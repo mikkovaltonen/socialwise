@@ -201,9 +201,9 @@ export const ERPUpload: React.FC<ERPUploadProps> = ({
           </ul>
         </div>
 
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-medium text-blue-800 mb-2">💡 Best practices:</h4>
-          <ul className="text-sm text-blue-700 space-y-1">
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h4 className="font-medium text-green-800 mb-2">💡 Best practices:</h4>
+          <ul className="text-sm text-green-700 space-y-1">
             <li>• Ensure first row contains column headers</li>
             <li>• Remove merged cells and complex formatting</li>
             <li>• Use consistent data types in columns</li>

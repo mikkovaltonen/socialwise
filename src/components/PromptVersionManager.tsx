@@ -234,15 +234,15 @@ const PromptVersionManager: React.FC<PromptVersionManagerProps> = ({
 
               {/* Sample prompt buttons - show when no prompt exists */}
               {!prompt.trim() && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+                  <p className="text-sm text-green-800">
                     <strong>Get started:</strong> Load a sample prompt or create your own from scratch.
                   </p>
                   <div className="flex gap-2">
                     <Button 
                       onClick={handleLoadSamplePrompt} 
                       variant="outline"
-                      className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-100"
+                      className="flex-1 border-green-300 text-green-700 hover:bg-green-100"
                     >
                       Load Sample Prompt
                     </Button>
@@ -313,7 +313,7 @@ const PromptVersionManager: React.FC<PromptVersionManagerProps> = ({
                     <Card 
                       key={version.id} 
                       className={`cursor-pointer transition-colors hover:bg-gray-50 ${
-                        selectedVersion?.id === version.id ? 'ring-2 ring-blue-500' : ''
+                        selectedVersion?.id === version.id ? 'ring-2 ring-green-500' : ''
                       }`}
                       onClick={() => handleLoadVersion(version)}
                     >

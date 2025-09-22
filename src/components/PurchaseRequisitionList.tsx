@@ -57,7 +57,7 @@ const PurchaseRequisitionList: React.FC<Props> = ({ onOpen, selectedId, refreshT
             {data && data.length > 0 ? data.map(pr => (
               <div
                 key={pr.id}
-                className={`border rounded-md p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer ${selectedId === pr.id ? 'ring-2 ring-blue-300 bg-blue-50' : ''}`}
+                className={`border rounded-md p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer ${selectedId === pr.id ? 'ring-2 ring-green-300 bg-green-50' : ''}`}
                 onClick={() => onOpen?.(pr.id!)}
                 aria-selected={selectedId === pr.id}
               >

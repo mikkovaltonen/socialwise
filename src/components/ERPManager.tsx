@@ -187,7 +187,7 @@ export const ERPManager: React.FC = () => {
                 <Button 
                   onClick={handleReplaceData} 
                   variant="outline"
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  className="text-green-600 border-green-200 hover:bg-green-50"
                 >
                   Replace Data
                 </Button>

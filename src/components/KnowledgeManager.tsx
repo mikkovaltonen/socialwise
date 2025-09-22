@@ -198,7 +198,7 @@ export const KnowledgeManager: React.FC = () => {
               {documents.map((doc) => (
                 <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
-                    <File className="w-8 h-8 text-blue-500" />
+                    <File className="w-8 h-8 text-green-500" />
                     <div>
                       <h3 className="font-medium">{doc.name}</h3>
                       <div className="flex items-center space-x-2 text-sm text-gray-500">

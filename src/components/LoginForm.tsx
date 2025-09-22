@@ -13,8 +13,7 @@ const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, register, user, loading } = useAuth();
-  const [isRegistering, setIsRegistering] = useState(false);
+  const { login, user, loading } = useAuth();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -26,7 +25,7 @@ const LoginForm = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 flex items-center justify-center">
         <div className="text-lg">Loading...</div>
       </div>
     );
@@ -38,17 +37,9 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      let success;
-      if (isRegistering) {
-        success = await register(email, password);
-        if (!success) {
-          setError('Registration failed. Email may already be in use.');
-        }
-      } else {
-        success = await login(email, password);
-        if (!success) {
-          setError('Invalid credentials');
-        }
+      const success = await login(email, password);
+      if (!success) {
+        setError('Invalid credentials');
       }
       
       if (success) {
@@ -64,15 +55,15 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md border-indigo-200 shadow-xl">
-        <CardHeader className="space-y-2 text-center bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-lg">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-green-200 shadow-xl">
+        <CardHeader className="space-y-2 text-center bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-lg">
           <Link to="/" className="flex flex-col items-center mb-6">
-            <span className="text-3xl font-bold tracking-wider text-white">PROCUREMENT AI</span>
-            <span className="text-indigo-100 text-sm font-medium">Agent Evaluator</span>
+            <span className="text-3xl font-bold tracking-wider text-white">VALMET</span>
+            <span className="text-green-100 text-sm font-medium">Purchaser AI Assistant</span>
           </Link>
           <CardTitle className="text-2xl font-bold text-white">Login</CardTitle>
-          <p className="text-indigo-100">Enter your credentials to continue evaluation</p>
+          <p className="text-green-100">Enter your credentials to continue</p>
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -85,7 +76,7 @@ const LoginForm = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full border-green-200 focus:ring-green-500 focus:border-green-500"
               />
             </div>
             <div className="space-y-2">
@@ -97,7 +88,7 @@ const LoginForm = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full border-green-200 focus:ring-green-500 focus:border-green-500"
               />
             </div>
             {error && (
@@ -107,27 +98,15 @@ const LoginForm = () => {
             )}
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-11 shadow-lg hover:shadow-xl transition-all"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white h-11 shadow-lg hover:shadow-xl transition-all"
               disabled={isLoading}
             >
-              {isLoading ? 'Processing...' : (isRegistering ? 'Register' : 'Login')}
+              {isLoading ? 'Processing...' : 'Login'}
             </Button>
-            <div className="text-center">
-              <button 
-                type="button"
-                onClick={() => {
-                  setIsRegistering(!isRegistering);
-                  setError('');
-                }}
-                className="text-sm text-indigo-600 hover:text-indigo-800"
-              >
-                {isRegistering ? 'Already have an account? Login' : 'Need an account? Register'}
-              </button>
-            </div>
             <div className="text-center mt-4">
               <Link 
                 to="/" 
-                className="text-sm text-indigo-600 hover:text-indigo-800"
+                className="text-sm text-green-600 hover:text-green-800"
               >
                 ← Back to homepage
               </Link>
@@ -139,4 +118,4 @@ const LoginForm = () => {
   );
 };
 
-export default LoginForm; 
+export default LoginForm;
