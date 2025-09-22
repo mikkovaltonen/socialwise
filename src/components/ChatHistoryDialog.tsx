@@ -51,7 +51,7 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
   const getEventIcon = (event: string) => {
     switch (event) {
       case 'user_message':
-        return <User className="h-4 w-4 text-blue-600" />;
+        return <User className="h-4 w-4 text-green-600" />;
       case 'function_call_triggered':
         return <Zap className="h-4 w-4 text-orange-600" />;
       case 'function_call_success':
@@ -67,7 +67,7 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
 
   const getEventBadge = (event: string) => {
     const colorMap = {
-      'user_message': 'bg-blue-100 text-blue-800',
+      'user_message': 'bg-green-100 text-green-800',
       'function_call_triggered': 'bg-orange-100 text-orange-800',
       'function_call_success': 'bg-green-100 text-green-800',
       'function_call_error': 'bg-red-100 text-red-800',
@@ -170,7 +170,7 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
               <CardContent>
                 <div className="grid grid-cols-5 gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-2xl font-bold text-green-600">
                       {sortedLogs.filter(log => log.event === 'user_message').length}
                     </div>
                     <div className="text-xs text-gray-600">User Messages</div>
@@ -213,7 +213,7 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
               ) : (
                 <div className="space-y-3">
                   {sortedLogs.map((log, index) => (
-                  <Card key={index} className="border-l-4 border-l-blue-500">
+                  <Card key={index} className="border-l-4 border-l-green-500">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         {getEventBadge(log.event)}
@@ -224,8 +224,8 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
                       
                       {log.userMessage && (
                         <div className="mb-2">
-                          <p className="text-sm font-medium text-blue-800">User Message:</p>
-                          <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded">
+                          <p className="text-sm font-medium text-green-800">User Message:</p>
+                          <p className="text-sm text-gray-700 bg-green-50 p-2 rounded">
                             {log.userMessage}
                           </p>
                         </div>
@@ -254,8 +254,8 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
 
                       {log.functionInputs && (
                         <div className="mb-2">
-                          <p className="text-sm font-medium text-blue-800">Function Inputs:</p>
-                          <div className="text-xs text-gray-700 bg-blue-50 p-2 rounded font-mono overflow-x-auto">
+                          <p className="text-sm font-medium text-green-800">Function Inputs:</p>
+                          <div className="text-xs text-gray-700 bg-green-50 p-2 rounded font-mono overflow-x-auto">
                             <pre>{JSON.stringify(log.functionInputs, null, 2)}</pre>
                           </div>
                         </div>

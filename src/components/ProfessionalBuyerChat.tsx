@@ -211,7 +211,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
             role: 'model',
             parts: [{
               text: isLikelyNewUser 
-                ? `🎉 **Welcome to Professional Buyer AI Assistant!**
+                ? `🎉 **Welcome to Valmet Purchaser AI Assistant!**
 
 I'm here to transform how you handle procurement and purchasing. As your AI-powered procurement expert, I can help you:
 
@@ -228,7 +228,7 @@ I'm here to transform how you handle procurement and purchasing. As your AI-powe
 **Ready to explore?** Try asking me "Load some sample data so I can see what you can do" or visit the Admin panel to upload your own files!
 
 What would you like to start with?`
-                : `Hello! I'm your Professional Buyer AI Assistant. I'm here to help you optimize your procurement processes, negotiate better deals, and achieve significant cost savings.
+                : `Hello! I'm your Valmet Purchaser AI Assistant. I'm here to help you optimize your procurement processes, negotiate better deals, and achieve significant cost savings.
 
 📚 **Knowledge Base Loaded:** ${session.documentsUsed.length} document(s) available for reference.
 
@@ -253,7 +253,7 @@ What can I help you with today?`
           const welcomeMessage: Message = {
             role: 'model',
             parts: [{
-              text: "Hello! I'm your Professional Buyer AI Assistant. I'm here to help you optimize your procurement processes, negotiate better deals, and achieve significant cost savings. What can I help you with today?"
+              text: "Hello! I'm your Valmet Purchaser AI Assistant. I'm here to help you optimize your procurement processes, negotiate better deals, and achieve significant cost savings. What can I help you with today?"
             }]
           };
           setMessages([welcomeMessage]);
@@ -698,7 +698,7 @@ What can I help you with today?`
         </div>
         <div className="flex items-center justify-center mb-4">
           <Bot className="h-8 w-8 mr-3" />
-          <h1 className="text-3xl font-bold">Professional Buyer AI Assistant</h1>
+          <h1 className="text-3xl font-bold">Valmet Purchaser AI Assistant</h1>
         </div>
         <p className="text-gray-300 text-lg max-w-4xl mx-auto">
           Get expert procurement advice, use prenegotiated prices from best suppliers, and do professional level procurement with ease

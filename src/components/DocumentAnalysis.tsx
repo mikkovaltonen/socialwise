@@ -228,7 +228,7 @@ const DocumentAnalysis: React.FC<DocumentAnalysisProps> = ({
                   className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm"
                 >
                   <div className="flex items-center space-x-2">
-                    <FileText className="h-4 w-4 text-blue-500" />
+                    <FileText className="h-4 w-4 text-green-500" />
                     <div>
                       <p className="font-medium text-gray-900 truncate max-w-48">{file.name}</p>
                       <p className="text-xs text-gray-500">
@@ -313,7 +313,7 @@ const DocumentAnalysis: React.FC<DocumentAnalysisProps> = ({
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                       >
                         <div className="flex items-center space-x-3">
-                          <FileText className="h-5 w-5 text-blue-500" />
+                          <FileText className="h-5 w-5 text-green-500" />
                           <div>
                             <p className="font-medium text-gray-900">{file.name}</p>
                             <p className="text-sm text-gray-500">
@@ -376,8 +376,8 @@ const DocumentAnalysis: React.FC<DocumentAnalysisProps> = ({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-800">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">
                       <strong>{uploadedFiles.length}</strong> document(s) ready for analysis. 
                       Use the chat below to ask questions about your documents or request specific analyses.
                     </p>

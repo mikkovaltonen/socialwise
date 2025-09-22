@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 import DocumentAnalysis from "@/components/DocumentAnalysis";
 import { KnowledgeManager } from "@/components/KnowledgeManager";
 import { ERPManager } from "@/components/ERPManager";
-import { ERPApiTester } from "@/components/ERPApiTester";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +23,6 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPdfUpload, setShowPdfUpload] = useState(false);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
-  const [showApiTester, setShowApiTester] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -127,8 +125,8 @@ const Admin = () => {
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Solution Visuals</h2>
           <div className="grid md:grid-cols-2 gap-6 items-center">
             <div>
-              <h3 className="text-xl font-medium text-gray-700 mb-2">Professional Buyer Tech Stack</h3>
-              <img src="/professiona_buyer_tech_stack.png" alt="Professional Buyer Tech Stack" className="rounded-lg shadow-md border border-gray-200 w-full h-auto" />
+              <h3 className="text-xl font-medium text-gray-700 mb-2">Valmet Purchaser Tech Stack</h3>
+              <img src="/professiona_buyer_tech_stack.png" alt="Valmet Purchaser Tech Stack" className="rounded-lg shadow-md border border-gray-200 w-full h-auto" />
             </div>
             <div>
               <h3 className="text-xl font-medium text-gray-700 mb-2">Solution Overview</h3>
@@ -205,40 +203,6 @@ const Admin = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <ERPManager />
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-
-          {/* ERP API Testing */}
-          <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="bg-gray-700 text-white rounded-t-lg">
-              <CardTitle className="flex items-center">
-                <Database className="mr-3 h-6 w-6" />
-                ERP API Testing
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <p className="text-gray-600 mb-4">
-                Test the internal ERP API with search functionality. Search by supplier, product, date range, or buyer name.
-              </p>
-              <Dialog open={showApiTester} onOpenChange={setShowApiTester}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="w-full bg-gray-700 hover:bg-gray-600 text-white"
-                  >
-                    <Database className="mr-2 h-4 w-4" />
-                    Test ERP API
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[1000px] max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>ERP API Testing Interface</DialogTitle>
-                    <DialogDescription>
-                      Test the ERP search API with different criteria and verify functionality.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <ERPApiTester />
                 </DialogContent>
               </Dialog>
             </CardContent>

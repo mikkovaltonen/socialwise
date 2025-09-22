@@ -213,8 +213,8 @@ export const ERPApiTester: React.FC = () => {
                 </p>
               </div>
             </div>
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
-              <p className="text-blue-700 text-sm">
+            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
+              <p className="text-green-700 text-sm">
                 <strong>💡 Required Excel Column Names:</strong> Supplier Name, Description, Receive By, Buyer Name
               </p>
             </div>
@@ -222,8 +222,8 @@ export const ERPApiTester: React.FC = () => {
 
           {/* Available Fields Info */}
           {availableFields.length > 0 && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-medium text-blue-800 mb-2">📊 Available Fields in Your Data:</h4>
+            <div className="p-3 bg-green-50 border border-green-200 rounded">
+              <h4 className="font-medium text-green-800 mb-2">📊 Available Fields in Your Data:</h4>
               <div className="flex flex-wrap gap-2">
                 {availableFields.map((field, index) => (
                   <Badge key={index} variant="secondary" className="text-xs">
@@ -303,7 +303,7 @@ export const ERPApiTester: React.FC = () => {
             <Button 
               onClick={handleSearch} 
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-green-600 hover:bg-green-700"
             >
               <Search className="w-4 h-4 mr-2" />
               Search Records
