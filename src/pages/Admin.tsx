@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle } from "lucide-react";
+import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle, Book } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import DocumentAnalysis from "@/components/DocumentAnalysis";
 import { KnowledgeManager } from "@/components/KnowledgeManager";
+import ChatInitViewer from "@/components/ChatInitViewer";
 import { ERPManager } from "@/components/ERPManager";
 import {
   Dialog,
@@ -22,6 +23,7 @@ const Admin = () => {
   const { user, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPdfUpload, setShowPdfUpload] = useState(false);
+  const [showChatInit, setShowChatInit] = useState(false);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
 
   const handleLogout = () => {
@@ -120,47 +122,12 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Chat Initialization Documents Section */}
-        <div className="my-8 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Chat Initialization Context</h2>
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              The following Valmet policies are automatically loaded as context for the AI assistant:
-            </p>
-            <div className="grid gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">📋 Valmet Global Procurement Policy</h3>
-                <p className="text-sm text-gray-600">
-                  Defines purchasing and payment processes, supplier management, buying channels, and compliance requirements across all Valmet units.
-                </p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">💳 Valmet Global Payment Policy</h3>
-                <p className="text-sm text-gray-600">
-                  Outlines payment channels, frequency, authorization requirements, and exception handling for supplier payments.
-                </p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">✅ Valmet Approval Limits Policy</h3>
-                <p className="text-sm text-gray-600">
-                  Establishes purchase invoice approval limits, rights management, and compliance framework based on position levels.
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
-              <p className="text-sm text-green-700">
-                <strong>Note:</strong> These documents are automatically available to the AI assistant and help provide accurate, policy-compliant responses for Valmet procurement processes.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Secondary Tools */}
         <div className="grid md:grid-cols-3 gap-6">
           
           {/* AI Prompt Management - Moved to featured section above */}
 
-          {/* Internal Knowledge Upload */}
+          {/* Internal Knowledge & Chat Initialization */}
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="bg-gray-700 text-white rounded-t-lg">
               <CardTitle className="flex items-center">
@@ -170,22 +137,40 @@ const Admin = () => {
             </CardHeader>
             <CardContent className="p-6">
               <p className="text-gray-600 mb-4">
-                Upload markdown and text documents containing internal procurement policies, procedures, and knowledge base content for AI analysis.
+                View Valmet policies that are automatically loaded as AI context, and manage additional knowledge documents.
               </p>
+              
+              {/* Chat Initialization Viewer */}
+              <Dialog open={showChatInit} onOpenChange={setShowChatInit}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="w-full bg-green-700 hover:bg-green-600 text-white mb-3"
+                  >
+                    <Book className="mr-2 h-4 w-4" />
+                    View Chat Initialization Context
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
+                  <ChatInitViewer />
+                </DialogContent>
+              </Dialog>
+              
+              {/* Knowledge Manager */}
               <Dialog open={showPdfUpload} onOpenChange={setShowPdfUpload}>
                 <DialogTrigger asChild>
                   <Button 
                     className="w-full bg-gray-700 hover:bg-gray-600 text-white"
+                    variant="outline"
                   >
                     <FileText className="mr-2 h-4 w-4" />
-                    Manage Knowledge Documents
+                    Manage Additional Documents
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Internal Knowledge Management</DialogTitle>
+                    <DialogTitle>Additional Knowledge Management</DialogTitle>
                     <DialogDescription>
-                      Upload and manage markdown and text documents for your internal knowledge base.
+                      Upload and manage markdown and text documents to extend the AI's knowledge base.
                     </DialogDescription>
                   </DialogHeader>
                   <KnowledgeManager />
