@@ -5,7 +5,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle, Book } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import DocumentAnalysis from "@/components/DocumentAnalysis";
-import { KnowledgeManager } from "@/components/KnowledgeManager";
 import ChatInitViewer from "@/components/ChatInitViewer";
 import { ERPManager } from "@/components/ERPManager";
 import {
@@ -22,7 +21,6 @@ const Admin = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [showPdfUpload, setShowPdfUpload] = useState(false);
   const [showChatInit, setShowChatInit] = useState(false);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
 
@@ -137,7 +135,7 @@ const Admin = () => {
             </CardHeader>
             <CardContent className="p-6">
               <p className="text-gray-600 mb-4">
-                View Valmet policies that are automatically loaded as AI context, and manage additional knowledge documents.
+                View Valmet policies and supplier data that are automatically loaded as context for the AI assistant.
               </p>
               
               {/* Chat Initialization Viewer */}
@@ -152,28 +150,6 @@ const Admin = () => {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
                   <ChatInitViewer />
-                </DialogContent>
-              </Dialog>
-              
-              {/* Knowledge Manager */}
-              <Dialog open={showPdfUpload} onOpenChange={setShowPdfUpload}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="w-full bg-gray-700 hover:bg-gray-600 text-white"
-                    variant="outline"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Manage Additional Documents
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Additional Knowledge Management</DialogTitle>
-                    <DialogDescription>
-                      Upload and manage markdown and text documents to extend the AI's knowledge base.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <KnowledgeManager />
                 </DialogContent>
               </Dialog>
             </CardContent>
