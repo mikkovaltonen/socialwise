@@ -1,25 +1,24 @@
-# Procurement AI Agent Evaluator
+# Valmet Procurement AI Assistant
 
-A modern React application for evaluating AI capabilities in procurement processes through document analysis and intelligent data extraction.
+A specialized AI-powered procurement assistant for Valmet, focused on supplier search, vendor selection, and procurement intelligence.
+
+## 🎯 Purpose
+
+This application serves as Valmet's intelligent procurement assistant, helping users:
+- Search and analyze 520+ verified suppliers
+- Find vendors for professional services (IT consulting, business consulting, training, R&D, legal services)
+- Access procurement policies and guidelines
+- Make data-driven vendor selection decisions
 
 ## Features
 
-- **Document Intelligence**: Upload and analyze PDF, Excel, CSV, and Word documents
-- **AI-Powered Analysis**: Leverage Google Gemini AI for procurement document insights
-- **Structured Data Extraction**: Extract suppliers, pricing, and contract information in structured formats
-- **Interactive Chat Interface**: Natural language conversation with AI about uploaded documents
-- **Quick Action Buttons**: Pre-built prompts for common procurement analyses
-- **Export Capabilities**: Download extracted data as CSV files
-- **Responsive UI**: Modern interface built with Tailwind CSS and shadcn/ui components
-
-## Use Cases
-
-Perfect for evaluating AI capabilities in:
-- **Supplier Analysis**: Extract and analyze supplier information from catalogs and documents
-- **Contract Review**: Identify key terms, risks, and opportunities in procurement contracts
-- **Pricing Intelligence**: Analyze pricing trends and identify cost-saving opportunities
-- **Document Processing**: Demonstrate AI's ability to structure unorganized procurement data
-- **Procurement Workflow Optimization**: Assess how AI can streamline procurement processes
+- **Valmet Supplier Search**: Fuzzy, case-insensitive search across 520+ suppliers
+- **AI-Powered Chat**: Google Gemini AI for intelligent procurement assistance
+- **Document Analysis**: Process and analyze procurement documents (PDF, Excel, Word, CSV)
+- **Policy Context Viewer**: Browse Valmet procurement policies with paged navigation
+- **Supplier Statistics**: Real-time analytics on supplier distribution and compliance
+- **Export Capabilities**: Download supplier data and search results as CSV
+- **Multi-language Support**: Finnish and English interfaces
 
 ## Technologies
 

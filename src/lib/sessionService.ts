@@ -108,30 +108,98 @@ Please use this internal knowledge to provide accurate, company-specific guidanc
   }
 
   /**
+   * Load Valmet policy documents from chat_init_context
+   */
+  private async loadValmetPolicyDocuments(): Promise<string> {
+    const policyPaths = [
+      '/chat_init_contect/valmet-procurement-policy.md',
+      '/chat_init_contect/valmet-payment-policy.md',
+      '/chat_init_contect/valmet-approval-limits-policy.md',
+      '/chat_init_contect/valmet-supplier-spend-data.md'
+    ];
+
+    const policyContexts: string[] = [];
+
+    for (const path of policyPaths) {
+      try {
+        const response = await fetch(path);
+        if (response.ok) {
+          const content = await response.text();
+          const filename = path.split('/').pop()?.replace('.md', '') || 'policy';
+          const title = filename.split('-').map(w => 
+            w.charAt(0).toUpperCase() + w.slice(1)
+          ).join(' ');
+          
+          policyContexts.push(`
+## ${title}
+
+${content}
+`);
+        }
+      } catch (error) {
+        console.warn(`Failed to load policy document: ${path}`, error);
+      }
+    }
+
+    if (policyContexts.length > 0) {
+      return `
+# VALMET INTERNAL POLICIES AND GUIDELINES
+
+${policyContexts.join('\n')}
+
+---
+`;
+    }
+
+    return '';
+  }
+
+  /**
    * Initialize a new chat session with full context
    */
   async initializeChatSession(userId: string): Promise<ChatSession> {
     try {
-      // Get latest system prompt
+      // Get latest system prompt or use default
       const latestPrompt = await this.getLatestSystemPrompt(userId);
+      let systemPrompt: string;
+      let aiModel: string;
+      
       if (!latestPrompt?.systemPrompt) {
-        throw new Error('No system prompt configured. Please create a prompt in the Admin panel.');
+        // Use default system prompt from public folder
+        try {
+          const response = await fetch('/sample_promtp.md');
+          if (response.ok) {
+            systemPrompt = await response.text();
+            aiModel = 'gemini-2.5-pro';
+          } else {
+            throw new Error('No system prompt configured. Please create a prompt in the Admin panel.');
+          }
+        } catch (err) {
+          throw new Error('No system prompt configured. Please create a prompt in the Admin panel.');
+        }
+      } else {
+        systemPrompt = latestPrompt.systemPrompt;
+        aiModel = latestPrompt.aiModel || 'gemini-2.5-pro';
       }
-      const systemPrompt = latestPrompt.systemPrompt;
-      const aiModel = latestPrompt.aiModel || 'gemini-2.5-pro';
 
       // Get knowledge documents
       const documents = await this.getUserKnowledgeDocuments(userId);
       
       // Build knowledge context
       const knowledgeContext = await this.buildKnowledgeContext(documents);
+      
+      // Load Valmet policy documents
+      const policyContext = await this.loadValmetPolicyDocuments();
+      
+      // Combine all contexts
+      const fullKnowledgeContext = policyContext + knowledgeContext;
 
       // Combine system prompt with knowledge context
-      const fullContext = this.combineContexts(systemPrompt, knowledgeContext);
+      const fullContext = this.combineContexts(systemPrompt, fullKnowledgeContext);
 
       return {
         systemPrompt,
-        knowledgeContext,
+        knowledgeContext: fullKnowledgeContext,
         fullContext,
         documentsUsed: documents,
         aiModel,

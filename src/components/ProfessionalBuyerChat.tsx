@@ -17,6 +17,8 @@ import { erpApiService } from '../lib/erpApiService';
 import { storageService } from '../lib/storageService';
 import { createPurchaseRequisition } from '@/lib/firestoreService';
 import { useQueryClient } from '@tanstack/react-query';
+import { searchSuppliersForChat, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
+import { purchaseRequisitionService, RequisitionStatus } from '../lib/purchaseRequisitionService';
 
 interface ProfessionalBuyerChatProps {
   onLogout?: () => void;
@@ -28,73 +30,102 @@ interface ProfessionalBuyerChatProps {
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const geminiModel = 'gemini-2.5-pro';
 
-// ERP Function Definition for Gemini
-const searchERPFunction = {
-  name: "search_erp_data",
-  description: "Search ERP/purchase order data with various criteria. Use this when user asks about suppliers, orders, purchases, products, or wants to find specific data from their ERP system.",
+// Supplier Search Function Definition for Gemini
+const searchSuppliersFunction = {
+  name: "search_suppliers",
+  description: "Search for verified suppliers in Valmet's supplier database for external workforce needs. Use this when user asks about finding suppliers, vendors, or service providers for consulting, training, legal services, or other professional services.",
   parameters: {
     type: "object",
     properties: {
-      supplierName: {
+      mainCategory: {
         type: "string",
-        description: "Supplier/vendor name or partial name to search for"
+        description: `Main category to search. Valid values: ${MAIN_CATEGORY_LOV.map(c => c.value).join(', ')}`
       },
-      productDescription: {
-        type: "string", 
-        description: "Product description or partial description to search for"
-      },
-      dateFrom: {
+      supplierCategories: {
         type: "string",
-        description: "Search from date (YYYY-MM-DD format). Filters by 'Receive By' column in the Excel data."
+        description: "Free text search in supplier categories"
       },
-      dateTo: {
+      country: {
         type: "string",
-        description: "Search to date (YYYY-MM-DD format). Filters by 'Receive By' column in the Excel data."
+        description: "Country to filter by (e.g., Finland, Sweden, Germany)"
       },
-      buyerName: {
+      city: {
         type: "string",
-        description: "Buyer/purchaser name or partial name to search for"
+        description: "City to filter by"
+      },
+      limit: {
+        type: "number",
+        description: "Maximum number of results to return (default: 10)"
       }
     }
   }
 };
 
+// ERP search function removed - only supplier search is used
+
+// Purchase Requisition Function (Basware-style)
 const createRequisitionFunction = {
   name: "create_purchase_requisition",
-  description: "Create a purchase requisition document with header and lines to Firestore.",
+  description: "Create a purchase requisition for external workforce or services. This creates a formal request that needs approval before becoming a purchase order.",
   parameters: {
     type: "object",
     properties: {
-      header: {
-        type: "object",
-        properties: {
-          templateBatchName: { type: "string" },
-          locationCode: { type: "string" },
-          startDate: { type: "string", description: "YYYY-MM-DD" },
-          endDate: { type: "string", description: "YYYY-MM-DD" },
-          responsibilityCenterOrBuyer: { type: "string" },
-          notes: { type: "string" }
-        },
-        required: ["templateBatchName","locationCode","startDate","endDate","responsibilityCenterOrBuyer"]
+      department: { 
+        type: "string",
+        description: "Requesting department (e.g., IT, Finance, Operations)"
       },
-      lines: {
+      requestedDeliveryDate: { 
+        type: "string", 
+        description: "Required delivery date (YYYY-MM-DD format)" 
+      },
+      businessJustification: { 
+        type: "string",
+        description: "Business reason for the purchase"
+      },
+      urgencyLevel: { 
+        type: "string",
+        enum: ["low", "medium", "high", "critical"],
+        description: "Urgency of the request"
+      },
+      preferredSupplier: { 
+        type: "string",
+        description: "Preferred supplier name (optional)"
+      },
+      lineItems: {
         type: "array",
         items: {
           type: "object",
           properties: {
-            itemNoOrDescription: { type: "string" },
-            quantity: { type: "number" },
-            unitOfMeasure: { type: "string" },
-            requestedDate: { type: "string", description: "YYYY-MM-DD" },
-            vendorNoOrName: { type: "string" },
-            directUnitCost: { type: "number" },
-            currency: { type: "string" }
+            itemDescription: { 
+              type: "string",
+              description: "Description of the item or service"
+            },
+            quantity: { 
+              type: "number",
+              description: "Quantity needed"
+            },
+            unitOfMeasure: { 
+              type: "string",
+              description: "Unit of measure (EA, HR, DAY, etc.)"
+            },
+            unitPrice: { 
+              type: "number",
+              description: "Unit price in EUR"
+            },
+            supplierName: {
+              type: "string",
+              description: "Specific supplier for this line item (optional)"
+            },
+            categoryCode: {
+              type: "string",
+              description: "Category code (e.g., IT-CONSULT, TRAINING, LEGAL)"
+            }
           },
-          required: ["itemNoOrDescription","quantity","unitOfMeasure","requestedDate"]
+          required: ["itemDescription", "quantity", "unitOfMeasure", "unitPrice"]
         }
       }
     },
-    required: ["header","lines"]
+    required: ["department", "requestedDeliveryDate", "businessJustification", "lineItems"]
   }
 };
 
@@ -167,7 +198,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
   // System initialization status
   const [statusLoading, setStatusLoading] = useState(false);
   const [initStatus, setInitStatus] = useState<{ hasPrompt: boolean; knowledgeCount: number; erpCount: number }>({
-    hasPrompt: false,
+    hasPrompt: true, // Default to true to allow chat input
     knowledgeCount: 0,
     erpCount: 0
   });
@@ -211,24 +242,19 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
             role: 'model',
             parts: [{
               text: isLikelyNewUser 
-                ? `🎉 **Welcome to Valmet Purchaser AI Assistant!**
+                ? `🎯 **Valmet Finland External Workforce Assistant**
 
-I'm here to transform how you handle procurement and purchasing. As your AI-powered procurement expert, I can help you:
+I help you find and select the best suppliers for external workforce needs in Finland.
 
-**🎯 Get Started (recommended):**
-• **Load Sample Data**: Go to Admin panel → Load sample knowledge documents and ERP data to try me out
-• **Upload Your Files**: Add your own procurement policies and Excel purchase data  
-• **Ask Questions**: "What suppliers do we use?" or "Find me laptop purchases from last quarter"
+**Available services:** IT consulting • Business consulting • Training • Legal services • R&D services • Leased workforce
 
-**💡 My Special Capabilities:**
-✅ Real-time access to your ERP/purchase data through advanced function calling
-✅ Analysis of your internal procurement documents and policies  
-✅ Professional buyer expertise for cost optimization and supplier management
+**Quick actions:**
+• "Find IT consulting suppliers in Finland"
+• "Show me training providers"
+• "List legal service vendors"
 
-**Ready to explore?** Try asking me "Load some sample data so I can see what you can do" or visit the Admin panel to upload your own files!
-
-What would you like to start with?`
-                : `Hello! I'm your Valmet Purchaser AI Assistant. I'm here to help you optimize your procurement processes, negotiate better deals, and achieve significant cost savings.
+520+ verified suppliers ready to search. What service do you need?`
+                : `Hello! I'm your Valmet External Workforce Assistant for Finland. I help you find suppliers for consulting, training, legal, and other professional services.
 
 📚 **Knowledge Base Loaded:** ${session.documentsUsed.length} document(s) available for reference.
 
@@ -267,27 +293,12 @@ What can I help you with today?`
     initializeSession();
   }, [sessionActive, user, sessionInitializing]);
 
-  const quickActions = [
-    "Use prenegotiated discount prices",
-    "Get approvals easily and from correct person", 
-    "Find preferred supplier and best price/quality",
-    "Create purcase requisitions and orders easily and correctly"
-  ];
-
-  const handleQuickAction = async (action: string) => {
-    setInput(action);
-    await handleSendMessage(action);
-  };
 
   const handleSendMessage = async (messageText?: string) => {
     const textToSend = messageText || input;
     if (!textToSend.trim() || isLoading) return;
 
-    // Guard: require at least a system prompt
-    if (!initStatus.hasPrompt) {
-      toast.error('No system prompt configured. Please open Admin and set up your prompt.');
-      return;
-    }
+    // System prompt check removed - default prompt is always available
 
     // Initialize continuous improvement if not already done
     if (!continuousImprovementSessionId) {
@@ -337,7 +348,7 @@ What can I help you with today?`
         model: geminiModel,
         generationConfig: { temperature: 0.2 },
         tools: [
-          { functionDeclarations: [searchERPFunction, createRequisitionFunction] }
+          { functionDeclarations: [searchSuppliersFunction, createRequisitionFunction] }
         ]
       });
 
@@ -362,12 +373,12 @@ What can I help you with today?`
               const functionName = part.functionCall.name;
               const functionArgs = part.functionCall.args;
               
-              if (functionName === 'search_erp_data') {
+              if (functionName === 'search_suppliers') {
                 try {
                   const aiRequestId = Math.random().toString(36).substring(2, 8);
                   
                   // Log AI function call details
-                  console.log('🤖 AI FUNCTION CALL [' + aiRequestId + ']:', {
+                  console.log('🤖 AI SUPPLIER SEARCH CALL [' + aiRequestId + ']:', {
                     triggered_by_user_message: textToSend,
                     function_name: functionName,
                     ai_generated_parameters: functionArgs,
@@ -386,18 +397,18 @@ What can I help you with today?`
                     });
                   }
 
-                  // Execute ERP search (this will generate its own logs with request ID)
-                  const searchResult = await erpApiService.searchRecords(user!.uid, functionArgs);
+                  // Execute supplier search
+                  const searchResult = await searchSuppliersForChat(functionArgs);
                   
-                  // Log consolidated AI + ERP results
-                  console.log('🔗 AI-ERP INTEGRATION RESULT [' + aiRequestId + ']:', {
+                  // Log consolidated AI + Supplier search results
+                  console.log('🔗 AI-SUPPLIER SEARCH RESULT [' + aiRequestId + ']:', {
                     user_query: textToSend,
                     ai_function_call: functionName,
                     ai_parameters: functionArgs,
-                    erp_result_summary: {
-                      totalRecords: searchResult.totalCount,
-                      processingTime: searchResult.processingTimeMs + 'ms',
-                      hasData: searchResult.records.length > 0
+                    supplier_result_summary: {
+                      totalRecords: searchResult.totalFound,
+                      success: searchResult.success,
+                      hasData: searchResult.totalFound > 0
                     },
                     execution_timestamp: new Date().toISOString(),
                     ai_request_id: aiRequestId
@@ -410,10 +421,10 @@ What can I help you with today?`
                       functionName: functionName,
                       functionInputs: functionArgs,
                       functionOutputs: {
-                        totalRecords: searchResult.totalCount,
-                        processingTimeMs: searchResult.processingTimeMs,
-                        hasData: searchResult.records.length > 0,
-                        recordsPreview: searchResult.records.slice(0, 3) // First 3 records as preview
+                        totalRecords: searchResult.totalFound,
+                        success: searchResult.success,
+                        hasData: searchResult.totalFound > 0,
+                        suppliersPreview: searchResult.suppliers.slice(0, 3) // First 3 suppliers as preview
                       },
                       aiRequestId: aiRequestId
                     });
@@ -426,9 +437,10 @@ What can I help you with today?`
                       functionResponse: {
                         name: functionName,
                         response: {
-                          records: searchResult.records,
-                          totalCount: searchResult.totalCount,
-                          processingTimeMs: searchResult.processingTimeMs
+                          success: searchResult.success,
+                          totalFound: searchResult.totalFound,
+                          suppliers: searchResult.suppliers,
+                          error: searchResult.error
                         }
                       }
                     }]
@@ -498,7 +510,7 @@ What can I help you with today?`
                   console.error('Function execution failed:', functionError);
                   setMessages(prev => [...prev, {
                     role: 'model',
-                    parts: [{ text: `I tried to search your ERP data but encountered an error: ${functionError instanceof Error ? functionError.message : 'Unknown error'}. Please make sure you have uploaded your ERP data in the Admin panel.` }]
+                    parts: [{ text: `I tried to search for suppliers but encountered an error: ${functionError instanceof Error ? functionError.message : 'Unknown error'}. Please try again with different search criteria.` }]
                   }]);
                   return;
                 }
@@ -507,19 +519,77 @@ What can I help you with today?`
                 try {
                   const aiRequestId = Math.random().toString(36).substring(2, 8);
                   const args = functionArgs as any;
-                  if (!user?.uid) throw new Error('Not authenticated');
-                  const id = await createPurchaseRequisition(user.uid, {
-                    status: 'draft',
-                    header: args.header,
-                    lines: args.lines
-                  } as any);
-                  try {
-                    await queryClient.invalidateQueries({ queryKey: ['purchaseRequisitions', user.uid] });
-                  } catch {}
-                  setMessages(prev => [...prev, { role: 'model', parts: [{ text: `Created purchase requisition ${id}. You can view and edit it in Requisitions.` }] }]);
+                  
+                  if (!user) throw new Error('Not authenticated');
+                  
+                  // Prepare line items with proper structure
+                  const lineItems = args.lineItems.map((item: any, index: number) => ({
+                    lineNumber: index + 1,
+                    itemDescription: item.itemDescription,
+                    quantity: item.quantity,
+                    unitOfMeasure: item.unitOfMeasure,
+                    unitPrice: item.unitPrice,
+                    totalAmount: item.quantity * item.unitPrice,
+                    supplierName: item.supplierName,
+                    categoryCode: item.categoryCode,
+                    requestedDate: args.requestedDeliveryDate
+                  }));
+                  
+                  // Create requisition using our service
+                  const requisitionData = {
+                    externalCode: `AI-${Date.now()}`,
+                    requesterId: user.uid,
+                    requesterName: user.email || 'Unknown',
+                    requesterEmail: user.email || '',
+                    department: args.department,
+                    requestedDeliveryDate: args.requestedDeliveryDate,
+                    status: RequisitionStatus.DRAFT,
+                    currency: 'EUR',
+                    preferredSupplier: args.preferredSupplier || '',
+                    deliveryAddress: {
+                      locationCode: 'FI-HEL-01',
+                      locationName: 'Valmet Helsinki Office',
+                      city: 'Helsinki',
+                      country: 'Finland'
+                    },
+                    lineItems: lineItems,
+                    businessJustification: args.businessJustification,
+                    urgencyLevel: args.urgencyLevel || 'medium'
+                  };
+                  
+                  const requisitionId = await purchaseRequisitionService.createRequisition(
+                    user.uid,
+                    requisitionData
+                  );
+                  
+                  // Log success
+                  console.log('✅ Purchase requisition created via AI:', requisitionId);
+                  
+                  // Calculate total
+                  const total = lineItems.reduce((sum: number, item: any) => sum + item.totalAmount, 0);
+                  
+                  setMessages(prev => [...prev, { 
+                    role: 'model', 
+                    parts: [{ 
+                      text: `✅ Purchase requisition created successfully!\n\n` +
+                            `**Requisition ID:** ${requisitionId}\n` +
+                            `**Department:** ${args.department}\n` +
+                            `**Total Amount:** €${total.toFixed(2)}\n` +
+                            `**Status:** Draft\n` +
+                            `**Items:** ${lineItems.length} line item(s)\n\n` +
+                            `The requisition has been created in draft status. You can view, edit, and submit it for approval in the Purchase Requisition Verification panel.`
+                    }] 
+                  }]);
+                  
                   return;
                 } catch (err) {
-                  setMessages(prev => [...prev, { role: 'model', parts: [{ text: `Failed to create requisition: ${err instanceof Error ? err.message : 'Unknown error'}` }] }]);
+                  console.error('Failed to create requisition:', err);
+                  setMessages(prev => [...prev, { 
+                    role: 'model', 
+                    parts: [{ 
+                      text: `❌ Failed to create purchase requisition: ${err instanceof Error ? err.message : 'Unknown error'}` 
+                    }] 
+                  }]);
                   return;
                 }
               }
@@ -708,7 +778,16 @@ What can I help you with today?`
 
       {/* Main Content under header with optional left panel */}
       {/* Controls row under header */}
-      <div className="container mx-auto px-4 mt-4 flex justify-end">
+      <div className="container mx-auto px-4 mt-4 flex justify-between">
+        <Button 
+          variant="outline" 
+          onClick={handleResetChat} 
+          className="text-red-600 border-red-200 hover:bg-red-50"
+          size="sm"
+        >
+          <RotateCcw className="mr-2 h-4 w-4" />
+          Reset Chat
+        </Button>
         {topRightControls}
       </div>
 
@@ -721,77 +800,9 @@ What can I help you with today?`
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={65} minSize={40} className="pl-2">
               <div className={"flex flex-col items-stretch"}>
-            {/* Status Panel */}
-            <div className="bg-white border rounded-md p-4 mb-2">
-              {statusLoading ? (
-                <div className="text-sm text-gray-600">Checking system status…</div>
-              ) : (
-                <div className="text-sm">
-                  <div className="flex flex-wrap gap-4">
-                    <div>
-                      <span className={`font-medium ${initStatus.hasPrompt ? 'text-green-700' : 'text-red-700'}`}>System Prompt:</span>
-                      <span className="ml-2 text-gray-700">{initStatus.hasPrompt ? 'Configured' : 'Missing'}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-800">Knowledge Docs:</span>
-                      <span className="ml-2 text-gray-700">{initStatus.knowledgeCount}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-800">ERP Data files:</span>
-                      <span className="ml-2 text-gray-700">{initStatus.erpCount}</span>
-                    </div>
-                    
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <a href="/admin" className="text-xs inline-flex items-center px-3 py-2 border rounded-md hover:bg-gray-50">Open Admin</a>
-                    <a href="/docs/setup_guide.html" target="_blank" rel="noreferrer" className="text-xs inline-flex items-center px-3 py-2 border rounded-md hover:bg-gray-50">Setup Guide (PDF)</a>
-                  </div>
-                  {!initStatus.hasPrompt && (
-                    <div className="mt-2 text-xs text-red-700">
-                      Please open Admin and configure a system prompt before chatting.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
 
-            {/* Action Buttons */}
-            <div className="bg-white border p-4 rounded-md mb-2">
-              <div className="flex gap-3 justify-center">
-                <Button 
-                  variant="outline" 
-                  onClick={handleResetChat}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset Chat
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleAttachDocuments}
-                  className="text-gray-700 border-gray-300 hover:bg-gray-100"
-                >
-                  <Paperclip className="mr-2 h-4 w-4" />
-                  Upload Documents
-                </Button>
-              </div>
-            </div>
 
-            {/* Quick Action Pills */}
-            <div className="bg-white border rounded-md p-6 mb-2">
-              <div className="flex flex-wrap gap-3 justify-center max-w-4xl mx-auto">
-                {quickActions.map((action, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="rounded-full px-6 py-2 text-sm bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
-                    onClick={() => handleQuickAction(action)}
-                  >
-                    {action}
-                  </Button>
-                ))}
-              </div>
-            </div>
+            {/* Quick Action Pills removed for simplified interface */}
 
             {/* Chat Messages */}
             <div className="p-2 space-y-6">
@@ -905,13 +916,13 @@ What can I help you with today?`
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      disabled={isLoading || !initStatus.hasPrompt}
+                      disabled={isLoading}
                       className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
                     />
                   </div>
                   <Button
                     onClick={() => handleSendMessage()}
-                    disabled={!input.trim() || isLoading || !initStatus.hasPrompt}
+                    disabled={!input.trim() || isLoading}
                     className="h-12 px-6 bg-black hover:bg-gray-800 text-white rounded-xl"
                   >
                     <Send className="h-5 w-5" />
@@ -926,61 +937,8 @@ What can I help you with today?`
           <div>
             {/* When no left panel, show full-width chat */}
             <div className={"flex flex-col items-stretch"}>
-              <div className="bg-white border p-4 rounded-md mb-2">
-                <div className="flex gap-3 justify-center">
-                  <Button variant="outline" onClick={handleResetChat} className="text-red-600 border-red-200 hover:bg-red-50">
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Reset Chat
-                  </Button>
-                  <Button variant="outline" onClick={handleAttachDocuments} className="text-gray-700 border-gray-300 hover:bg-gray-100">
-                    <Paperclip className="mr-2 h-4 w-4" />
-                    Upload Documents
-                  </Button>
-                </div>
-              </div>
-              {/* Status Panel */}
-              <div className="bg-white border rounded-md p-4 mb-2">
-                {statusLoading ? (
-                  <div className="text-sm text-gray-600">Checking system status…</div>
-                ) : (
-                  <div className="text-sm">
-                    <div className="flex flex-wrap gap-4">
-                      <div>
-                        <span className={`font-medium ${initStatus.hasPrompt ? 'text-green-700' : 'text-red-700'}`}>System Prompt:</span>
-                        <span className="ml-2 text-gray-700">{initStatus.hasPrompt ? 'Configured' : 'Missing'}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-800">Knowledge Docs:</span>
-                        <span className="ml-2 text-gray-700">{initStatus.knowledgeCount}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-800">ERP Data files:</span>
-                        <span className="ml-2 text-gray-700">{initStatus.erpCount}</span>
-                      </div>
-                      
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <a href="/admin" className="text-xs inline-flex items-center px-3 py-2 border rounded-md hover:bg-gray-50">Open Admin</a>
-                      <a href="/docs/setup_guide.html" target="_blank" rel="noreferrer" className="text-xs inline-flex items-center px-3 py-2 border rounded-md hover:bg-gray-50">Setup Guide (PDF)</a>
-                    </div>
-                    {!initStatus.hasPrompt && (
-                      <div className="mt-2 text-xs text-red-700">
-                        Please open Admin and configure a system prompt before chatting.
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
 
-              <div className="bg-white border rounded-md p-6 mb-2">
-                <div className="flex flex-wrap gap-3 justify-center max-w-4xl mx-auto">
-                  {quickActions.map((action, index) => (
-                    <Button key={index} variant="outline" className="rounded-full px-6 py-2 text-sm bg-white border-gray-300 text-gray-700 hover:bg-gray-100" onClick={() => handleQuickAction(action)}>
-                      {action}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              {/* Quick Action Pills removed for simplified interface */}
               <div className="p-2 space-y-6">
                 <div className="max-w-4xl mx-auto space-y-6">
                   {sessionInitializing && (

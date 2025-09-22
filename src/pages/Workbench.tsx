@@ -2,8 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import ProfessionalBuyerChat from "@/components/ProfessionalBuyerChat";
-import PurchaseRequisitionList from "@/components/PurchaseRequisitionList";
-import PurchaseRequisitionDetail from "@/components/PurchaseRequisitionDetail";
+import { PurchaseRequisitionPanel } from "@/components/PurchaseRequisitionPanel";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,31 +26,9 @@ const Workbench = () => {
         onLogout={handleLogout}
         leftPanelVisible={verificationVisible}
         leftPanel={
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Purchase Requisition Verification</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setRefreshToken((t) => t + 1)}>Refresh</Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <PurchaseRequisitionList
-                onOpen={(id) => setOpenId(id)}
-                selectedId={openId}
-                refreshToken={refreshToken}
-                onDeleted={(id) => {
-                  if (openId === id) setOpenId(null);
-                }}
-              />
-              {openId && (
-                <div className="border rounded-md">
-                  <PurchaseRequisitionDetail id={openId} />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="h-full overflow-y-auto p-4">
+            <PurchaseRequisitionPanel />
+          </div>
         }
         topRightControls={
           <div className="flex items-center gap-2">

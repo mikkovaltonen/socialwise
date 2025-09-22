@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle, Book } from "lucide-react";
+import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle, Book, Info } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import DocumentAnalysis from "@/components/DocumentAnalysis";
 import ChatInitViewer from "@/components/ChatInitViewer";
-import { ERPManager } from "@/components/ERPManager";
+import { ValmetSupplierSearchSimple } from "@/components/ValmetSupplierSearchSimple";
 import {
   Dialog,
   DialogContent,
@@ -161,17 +161,17 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          {/* ERP/P2P Integration Simulation */}
+          {/* Valmet Supplier Spend Data Search */}
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="bg-gray-700 text-white rounded-t-lg">
               <CardTitle className="flex items-center">
                 <Database className="mr-3 h-6 w-6" />
-                ERP/P2P Integration
+                Valmet Supplier Spend Data Search
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <p className="text-gray-600 mb-4">
-                Upload and manage your structured Excel file to simulate ERP integration.
+                Search and analyze supplier spend data, vendor details, and metadata.
               </p>
               <Dialog open={showExcelUpload} onOpenChange={setShowExcelUpload}>
                 <DialogTrigger asChild>
@@ -179,17 +179,33 @@ const Admin = () => {
                     className="w-full bg-gray-700 hover:bg-gray-600 text-white"
                   >
                     <Database className="mr-2 h-4 w-4" />
-                    Manage ERP Data
+                    Search Supplier Data
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>ERP/P2P Integration Management</DialogTitle>
-                    <DialogDescription>
-                      Upload and manage your structured Excel file to simulate ERP integration.
-                    </DialogDescription>
+                <DialogContent className="sm:max-w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
+                  <DialogHeader className="px-6 pt-6 pb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <DialogTitle>Valmet Supplier Spend Data Search</DialogTitle>
+                        <DialogDescription>
+                          Search and analyze supplier spend data, vendor details, metadata, and training information.
+                        </DialogDescription>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => window.open('/vendor_search.md', '_blank')}
+                          title="View Documentation"
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </DialogHeader>
-                  <ERPManager />
+                  <div className="flex-1 overflow-y-auto px-6 pb-6">
+                    <ValmetSupplierSearchSimple />
+                  </div>
                 </DialogContent>
               </Dialog>
             </CardContent>
