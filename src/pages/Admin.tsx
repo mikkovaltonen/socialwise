@@ -149,6 +149,12 @@ const Admin = () => {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
+                  <DialogHeader className="sr-only">
+                    <DialogTitle>Chat Initialization Context</DialogTitle>
+                    <DialogDescription>
+                      View and manage the policy documents that are automatically loaded as context for the AI assistant.
+                    </DialogDescription>
+                  </DialogHeader>
                   <ChatInitViewer />
                 </DialogContent>
               </Dialog>
