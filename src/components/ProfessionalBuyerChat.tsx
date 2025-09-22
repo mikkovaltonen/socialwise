@@ -26,7 +26,7 @@ interface ProfessionalBuyerChatProps {
 }
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-const geminiModel = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-pro-preview-03-25';
+const geminiModel = 'gemini-2.5-pro';
 
 // ERP Function Definition for Gemini
 const searchERPFunction = {

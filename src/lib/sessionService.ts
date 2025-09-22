@@ -118,7 +118,7 @@ Please use this internal knowledge to provide accurate, company-specific guidanc
         throw new Error('No system prompt configured. Please create a prompt in the Admin panel.');
       }
       const systemPrompt = latestPrompt.systemPrompt;
-      const aiModel = latestPrompt.aiModel || 'gemini-2.5-pro-preview-06-05';
+      const aiModel = latestPrompt.aiModel || 'gemini-2.5-pro';
 
       // Get knowledge documents
       const documents = await this.getUserKnowledgeDocuments(userId);

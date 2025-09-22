@@ -120,17 +120,37 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Visual Overview Section */}
+        {/* Chat Initialization Documents Section */}
         <div className="my-8 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Solution Visuals</h2>
-          <div className="grid md:grid-cols-2 gap-6 items-center">
-            <div>
-              <h3 className="text-xl font-medium text-gray-700 mb-2">Valmet Purchaser Tech Stack</h3>
-              <img src="/professiona_buyer_tech_stack.png" alt="Valmet Purchaser Tech Stack" className="rounded-lg shadow-md border border-gray-200 w-full h-auto" />
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Chat Initialization Context</h2>
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              The following Valmet policies are automatically loaded as context for the AI assistant:
+            </p>
+            <div className="grid gap-4">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">📋 Valmet Global Procurement Policy</h3>
+                <p className="text-sm text-gray-600">
+                  Defines purchasing and payment processes, supplier management, buying channels, and compliance requirements across all Valmet units.
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">💳 Valmet Global Payment Policy</h3>
+                <p className="text-sm text-gray-600">
+                  Outlines payment channels, frequency, authorization requirements, and exception handling for supplier payments.
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">✅ Valmet Approval Limits Policy</h3>
+                <p className="text-sm text-gray-600">
+                  Establishes purchase invoice approval limits, rights management, and compliance framework based on position levels.
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-medium text-gray-700 mb-2">Solution Overview</h3>
-              <img src="/solution_overview.png" alt="Solution Overview" className="rounded-lg shadow-md border border-gray-200 w-full h-auto" />
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+              <p className="text-sm text-green-700">
+                <strong>Note:</strong> These documents are automatically available to the AI assistant and help provide accurate, policy-compliant responses for Valmet procurement processes.
+              </p>
             </div>
           </div>
         </div>

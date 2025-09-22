@@ -81,7 +81,7 @@ export const savePromptVersion = async (
   userId: string, 
   promptText: string, 
   evaluation: string = '',
-  aiModel: string = 'gemini-2.5-flash-preview-04-17',
+  aiModel: string = 'gemini-2.5-pro',
   userEmail?: string
 ): Promise<number> => {
   try {
