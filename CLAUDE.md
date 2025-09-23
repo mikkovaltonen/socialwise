@@ -62,6 +62,7 @@ npm run preview
 - **Authentication**: Firebase Auth
 - **State Management**: React Hooks
 - **File Processing**: Support for PDF, Excel, CSV, Word documents
+- **Data Visualization**: Interactive Markdown table parser with sorting, filtering, and export
 
 ## Project Structure
 ```
@@ -70,6 +71,7 @@ src/
 │   ├── ValmetSupplierSearchSimple.tsx  # Main supplier search interface
 │   ├── ChatInitViewer.tsx              # Policy document viewer
 │   ├── DocumentAnalysis.tsx            # Document upload and analysis
+│   ├── InteractiveMarkdownTable.tsx    # Interactive table parser for Markdown
 │   └── ui/                             # shadcn/ui components
 ├── lib/
 │   ├── valmetSupplierSearch.ts         # Supplier search functions
@@ -143,6 +145,34 @@ VITE_GEMINI_API_KEY=your-gemini-key
 VITE_GEMINI_MODEL=gemini-2.5-flash-preview-04-17
 ```
 
+## Component Usage
+
+### InteractiveMarkdownTable Component
+The `InteractiveMarkdownTable` component parses Markdown tables and provides interactive features:
+
+```typescript
+import { InteractiveMarkdownTable } from '@/components/InteractiveMarkdownTable';
+
+// Example usage
+<InteractiveMarkdownTable
+  markdownContent={markdownTableString}
+  title="Supplier Comparison"
+  description="Compare top vendors by features"
+  enableExport={true}
+  enableSearch={true}
+  enableSort={true}
+  highlightFirstColumn={true}
+/>
+```
+
+Features:
+- **Automatic Parsing**: Extracts tables from Markdown content
+- **Sorting**: Click column headers to sort ascending/descending
+- **Filtering**: Global search and per-column filters
+- **Export**: Download table data as CSV
+- **Smart Formatting**: Recognizes badges (✅, ❌), risk levels (🟢, 🟡, 🔴), and currency
+- **Responsive**: Mobile-friendly with horizontal scroll
+
 ## Development Guidelines
 - Always run type checking before committing
 - Test fuzzy search with various inputs (partial words, wrong case)
@@ -183,3 +213,5 @@ VITE_GEMINI_MODEL=gemini-2.5-flash-preview-04-17
 - Simplified search UI with only 4 search fields
 - Added comprehensive CSV export functionality
 - Implemented paged document viewer for policies
+- Added InteractiveMarkdownTable component for dynamic table rendering
+- Fixed Main Category LOV to use full hierarchical paths from database
