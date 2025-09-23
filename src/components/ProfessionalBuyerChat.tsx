@@ -19,6 +19,8 @@ import { createPurchaseRequisition } from '@/lib/firestoreService';
 import { useQueryClient } from '@tanstack/react-query';
 import { searchSuppliersForChat, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
 import { purchaseRequisitionService, RequisitionStatus } from '../lib/purchaseRequisitionService';
+import { InteractiveJsonTable } from './InteractiveJsonTable';
+import { consoleLogger } from '../lib/consoleLogger';
 
 interface ProfessionalBuyerChatProps {
   onLogout?: () => void;
@@ -28,18 +30,20 @@ interface ProfessionalBuyerChatProps {
 }
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-const geminiModel = 'gemini-2.5-pro';
+// Use gemini-2.5-flash model
+const geminiModel = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash';
 
 // Supplier Search Function Definition for Gemini
 const searchSuppliersFunction = {
   name: "search_suppliers",
-  description: "Search for verified suppliers in Valmet's supplier database for external workforce needs. Use this when user asks about finding suppliers, vendors, or service providers for consulting, training, legal services, or other professional services.",
+  description: "Search for verified suppliers in Valmet's supplier database. IMPORTANT: mainCategory must be EXACTLY one of the valid LOV values. For 'vuokratyövoima' or 'henkilöstövuokraus', use 'Leased workforce'. For 'IT-konsultointi', use 'IT consulting'. Always use the exact English LOV values.",
   parameters: {
     type: "object",
     properties: {
       mainCategory: {
         type: "string",
-        description: `Main category to search. Valid values: ${MAIN_CATEGORY_LOV.map(c => c.value).join(', ')}`
+        enum: MAIN_CATEGORY_LOV.map(c => c.value),
+        description: `Main category to search. MUST be one of these exact values: ${MAIN_CATEGORY_LOV.map(c => c.value).join(', ')}`
       },
       supplierCategories: {
         type: "string",
@@ -63,69 +67,119 @@ const searchSuppliersFunction = {
 
 // ERP search function removed - only supplier search is used
 
-// Purchase Requisition Function (Basware-style)
+// Purchase Requisition Function (Basware-style as per system prompt)
 const createRequisitionFunction = {
   name: "create_purchase_requisition",
-  description: "Create a purchase requisition for external workforce or services. This creates a formal request that needs approval before becoming a purchase order.",
+  description: "Create a purchase requisition in Basware via POST API. This creates a formal request that needs approval before becoming a purchase order.",
   parameters: {
     type: "object",
     properties: {
-      department: { 
-        type: "string",
-        description: "Requesting department (e.g., IT, Finance, Operations)"
+      header: {
+        type: "object",
+        description: "Object containing requisition header information",
+        properties: {
+          requisitionId: {
+            type: "string",
+            description: "External identifier for the requisition (optional)"
+          },
+          requisitionType: {
+            type: "string",
+            description: "Type of requisition (e.g., standard, service)"
+          },
+          status: {
+            type: "string",
+            description: "Initial status (e.g., Draft, Submitted)"
+          },
+          requester: {
+            type: "string",
+            description: "Identifier of the person creating the requisition"
+          },
+          companyCode: {
+            type: "string",
+            description: "Company or business unit code"
+          },
+          costCenter: {
+            type: "string",
+            description: "Cost center or accounting assignment"
+          },
+          supplierId: {
+            type: "string",
+            description: "Supplier identifier (optional)"
+          },
+          contractId: {
+            type: "string",
+            description: "Reference to framework agreement or contract (optional)"
+          },
+          justification: {
+            type: "string",
+            description: "Notes or justification for the request (optional)"
+          }
+        },
+        required: ["requisitionType", "status", "requester", "companyCode"]
       },
-      requestedDeliveryDate: { 
-        type: "string", 
-        description: "Required delivery date (YYYY-MM-DD format)" 
-      },
-      businessJustification: { 
-        type: "string",
-        description: "Business reason for the purchase"
-      },
-      urgencyLevel: { 
-        type: "string",
-        enum: ["low", "medium", "high", "critical"],
-        description: "Urgency of the request"
-      },
-      preferredSupplier: { 
-        type: "string",
-        description: "Preferred supplier name (optional)"
-      },
-      lineItems: {
+      lines: {
         type: "array",
+        description: "Array of requisition line items",
         items: {
           type: "object",
           properties: {
-            itemDescription: { 
+            lineId: {
               type: "string",
-              description: "Description of the item or service"
+              description: "Line item identifier"
             },
-            quantity: { 
+            description: {
+              type: "string",
+              description: "Item or service description"
+            },
+            quantity: {
               type: "number",
-              description: "Quantity needed"
+              description: "Quantity requested"
             },
-            unitOfMeasure: { 
+            unitOfMeasure: {
               type: "string",
-              description: "Unit of measure (EA, HR, DAY, etc.)"
+              description: "Unit of measure (e.g., PCS, H)"
             },
-            unitPrice: { 
+            unitPrice: {
               type: "number",
-              description: "Unit price in EUR"
+              description: "Unit price (optional)"
             },
-            supplierName: {
+            currency: {
               type: "string",
-              description: "Specific supplier for this line item (optional)"
+              description: "Currency code (default: EUR)"
             },
-            categoryCode: {
+            glAccount: {
               type: "string",
-              description: "Category code (e.g., IT-CONSULT, TRAINING, LEGAL)"
+              description: "General ledger account or other coding"
+            },
+            deliveryDate: {
+              type: "string",
+              description: "Requested delivery date (YYYY-MM-DD)"
+            },
+            deliveryAddress: {
+              type: "string",
+              description: "Delivery address"
+            },
+            vendorNoOrName: {
+              type: "string",
+              description: "Suggested supplier (optional)"
             }
           },
-          required: ["itemDescription", "quantity", "unitOfMeasure", "unitPrice"]
+          required: ["lineId", "description", "quantity", "unitOfMeasure", "deliveryDate", "deliveryAddress"]
         }
+      },
+      attachments: {
+        type: "array",
+        description: "Array of related files (e.g., technical specifications) - optional",
+        items: {
+          type: "string"
+        }
+      },
+      customFields: {
+        type: "object",
+        description: "Customer-specific extension fields (optional)"
       }
     },
-    required: ["department", "requestedDeliveryDate", "businessJustification", "lineItems"]
+    required: ["header", "lines"]
   }
 };
 
@@ -279,7 +333,7 @@ What can I help you with today?`
           const welcomeMessage: Message = {
             role: 'model',
             parts: [{
-              text: "Hello! I'm your Valmet Purchaser AI Assistant. I'm here to help you optimize your procurement processes, negotiate better deals, and achieve significant cost savings. What can I help you with today?"
+              text: "Hei! 👋 Olen Valmet-hankinta-avustajasi.\n\nAutan sinua löytämään parhaat toimittajat ulkopuoliselle työvoimalle Suomessa. Minulla on pääsy 520+ vahvistettuun toimittajaan.\n\n**Miten voin auttaa tänään?**\nVoit esimerkiksi sanoa:\n• \"Etsi IT-konsultteja Helsingistä\"\n• \"Näytä koulutuspalvelut\"\n• \"Tarvitsen vuokratyövoimaa\"\n\nKerro vain tarpeesi, niin etsitään sinulle sopivat toimittajat! 🎯"
             }]
           };
           setMessages([welcomeMessage]);
@@ -519,68 +573,77 @@ What can I help you with today?`
                 try {
                   const aiRequestId = Math.random().toString(36).substring(2, 8);
                   const args = functionArgs as any;
-                  
+
                   if (!user) throw new Error('Not authenticated');
-                  
-                  // Prepare line items with proper structure
-                  const lineItems = args.lineItems.map((item: any, index: number) => ({
-                    lineNumber: index + 1,
-                    itemDescription: item.itemDescription,
+
+                  // Extract header and lines from Basware-style structure
+                  const header = args.header || {};
+                  const lines = args.lines || [];
+
+                  // Prepare line items with proper structure for our Firestore
+                  const lineItems = lines.map((item: any, index: number) => ({
+                    lineNumber: parseInt(item.lineId) || (index + 1),
+                    itemDescription: item.description,
                     quantity: item.quantity,
                     unitOfMeasure: item.unitOfMeasure,
-                    unitPrice: item.unitPrice,
-                    totalAmount: item.quantity * item.unitPrice,
-                    supplierName: item.supplierName,
-                    categoryCode: item.categoryCode,
-                    requestedDate: args.requestedDeliveryDate
+                    unitPrice: item.unitPrice || 0,
+                    totalAmount: item.quantity * (item.unitPrice || 0),
+                    supplierName: item.vendorNoOrName || header.supplierId || '',
+                    categoryCode: item.glAccount || '',
+                    requestedDate: item.deliveryDate
                   }));
-                  
-                  // Create requisition using our service
+
+                  // Create requisition using our service with Basware header data
                   const requisitionData = {
-                    externalCode: `AI-${Date.now()}`,
-                    requesterId: user.uid,
+                    externalCode: header.requisitionId || `AI-${Date.now()}`,
+                    requesterId: header.requester || user.uid,
                     requesterName: user.email || 'Unknown',
                     requesterEmail: user.email || '',
-                    department: args.department,
-                    requestedDeliveryDate: args.requestedDeliveryDate,
-                    status: RequisitionStatus.DRAFT,
-                    currency: 'EUR',
-                    preferredSupplier: args.preferredSupplier || '',
+                    department: header.companyCode || 'General',
+                    requestedDeliveryDate: lines[0]?.deliveryDate || new Date().toISOString().split('T')[0],
+                    status: header.status === 'Submitted' ? RequisitionStatus.SUBMITTED : RequisitionStatus.DRAFT,
+                    currency: lines[0]?.currency || 'EUR',
+                    preferredSupplier: header.supplierId || '',
                     deliveryAddress: {
-                      locationCode: 'FI-HEL-01',
-                      locationName: 'Valmet Helsinki Office',
+                      locationCode: header.costCenter || 'FI-HEL-01',
+                      locationName: lines[0]?.deliveryAddress || 'Valmet Helsinki Office',
                       city: 'Helsinki',
                       country: 'Finland'
                     },
                     lineItems: lineItems,
-                    businessJustification: args.businessJustification,
-                    urgencyLevel: args.urgencyLevel || 'medium'
+                    businessJustification: header.justification || '',
+                    urgencyLevel: 'medium',
+                    contractId: header.contractId,
+                    attachments: args.attachments,
+                    customFields: args.customFields
                   };
-                  
+
                   const requisitionId = await purchaseRequisitionService.createRequisition(
                     user.uid,
                     requisitionData
                   );
-                  
+
                   // Log success
-                  console.log('✅ Purchase requisition created via AI:', requisitionId);
-                  
+                  console.log('✅ Purchase requisition created via AI (Basware format):', requisitionId);
+
                   // Calculate total
                   const total = lineItems.reduce((sum: number, item: any) => sum + item.totalAmount, 0);
-                  
-                  setMessages(prev => [...prev, { 
-                    role: 'model', 
-                    parts: [{ 
+
+                  setMessages(prev => [...prev, {
+                    role: 'model',
+                    parts: [{
                       text: `✅ Purchase requisition created successfully!\n\n` +
                             `**Requisition ID:** ${requisitionId}\n` +
-                            `**Department:** ${args.department}\n` +
+                            `**External Reference:** ${requisitionData.externalCode}\n` +
+                            `**Company Code:** ${header.companyCode || 'General'}\n` +
+                            `**Cost Center:** ${header.costCenter || 'Default'}\n` +
                             `**Total Amount:** €${total.toFixed(2)}\n` +
-                            `**Status:** Draft\n` +
+                            `**Status:** ${header.status || 'Draft'}\n` +
                             `**Items:** ${lineItems.length} line item(s)\n\n` +
-                            `The requisition has been created in draft status. You can view, edit, and submit it for approval in the Purchase Requisition Verification panel.`
-                    }] 
+                            `The requisition has been created. You can view, edit, and submit it for approval in the Purchase Requisition Verification panel.`
+                    }]
                   }]);
-                  
+
                   return;
                 } catch (err) {
                   console.error('Failed to create requisition:', err);
@@ -621,9 +684,39 @@ What can I help you with today?`
       }
     } catch (error) {
       console.error('Error sending message:', error);
+
+      // Log critical error to Firebase
+      await consoleLogger.sendCriticalLog('Chat message send failed', {
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        } : String(error),
+        userId: user?.uid,
+        chatSessionKey,
+        sessionId: continuousImprovementSessionId,
+        model: geminiModel,
+        messageText: textToSend.slice(0, 100) // First 100 chars only for privacy
+      });
+
+      // Provide more detailed error message to user
+      let errorMessage = "Error processing your request. ";
+
+      if (error instanceof Error) {
+        if (error.message.includes('overloaded') || error.message.includes('503')) {
+          errorMessage = "The AI service is temporarily overloaded. Please wait a moment and try again.";
+        } else if (error.message.includes('API key')) {
+          errorMessage = "There's an issue with the API configuration. Please contact support.";
+        } else if (error.message.includes('429')) {
+          errorMessage = "Too many requests. Please wait a moment before trying again.";
+        } else {
+          errorMessage = `Error: ${error.message}. Please try again.`;
+        }
+      }
+
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: "Error processing your request. Please try again." }]
+        parts: [{ text: errorMessage }]
       }]);
     } finally {
       setIsLoading(false);
@@ -670,7 +763,7 @@ What can I help you with today?`
   // Initialize continuous improvement session when user starts chatting
   const initializeContinuousImprovement = async () => {
     if (!user || continuousImprovementSessionId) return;
-    
+
     try {
       // For now, use a default prompt key if we don't have the actual one
       // This should be updated when the user selects/creates a prompt version
@@ -678,17 +771,40 @@ What can I help you with today?`
       const sessionId = await createContinuousImprovementSession(promptKey, chatSessionKey, user.uid);
       setContinuousImprovementSessionId(sessionId);
       console.log('📊 Continuous improvement session initialized:', sessionId);
+
+      // Enable console logging in collecting mode (don't auto-send)
+      consoleLogger.enableCollecting();
+      consoleLogger.setUserId(user.uid);
+
+      // Log session start info
+      console.log('🎯 Console logging enabled for session', {
+        sessionId,
+        userId: user.uid,
+        userEmail: user.email,
+        promptKey,
+        chatSessionKey,
+        model: geminiModel
+      });
     } catch (error) {
       console.error('Failed to initialize continuous improvement session:', error);
+
+      // Send critical error to Firebase
+      await consoleLogger.sendCriticalLog('Failed to initialize continuous improvement', {
+        error: error instanceof Error ? error.message : String(error),
+        userId: user?.uid,
+        chatSessionKey
+      });
     }
   };
 
   // Handle user feedback for specific message - opens dialog
   const handleFeedback = async (feedback: 'thumbs_up' | 'thumbs_down', messageIndex: number) => {
+    console.log(`${feedback === 'thumbs_up' ? '👍' : '👎'} User clicked ${feedback} for message ${messageIndex}`);
+
     if (!continuousImprovementSessionId) {
       await initializeContinuousImprovement();
     }
-    
+
     // Store pending feedback and open dialog
     setPendingFeedback(feedback);
     setPendingMessageIndex(messageIndex);
@@ -699,26 +815,55 @@ What can I help you with today?`
   // Submit feedback with optional comment
   const submitFeedback = async () => {
     if (!continuousImprovementSessionId || !pendingFeedback || pendingMessageIndex === null) {
+      console.warn('⚠️ Missing required data for feedback submission');
       return;
     }
+
+    // Log feedback submission details
+    console.log('════════════════════════════════════════════════');
+    console.log('📨 SUBMITTING USER FEEDBACK');
+    console.log('════════════════════════════════════════════════');
+    console.log(`Message Index: ${pendingMessageIndex}`);
+    console.log(`Feedback Type: ${pendingFeedback} ${pendingFeedback === 'thumbs_up' ? '👍' : '👎'}`);
+    console.log(`Session ID: ${continuousImprovementSessionId}`);
+    console.log(`Chat Session Key: ${chatSessionKey}`);
+
+    // Log the actual message being evaluated
+    if (messages[pendingMessageIndex]) {
+      const evaluatedMessage = messages[pendingMessageIndex];
+      console.log(`Evaluated Message Role: ${evaluatedMessage.role}`);
+      console.log(`Message Preview: ${evaluatedMessage.parts[0]?.text?.substring(0, 100)}...`);
+    }
+
+    if (feedbackComment) {
+      console.log(`User Comment: "${feedbackComment}"`);
+    }
+    console.log('════════════════════════════════════════════════');
 
     try {
       // Add message context to the feedback log
       await addTechnicalLog(continuousImprovementSessionId, {
         event: 'ai_response',
         aiResponse: `User feedback for message ${pendingMessageIndex}: ${pendingFeedback}${feedbackComment ? ` - Comment: ${feedbackComment}` : ''}`,
+        userFeedback: pendingFeedback,
+        userComment: feedbackComment || undefined,
       });
-      
+
       await setUserFeedback(continuousImprovementSessionId, pendingFeedback, feedbackComment || undefined);
-      
+
+      // Send console logs with feedback
+      await consoleLogger.sendLogsWithFeedback(pendingFeedback, feedbackComment || undefined);
+
+      console.log('✅ Feedback and logs submitted successfully');
+
       setFeedbackDialogOpen(false);
       setPendingFeedback(null);
       setPendingMessageIndex(null);
       setFeedbackComment('');
-      
+
       toast.success(pendingFeedback === 'thumbs_up' ? '👍 Thanks for the positive feedback!' : '👎 Thanks for the feedback - we\'ll improve!');
     } catch (error) {
-      console.error('Failed to save feedback:', error);
+      console.error('❌ Failed to save feedback:', error);
       toast.error('Failed to save feedback');
     }
   };
@@ -732,9 +877,9 @@ What can I help you with today?`
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-valmet-lightgray">
       {/* Header */}
-      <div className="bg-black text-white p-8 text-center relative">
+      <div className="bg-gradient-to-r from-valmet-green to-valmet-teal text-white p-8 text-center relative">
         {/* User info top left */}
         {user && (
           <div className="absolute top-4 left-4 text-sm text-gray-300">
@@ -770,7 +915,7 @@ What can I help you with today?`
           <Bot className="h-8 w-8 mr-3" />
           <h1 className="text-3xl font-bold">Valmet Purchaser AI Assistant</h1>
         </div>
-        <p className="text-gray-300 text-lg max-w-4xl mx-auto">
+        <p className="text-gray-100 text-lg max-w-7xl mx-auto">
           Get expert procurement advice, use prenegotiated prices from best suppliers, and do professional level procurement with ease
         </p>
       </div>
@@ -778,20 +923,20 @@ What can I help you with today?`
 
       {/* Main Content under header with optional left panel */}
       {/* Controls row under header */}
-      <div className="container mx-auto px-4 mt-4 flex justify-between">
-        <Button 
-          variant="outline" 
-          onClick={handleResetChat} 
+      <div className="max-w-7xl mx-auto px-4 mt-4 flex justify-between w-full">
+        {topRightControls}
+        <Button
+          variant="outline"
+          onClick={handleResetChat}
           className="text-red-600 border-red-200 hover:bg-red-50"
           size="sm"
         >
           <RotateCcw className="mr-2 h-4 w-4" />
           Reset Chat
         </Button>
-        {topRightControls}
       </div>
 
-      <div className="container mx-auto px-4 pb-6">
+      <div className="max-w-7xl mx-auto px-2 pb-6 w-full">
         {leftPanelVisible ? (
           <ResizablePanelGroup direction="horizontal" className="h-full min-h-[60vh]">
             <ResizablePanel defaultSize={35} minSize={20} maxSize={60} className="pr-2">
@@ -806,7 +951,7 @@ What can I help you with today?`
 
             {/* Chat Messages */}
             <div className="p-2 space-y-6">
-              <div className="max-w-4xl ml-0 mr-auto space-y-6">
+              <div className="max-w-full ml-0 mr-auto space-y-6">
                 
           {sessionInitializing && (
             <div className="flex justify-start">
@@ -827,7 +972,7 @@ What can I help you with today?`
               key={index}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className="flex items-start space-x-3 max-w-3xl w-full">
+              <div className="flex items-start space-x-3 max-w-full w-full">
                 {message.role === 'model' && (
                   <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                     <Bot className="h-5 w-5 text-gray-700" />
@@ -837,27 +982,61 @@ What can I help you with today?`
                   <div
                     className={`px-6 py-4 rounded-2xl ${
                       message.role === 'user'
-                        ? 'bg-black text-white ml-auto max-w-lg'
+                        ? 'bg-valmet-green text-white ml-auto max-w-lg'
                         : 'bg-white shadow-sm border'
                     }`}
                   >
-                    {message.parts.map((part, partIndex) => (
-                      <div key={partIndex}>
-                        {part.text && (
-                          <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none`}>
-                            <ReactMarkdown>
-                              {(() => {
-                                const { originalText, formattedSources } = processTextWithCitations(
-                                  part.text,
-                                  message.citationMetadata?.citationSources
-                                );
-                                return originalText + (formattedSources.length > 0 ? '\n\n**Sources:**\n' + formattedSources.join('\n') : '');
-                              })()}
-                            </ReactMarkdown>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {message.parts.map((part, partIndex) => {
+                      // Try to detect JSON supplier comparison table
+                      let jsonTable = null;
+                      let textWithoutJson = part.text || '';
+
+                      if (part.text && message.role === 'model') {
+                        // Look for JSON code block
+                        const jsonMatch = part.text.match(/```json\s*([\s\S]*?)\s*```/);
+                        if (jsonMatch) {
+                          try {
+                            const jsonData = JSON.parse(jsonMatch[1]);
+                            if (jsonData.type === 'supplier_comparison_table') {
+                              jsonTable = jsonData;
+                              // Remove JSON from text
+                              textWithoutJson = part.text.replace(/```json[\s\S]*?```/, '').trim();
+                            }
+                          } catch (e) {
+                            console.log('Failed to parse JSON table:', e);
+                          }
+                        }
+                      }
+
+                      return (
+                        <div key={partIndex}>
+                          {textWithoutJson && (
+                            <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none`}>
+                              <ReactMarkdown>
+                                {(() => {
+                                  const { originalText, formattedSources } = processTextWithCitations(
+                                    textWithoutJson,
+                                    message.citationMetadata?.citationSources
+                                  );
+                                  return originalText + (formattedSources.length > 0 ? '\n\n**Sources:**\n' + formattedSources.join('\n') : '');
+                                })()}
+                              </ReactMarkdown>
+                            </div>
+                          )}
+                          {jsonTable && (
+                            <div className="mt-4">
+                              <InteractiveJsonTable
+                                data={jsonTable}
+                                compact={true}
+                                enableExport={false}
+                                enableSearch={false}
+                                enableSort={true}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   
                   {/* Feedback buttons for AI responses only */}
@@ -906,7 +1085,7 @@ What can I help you with today?`
 
             {/* Input Area */}
             <div className="bg-white border rounded-md p-6">
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-full mx-auto">
                 <div className="flex space-x-4 items-end">
                   <div className="flex-1">
                     <Input
@@ -917,13 +1096,13 @@ What can I help you with today?`
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
                       disabled={isLoading}
-                      className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                      className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-valmet-green focus:border-transparent"
                     />
                   </div>
                   <Button
                     onClick={() => handleSendMessage()}
                     disabled={!input.trim() || isLoading}
-                    className="h-12 px-6 bg-black hover:bg-gray-800 text-white rounded-xl"
+                    className="h-12 px-6 bg-valmet-green hover:bg-valmet-darkgreen text-white rounded-xl"
                   >
                     <Send className="h-5 w-5" />
                   </Button>
@@ -940,7 +1119,7 @@ What can I help you with today?`
 
               {/* Quick Action Pills removed for simplified interface */}
               <div className="p-2 space-y-6">
-                <div className="max-w-4xl mx-auto space-y-6">
+                <div className="max-w-full mx-auto space-y-6">
                   {sessionInitializing && (
                     <div className="flex justify-start">
                       <div className="flex items-start space-x-3">
@@ -956,28 +1135,62 @@ What can I help you with today?`
                   )}
                   {messages.map((message, index) => (
                     <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className="flex items-start space-x-3 max-w-3xl w-full">
+                      <div className="flex items-start space-x-3 max-w-full w-full">
                         {message.role === 'model' && (
                           <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                             <Bot className="h-5 w-5 text-gray-700" />
                           </div>
                         )}
                         <div className="flex flex-col space-y-2 flex-1">
-                          <div className={`px-6 py-4 rounded-2xl ${message.role === 'user' ? 'bg-black text-white ml-auto max-w-lg' : 'bg-white shadow-sm border'}`}>
-                            {message.parts.map((part, partIndex) => (
-                              <div key={partIndex}>
-                                {part.text && (
-                                  <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none`}>
-                                    <ReactMarkdown>
-                                      {(() => {
-                                        const { originalText, formattedSources } = processTextWithCitations(part.text, message.citationMetadata?.citationSources);
-                                        return originalText + (formattedSources.length > 0 ? '\n\n**Sources:**\n' + formattedSources.join('\n') : '');
-                                      })()}
-                                    </ReactMarkdown>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                          <div className={`px-6 py-4 rounded-2xl ${message.role === 'user' ? 'bg-valmet-green text-white ml-auto max-w-lg' : 'bg-white shadow-sm border'}`}>
+                            {message.parts.map((part, partIndex) => {
+                              // Try to detect JSON supplier comparison table
+                              let jsonTable = null;
+                              let textWithoutJson = part.text || '';
+
+                              if (part.text && message.role === 'model') {
+                                // Look for JSON code block
+                                const jsonMatch = part.text.match(/```json\s*([\s\S]*?)\s*```/);
+                                if (jsonMatch) {
+                                  try {
+                                    const jsonData = JSON.parse(jsonMatch[1]);
+                                    if (jsonData.type === 'supplier_comparison_table') {
+                                      jsonTable = jsonData;
+                                      // Remove JSON from text
+                                      textWithoutJson = part.text.replace(/```json[\s\S]*?```/, '').trim();
+                                    }
+                                  } catch (e) {
+                                    console.log('Failed to parse JSON table:', e);
+                                  }
+                                }
+                              }
+
+                              return (
+                                <div key={partIndex}>
+                                  {textWithoutJson && (
+                                    <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none`}>
+                                      <ReactMarkdown>
+                                        {(() => {
+                                          const { originalText, formattedSources } = processTextWithCitations(textWithoutJson, message.citationMetadata?.citationSources);
+                                          return originalText + (formattedSources.length > 0 ? '\n\n**Sources:**\n' + formattedSources.join('\n') : '');
+                                        })()}
+                                      </ReactMarkdown>
+                                    </div>
+                                  )}
+                                  {jsonTable && (
+                                    <div className="mt-4">
+                                      <InteractiveJsonTable
+                                        data={jsonTable}
+                                        compact={true}
+                                        enableExport={false}
+                                        enableSearch={false}
+                                        enableSort={true}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                           {message.role === 'model' && (
                             <div className="flex items-center space-x-2 ml-2">
@@ -1010,12 +1223,12 @@ What can I help you with today?`
                 </div>
               </div>
               <div className="bg-white border rounded-md p-6">
-                <div className="max-w-4xl mx-auto">
+                <div className="max-w-full mx-auto">
                   <div className="flex space-x-4 items-end">
                     <div className="flex-1">
-                      <Input ref={inputRef} type="text" placeholder="Ask about procurement strategies, cost optimization, supplier management..." value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !initStatus.hasPrompt} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent" />
+                      <Input ref={inputRef} type="text" placeholder="Ask about procurement strategies, cost optimization, supplier management..." value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !initStatus.hasPrompt} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-valmet-green focus:border-transparent" />
                     </div>
-                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !initStatus.hasPrompt} className="h-12 px-6 bg-black hover:bg-gray-800 text-white rounded-xl">
+                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !initStatus.hasPrompt} className="h-12 px-6 bg-valmet-green hover:bg-valmet-darkgreen text-white rounded-xl">
                       <Send className="h-5 w-5" />
                     </Button>
                   </div>

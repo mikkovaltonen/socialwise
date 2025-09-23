@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 const Workbench = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const [verificationVisible, setVerificationVisible] = React.useState(true);
+  const [verificationVisible, setVerificationVisible] = React.useState(false);
   const [openId, setOpenId] = React.useState<string | null>(null);
   const [refreshToken, setRefreshToken] = React.useState<number>(0);
 

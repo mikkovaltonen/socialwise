@@ -398,9 +398,21 @@ export const setUserFeedback = async (
   feedback: 'thumbs_up' | 'thumbs_down',
   comment?: string
 ): Promise<void> => {
+  // Detailed logging for feedback
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`📝 USER FEEDBACK RECEIVED`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`🆔 Session ID: ${sessionId}`);
+  console.log(`${feedback === 'thumbs_up' ? '👍' : '👎'} Feedback: ${feedback}`);
+  if (comment) {
+    console.log(`💬 User Comment: "${comment}"`);
+  }
+  console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
   try {
     if (!db || sessionId.startsWith('local_') || sessionId.startsWith('error_')) {
-      console.warn('Firebase not initialized or invalid session, skipping feedback');
+      console.warn('⚠️ Firebase not initialized or invalid session, skipping feedback save');
       return;
     }
 
@@ -416,9 +428,17 @@ export const setUserFeedback = async (
 
     await setDoc(sessionRef, updateData, { merge: true });
 
-    console.log(`[ContinuousImprovement] Set feedback for session ${sessionId}: ${feedback}${comment ? ' with comment' : ''}`);
+    console.log(`✅ Feedback saved successfully to Firestore`);
+
+    // If negative feedback, log additional debug info
+    if (feedback === 'thumbs_down') {
+      console.log('🔍 NEGATIVE FEEDBACK ALERT - Check session logs for debugging:');
+      console.log(`   - Session: ${sessionId}`);
+      console.log(`   - Issue: ${comment || 'No specific comment provided'}`);
+      console.log('   - Action: Review technical logs in Firebase Console');
+    }
   } catch (error) {
-    console.error('Error setting user feedback:', error);
+    console.error('❌ Error saving user feedback:', error);
   }
 };
 

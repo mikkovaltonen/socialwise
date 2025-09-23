@@ -9,7 +9,7 @@ const Index = () => {
       {/* Navigation */}
       <nav className="flex justify-between items-center px-8 py-6 bg-white/80 backdrop-blur-md shadow-sm fixed w-full top-0 z-50">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-green-700 rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-xl flex items-center justify-center">
             <Brain className="h-6 w-6 text-white" />
           </div>
           <div className="flex flex-col">
@@ -30,21 +30,21 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-8 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-green-600/10 via-transparent to-green-700/10"></div>
-        <div className="absolute top-20 right-0 w-96 h-96 bg-green-400 rounded-full filter blur-3xl opacity-20 animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-green-500 rounded-full filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-valmet-green/10 via-transparent to-valmet-teal/10"></div>
+        <div className="absolute top-20 right-0 w-96 h-96 bg-valmet-teal rounded-full filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-valmet-green rounded-full filter blur-3xl opacity-20 animate-pulse"></div>
         
         <div className="container mx-auto relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium">
+              <div className="inline-flex items-center gap-2 bg-green-100 text-valmet-green px-4 py-2 rounded-full text-sm font-medium">
                 <Sparkles className="h-4 w-4" />
                 AI-Powered Procurement Guidance
               </div>
               
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
                 Valmet
-                <span className="bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent"> Purchaser AI Assistant</span>
+                <span className="bg-gradient-to-r from-valmet-green to-valmet-teal bg-clip-text text-transparent"> Purchaser AI Assistant</span>
               </h1>
               
               <p className="text-xl text-gray-600 leading-relaxed">
@@ -54,7 +54,7 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium shadow-lg shadow-green-500/25 group"
+                  className="bg-gradient-to-r from-valmet-green to-valmet-teal hover:from-valmet-darkgreen hover:to-valmet-darkteal text-white font-medium shadow-lg shadow-valmet-green/25 group"
                   onClick={() => window.location.href = 'mailto:mikko@zealsourcing.fi?subject=Book%20Free%20Demo%20with%20Our%20Data&body=Hi%20Mikko,%0A%0AWe%20would%20like%20to%20book%20a%20free%20demo%20of%20ProcureAI%20using%20our%20own%20procurement%20data.%0A%0ACompany:%20%0AName:%20%0ARole:%20%0APreferred%20demo%20time:%20%0AType%20of%20procurement%20data%20we%20want%20to%20test:%20%0A%0ABest%20regards'}
                 >
                   Book Free Demo with Your Data
@@ -64,22 +64,22 @@ const Index = () => {
               
               <div className="flex items-center gap-8 pt-4">
                 <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-600" />
+                  <Check className="h-5 w-5 text-valmet-green" />
                   <span className="text-sm text-gray-600">No credit card required</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-600" />
+                  <Check className="h-5 w-5 text-valmet-green" />
                   <span className="text-sm text-gray-600">14-day free trial</span>
                 </div>
               </div>
             </div>
             
             <div className="relative">
-              <div className="relative bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-1">
+              <div className="relative bg-gradient-to-br from-valmet-green to-valmet-teal rounded-2xl p-1">
                 <div className="bg-white rounded-xl p-8">
                   <div className="aspect-video bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
                     <div className="text-center space-y-4">
-                      <div className="w-20 h-20 bg-gradient-to-br from-green-600 to-green-700 rounded-2xl flex items-center justify-center mx-auto">
+                      <div className="w-20 h-20 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-2xl flex items-center justify-center mx-auto">
                         <Bot className="h-10 w-10 text-white" />
                       </div>
                       <h3 className="text-xl font-semibold text-gray-900">AI Procurement Agent</h3>
@@ -240,7 +240,7 @@ const Index = () => {
                 <div className="space-y-4">
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <MessageSquare className="h-5 w-5 text-green-600" />
+                      <MessageSquare className="h-5 w-5 text-valmet-green" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Natural Language Interface</h4>
@@ -250,7 +250,7 @@ const Index = () => {
                   
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Brain className="h-5 w-5 text-green-700" />
+                      <Brain className="h-5 w-5 text-valmet-green" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-900">AI Task Planning</h4>
@@ -270,7 +270,7 @@ const Index = () => {
                   
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                      <FileSpreadsheet className="h-5 w-5 text-valmet-green" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-900">ERP/P2P Integration</h4>
@@ -303,7 +303,7 @@ const Index = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             <Card className="border-0 shadow-xl bg-white hover:shadow-2xl transition-all duration-300 group hover:-translate-y-2">
               <CardContent className="p-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-green-700 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <div className="w-16 h-16 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <DollarSign className="h-8 w-8 text-white" />
                 </div>
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">Cost Optimization</h3>
@@ -312,15 +312,15 @@ const Index = () => {
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
                     <span className="text-sm text-gray-600">Contract compliance monitoring</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
                     <span className="text-sm text-gray-600">Automated spend analysis</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
                     <span className="text-sm text-gray-600">Supplier optimization</span>
                   </li>
                 </ul>
@@ -329,7 +329,7 @@ const Index = () => {
 
             <Card className="border-0 shadow-xl bg-white hover:shadow-2xl transition-all duration-300 group hover:-translate-y-2">
               <CardContent className="p-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-green-700 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <div className="w-16 h-16 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Upload className="h-8 w-8 text-white" />
                 </div>
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">Document Intelligence</h3>
@@ -338,15 +338,15 @@ const Index = () => {
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
                     <span className="text-sm text-gray-600">PDF, Excel, Word support</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
                     <span className="text-sm text-gray-600">Automated data extraction</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
                     <span className="text-sm text-gray-600">Smart categorization</span>
                   </li>
                 </ul>
@@ -355,7 +355,7 @@ const Index = () => {
 
             <Card className="border-0 shadow-xl bg-white hover:shadow-2xl transition-all duration-300 group hover:-translate-y-2">
               <CardContent className="p-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-green-700 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <div className="w-16 h-16 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Brain className="h-8 w-8 text-white" />
                 </div>
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">AI Buyer Assistant</h3>
@@ -364,15 +364,15 @@ const Index = () => {
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
                     <span className="text-sm text-gray-600">Natural language queries</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
                     <span className="text-sm text-gray-600">Real-time recommendations</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
                     <span className="text-sm text-gray-600">Policy compliance checks</span>
                   </li>
                 </ul>
@@ -475,7 +475,7 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-8 bg-gradient-to-r from-green-600 to-green-700">
+      <section className="py-20 px-8 bg-gradient-to-r from-valmet-green to-valmet-teal">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             Ready to Transform Your Procurement?
@@ -487,7 +487,7 @@ const Index = () => {
           <div className="flex justify-center">
             <Button
               size="lg"
-              className="bg-white text-green-600 hover:bg-gray-100 font-semibold shadow-xl"
+              className="bg-white text-valmet-green hover:bg-gray-100 font-semibold shadow-xl"
               onClick={() => window.location.href = 'mailto:mikko@zealsourcing.fi?subject=Request%20for%20ProcureAI%20Demo&body=Hi%20Mikko,%0A%0AI%20am%20interested%20in%20learning%20more%20about%20ProcureAI%20and%20would%20like%20to%20schedule%20a%20demo.%0A%0ACompany:%20%0AName:%20%0ARole:%20%0APreferred%20time:%20%0A%0ABest%20regards'}
             >
               Request Free Demo
@@ -515,7 +515,7 @@ const Index = () => {
             <div className="grid lg:grid-cols-2">
               <div className="p-12 lg:p-16">
                 <div className="mb-6">
-                  <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
+                  <div className="inline-flex items-center gap-2 bg-green-100 text-valmet-green px-4 py-2 rounded-full text-sm font-medium mb-6">
                     <Building2 className="h-4 w-4" />
                     About Zeal Sourcing
                   </div>
@@ -528,15 +528,15 @@ const Index = () => {
                 </p>
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600" />
+                    <Check className="h-5 w-5 text-valmet-green" />
                     <span className="text-gray-700">20+ years of procurement expertise</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600" />
+                    <Check className="h-5 w-5 text-valmet-green" />
                     <span className="text-gray-700">Trusted by Fortune 500 companies</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600" />
+                    <Check className="h-5 w-5 text-valmet-green" />
                     <span className="text-gray-700">AI-first approach to procurement</span>
                   </div>
                 </div>
@@ -557,10 +557,10 @@ const Index = () => {
                   </Button>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-green-600 to-green-700 p-12 lg:p-16 flex items-center justify-center">
+              <div className="bg-gradient-to-br from-valmet-green to-valmet-teal p-12 lg:p-16 flex items-center justify-center">
                 <div className="text-center">
                   <div className="w-32 h-32 bg-white rounded-3xl flex items-center justify-center mx-auto mb-8">
-                    <span className="text-6xl font-bold bg-gradient-to-br from-green-600 to-green-700 bg-clip-text text-transparent">V</span>
+                    <span className="text-6xl font-bold bg-gradient-to-br from-valmet-green to-valmet-teal bg-clip-text text-transparent">V</span>
                   </div>
                   <h3 className="text-3xl font-bold text-white mb-4">Zeal Sourcing</h3>
                   <p className="text-green-100 text-lg">Professional Procurement Solutions</p>
@@ -577,7 +577,7 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-green-700 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-xl flex items-center justify-center">
                   <Brain className="h-6 w-6 text-white" />
                 </div>
                 <span className="text-xl font-semibold text-white">Valmet AI</span>

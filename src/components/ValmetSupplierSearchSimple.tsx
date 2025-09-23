@@ -7,27 +7,35 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Alert, AlertDescription } from './ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { 
-  Search, 
-  Building2, 
-  Globe, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  Search,
+  Building2,
+  Globe,
+  CheckCircle2,
+  XCircle,
   AlertCircle,
   Mail,
   User,
   Download,
   ChartBar
 } from 'lucide-react';
-import { 
-  searchSuppliers, 
-  getSupplierDetails, 
-  getAllCategories, 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import {
+  searchSuppliers,
+  getSupplierDetails,
+  getAllCategories,
   getAllCountries,
   getSupplierStats,
   type SupplierDocument,
-  type SupplierSearchFilters 
+  type SupplierSearchFilters
 } from '../lib/valmetSupplierSearch';
+import { searchSuppliersForChat, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
 
 export const ValmetSupplierSearchSimple: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -35,7 +43,8 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
   const [suppliers, setSuppliers] = useState<SupplierDocument[]>([]);
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierDocument | null>(null);
   const [stats, setStats] = useState<any>(null);
-  
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+
   // Search filters - only the 4 requested fields
   const [mainCategory, setMainCategory] = useState('');
   const [supplierCategories, setSupplierCategories] = useState('');
@@ -45,6 +54,7 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
   // Load statistics on mount
   useEffect(() => {
     loadStats();
+    loadAllCategories();
   }, []);
 
   const loadStats = async () => {
@@ -56,24 +66,68 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
     }
   };
 
+  const loadAllCategories = async () => {
+    try {
+      const categories = await getAllCategories();
+      setAllCategories(categories);
+      console.log('🎯 ALL MAIN CATEGORIES FROM DATABASE:', categories);
+      console.log('📊 Total unique categories:', categories.length);
+
+      // Compare with LOV
+      console.log('🔍 LOV vs Database comparison:');
+      MAIN_CATEGORY_LOV.forEach(lov => {
+        const found = categories.includes(lov.value);
+        console.log(`   ${found ? '✅' : '❌'} LOV: "${lov.value}" - ${found ? 'FOUND' : 'NOT FOUND'} in database`);
+      });
+
+      // Show categories in DB but not in LOV
+      const notInLOV = categories.filter(cat => !MAIN_CATEGORY_LOV.some(lov => lov.value === cat));
+      if (notInLOV.length > 0) {
+        console.log('⚠️ Categories in DB but not in LOV:', notInLOV);
+      }
+    } catch (err) {
+      console.error('Error loading categories:', err);
+    }
+  };
+
   const handleSearch = async () => {
-    console.log('🔍 Starting supplier search...');
+    console.log('🔍 Testing searchSuppliersForChat function...');
     setLoading(true);
     setError(null);
-    
+
     try {
-      const filters: SupplierSearchFilters = {
+      // Use the same function that AI uses
+      const result = await searchSuppliersForChat({
         mainCategory: mainCategory || undefined,
         supplierCategories: supplierCategories || undefined,
         country: country || undefined,
         city: city || undefined,
-        maxResults: 500
-      };
+        limit: 500
+      });
 
-      const results = await searchSuppliers(filters);
-      setSuppliers(results.suppliers);
-      
-      console.log(`✅ Found ${results.suppliers.length} suppliers`);
+      console.log('📊 searchSuppliersForChat result:', result);
+
+      if (!result.success) {
+        setError(result.error || 'Search failed');
+        setSuppliers([]);
+      } else {
+        // Parse the formatted supplier strings back to documents for display
+        // For now, just show the count and raw results
+        console.log(`✅ Found ${result.totalFound} suppliers`);
+        console.log('📝 Formatted results:', result.suppliers);
+
+        // Since searchSuppliersForChat returns formatted strings,
+        // we need to also get the raw data for the table display
+        const filters: SupplierSearchFilters = {
+          mainCategory: mainCategory || undefined,
+          supplierCategories: supplierCategories || undefined,
+          country: country || undefined,
+          city: city || undefined,
+          maxResults: 500
+        };
+        const rawResults = await searchSuppliers(filters);
+        setSuppliers(rawResults.suppliers);
+      }
     } catch (err) {
       console.error('❌ Search failed:', err);
       setError(err instanceof Error ? err.message : 'Search failed');
@@ -140,10 +194,10 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="w-5 h-5" />
-            Valmet Supplier Spend Data Search
+            Supplier Search Function - Tester
           </CardTitle>
           <CardDescription>
-            Search 520+ suppliers using fuzzy, case-insensitive matching
+            Test searchSuppliersForChat function (same function used by AI) with 520+ suppliers database
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -158,16 +212,29 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
               {/* Search Form - Only 4 fields as requested */}
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Main Category - Fuzzy text input */}
+                  {/* Main Category - LOV Dropdown */}
                   <div className="space-y-2">
-                    <Label>Main Category (fuzzy search)</Label>
-                    <Input
-                      placeholder="e.g. IT consulting, Business consulting..."
-                      value={mainCategory}
-                      onChange={(e) => setMainCategory(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    />
-                    <p className="text-xs text-gray-500">Partial match, case-insensitive</p>
+                    <Label>Main Category (exact match)</Label>
+                    <Select value={mainCategory || "all"} onValueChange={(value) => setMainCategory(value === "all" ? "" : value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a main category..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Professional services, Business consulting">Business consulting (131)</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Office IT, IT consulting">IT consulting (103)</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Professional services, Training & people development">Training & people development (100)</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Professional services, R&D services & materials">R&D services & materials (55)</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Professional services, Legal services">Legal services (45)</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Professional services, Certification, standardization & audits">Certification, standardization & audits (26)</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Professional services, Patent services">Patent services (26)</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Personnel, Leased workforce">Leased workforce (14)</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Office IT, IT Services">IT Services (8)</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Professional services, Measurement & inspection">Measurement & inspection (2)</SelectItem>
+                        <SelectItem value="Indirect procurement iPRO, Facility investments">Facility investments (1)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">Select exact category from list</p>
                   </div>
 
                   {/* Supplier Categories - Fuzzy text input */}

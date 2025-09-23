@@ -18,18 +18,20 @@ export interface ChatSupplierSearchParams {
 /**
  * Main Category List of Values (LOV)
  * Numbers in parentheses indicate supplier count
+ * Categories are stored as hierarchical paths in the database
  */
 export const MAIN_CATEGORY_LOV = [
-  { value: 'Business consulting', label: 'Business consulting', count: 131 },
-  { value: 'IT consulting', label: 'IT consulting', count: 111 },
-  { value: 'Training & people development', label: 'Training & people development', count: 100 },
-  { value: 'R&D services & materials', label: 'R&D services & materials', count: 55 },
-  { value: 'Legal services', label: 'Legal services', count: 45 },
-  { value: 'standardization & audits', label: 'standardization & audits', count: 26 },
-  { value: 'Patent services', label: 'Patent services', count: 26 },
-  { value: 'Leased workforce', label: 'Leased workforce', count: 14 },
-  { value: 'measurement & inspection', label: 'measurement & inspection', count: 2 },
-  { value: 'Facility investments', label: 'Facility investments', count: 1 }
+  { value: 'Indirect procurement iPRO, Professional services, Business consulting', label: 'Business consulting', count: 131 },
+  { value: 'Indirect procurement iPRO, Office IT, IT consulting', label: 'IT consulting', count: 103 },
+  { value: 'Indirect procurement iPRO, Professional services, Training & people development', label: 'Training & people development', count: 100 },
+  { value: 'Indirect procurement iPRO, Professional services, R&D services & materials', label: 'R&D services & materials', count: 55 },
+  { value: 'Indirect procurement iPRO, Professional services, Legal services', label: 'Legal services', count: 45 },
+  { value: 'Indirect procurement iPRO, Professional services, Certification, standardization & audits', label: 'Certification, standardization & audits', count: 26 },
+  { value: 'Indirect procurement iPRO, Professional services, Patent services', label: 'Patent services', count: 26 },
+  { value: 'Indirect procurement iPRO, Personnel, Leased workforce', label: 'Leased workforce', count: 14 },
+  { value: 'Indirect procurement iPRO, Office IT, IT Services', label: 'IT Services', count: 8 },
+  { value: 'Indirect procurement iPRO, Professional services, Measurement & inspection', label: 'Measurement & inspection', count: 2 },
+  { value: 'Indirect procurement iPRO, Facility investments', label: 'Facility investments', count: 1 }
 ];
 
 /**
@@ -94,15 +96,28 @@ export async function searchSuppliersForChat(params: ChatSupplierSearchParams): 
   suppliers: string[];
   error?: string;
 }> {
+  console.log('📥 searchSuppliersForChat called with params:', JSON.stringify(params, null, 2));
+
   try {
     // Validate main category against LOV if provided
     if (params.mainCategory) {
-      const validCategory = MAIN_CATEGORY_LOV.find(cat => 
-        cat.value.toLowerCase().includes(params.mainCategory!.toLowerCase()) ||
-        params.mainCategory!.toLowerCase().includes(cat.value.toLowerCase())
+      // First try exact match (case-insensitive)
+      let validCategory = MAIN_CATEGORY_LOV.find(cat =>
+        cat.value.toLowerCase() === params.mainCategory!.toLowerCase()
       );
-      
+
+      // If no exact match, try to find if the param exactly matches the beginning of a category
+      if (!validCategory) {
+        validCategory = MAIN_CATEGORY_LOV.find(cat =>
+          cat.value.toLowerCase().startsWith(params.mainCategory!.toLowerCase())
+        );
+      }
+
+      // Log what we're searching for
+      console.log(`🔍 Category validation: Input="${params.mainCategory}", Found="${validCategory?.value || 'none'}"`);
+
       if (!validCategory && params.mainCategory.toLowerCase() !== 'all') {
+        console.log(`❌ Invalid category "${params.mainCategory}". Valid options:`, MAIN_CATEGORY_LOV.map(c => c.value));
         return {
           success: false,
           totalFound: 0,
@@ -110,10 +125,11 @@ export async function searchSuppliersForChat(params: ChatSupplierSearchParams): 
           error: `Invalid main category. Valid options are: ${MAIN_CATEGORY_LOV.map(c => c.value).join(', ')}`
         };
       }
-      
+
       // Use the exact category value for search
       if (validCategory) {
         params.mainCategory = validCategory.value;
+        console.log(`✅ Using exact category for search: "${validCategory.value}"`);
       }
     }
     

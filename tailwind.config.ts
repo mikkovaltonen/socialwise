@@ -19,6 +19,16 @@ export default {
 		},
 		extend: {
 			colors: {
+				// Valmet brand colors
+				valmet: {
+					green: '#00843D',      // Primary Valmet green
+					darkgreen: '#005F2E',  // Darker green
+					lightgreen: '#4BA85C', // Light green
+					teal: '#009B8F',       // Valmet teal
+					darkteal: '#007268',   // Dark teal
+					gray: '#54565A',       // Valmet gray
+					lightgray: '#F5F5F5',  // Light gray background
+				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',

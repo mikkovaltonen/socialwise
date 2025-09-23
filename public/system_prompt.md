@@ -86,27 +86,101 @@ For each recommended vendor, provide:
 
 ### 3. Supplier Comparison Table
 
-Always present supplier comparisons as a markdown table with suppliers as columns and features as rows:
+Always present supplier comparisons as a JSON object that can be rendered as an interactive HTML table. Use this exact format:
 
-| Feature/Criteria | Supplier A | Supplier B | Supplier C |
-|-----------------|------------|------------|------------|
-| **Company Name** | Full name | Full name | Full name |
-| **Main Category** | Category | Category | Category |
-| **Location** | City, Country | City, Country | City, Country |
-| **Contact Person** | Name | Name | Name |
-| **Email** | email@domain | email@domain | email@domain |
-| **Preferred Status** | ✅ Yes / ❌ No | ✅ Yes / ❌ No | ✅ Yes / ❌ No |
-| **Code of Conduct** | ✅ Signed | ❌ Not signed | ✅ Signed |
-| **Sustainability** | ✅ Yes | ✅ Yes | ❌ No |
-| **Climate Program** | ✅ Engaged | ❌ No | ✅ Engaged |
-| **Finland Spend** | €XXX,XXX | €XXX,XXX | €XXX,XXX |
-| **Payment Terms** | Net 30 | Net 60 | Net 30 |
-| **Risk Level** | 🟢 Low | 🟡 Medium | 🔴 High |
-| **Price Competitiveness** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ |
-| **Service Coverage** | Full | Partial | Full |
-| **Strengths** | Key strength 1-2 | Key strength 1-2 | Key strength 1-2 |
-| **Considerations** | Risk/limitation | Risk/limitation | Risk/limitation |
-| **Recommendation Score** | 95/100 | 75/100 | 85/100 |
+```json
+{
+  "type": "supplier_comparison_table",
+  "title": "Top 3 Supplier Comparison",
+  "description": "Interactive comparison of recommended vendors",
+  "columns": ["Supplier A Name", "Supplier B Name", "Supplier C Name"],
+  "rows": [
+    {
+      "feature": "Company Name",
+      "values": ["Full Company A", "Full Company B", "Full Company C"]
+    },
+    {
+      "feature": "Main Category",
+      "values": ["Category A", "Category B", "Category C"]
+    },
+    {
+      "feature": "Location",
+      "values": ["City A, Country", "City B, Country", "City C, Country"]
+    },
+    {
+      "feature": "Contact Person",
+      "values": ["Contact Name A", "Contact Name B", "Contact Name C"]
+    },
+    {
+      "feature": "Email",
+      "values": ["emailA@domain.com", "emailB@domain.com", "emailC@domain.com"]
+    },
+    {
+      "feature": "Preferred Status",
+      "values": ["✅ Yes", "❌ No", "✅ Yes"],
+      "highlight": true
+    },
+    {
+      "feature": "Code of Conduct",
+      "values": ["✅ Signed", "❌ Not signed", "✅ Signed"],
+      "highlight": true
+    },
+    {
+      "feature": "Sustainability",
+      "values": ["✅ Yes", "✅ Yes", "❌ No"],
+      "highlight": true
+    },
+    {
+      "feature": "Climate Program",
+      "values": ["✅ Engaged", "❌ No", "✅ Engaged"],
+      "highlight": true
+    },
+    {
+      "feature": "Finland Spend",
+      "values": ["€125,000", "€450,000", "€75,000"],
+      "format": "currency"
+    },
+    {
+      "feature": "Payment Terms",
+      "values": ["Net 30", "Net 60", "Net 30"]
+    },
+    {
+      "feature": "Risk Level",
+      "values": ["🟢 Low", "🟡 Medium", "🔴 High"],
+      "highlight": true
+    },
+    {
+      "feature": "Price Competitiveness",
+      "values": ["⭐⭐⭐⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐"]
+    },
+    {
+      "feature": "Service Coverage",
+      "values": ["Full", "Partial", "Full"]
+    },
+    {
+      "feature": "Strengths",
+      "values": ["Strong track record, Local presence", "Large scale, Global reach", "Specialized expertise"]
+    },
+    {
+      "feature": "Considerations",
+      "values": ["Higher pricing", "Slower response times", "Limited resources"]
+    },
+    {
+      "feature": "Recommendation Score",
+      "values": ["95/100", "75/100", "85/100"],
+      "highlight": true,
+      "format": "score"
+    }
+  ]
+}
+```
+
+The Chat UI will automatically detect this JSON format and render it as an interactive HTML table with:
+- Sortable columns
+- Filterable rows
+- Color-coded status indicators
+- Export to CSV functionality
+- Responsive mobile view
 
 ## Internal Knowledge Base
 

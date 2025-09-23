@@ -90,32 +90,100 @@ function fuzzyMatch(text: string | undefined, searchTerm: string): boolean {
  */
 export async function searchSuppliers(filters: SupplierSearchFilters = {}): Promise<SearchResults> {
   console.log('🔍 Searching suppliers with filters:', filters);
-  
+
   try {
     const supplierRef = collection(db, 'supplier_spend');
-    
+
     // Get all documents (we'll filter in memory for fuzzy matching)
     const querySnapshot = await getDocs(supplierRef);
-    
+
+    console.log(`📊 Total documents in database: ${querySnapshot.size}`);
+
     const suppliers: SupplierDocument[] = [];
     const categoriesSet = new Set<string>();
     const countriesSet = new Set<string>();
+
+    // Debug: Count documents per main category
+    const categoryCount: { [key: string]: number } = {};
+    querySnapshot.forEach((doc) => {
+      const category = doc.data().original?.['Supplier Main Category'];
+      if (category) {
+        // Trim the category to ensure consistent counting
+        const trimmedCategory = category.trim();
+        categoryCount[trimmedCategory] = (categoryCount[trimmedCategory] || 0) + 1;
+      }
+    });
+
+    if (filters.mainCategory) {
+      console.log(`🎯 Searching for Main Category: "${filters.mainCategory}"`);
+      const sortedCategories = Object.keys(categoryCount).sort();
+      console.log(`📋 Available categories in DB (${sortedCategories.length} unique):`, sortedCategories);
+
+      // Show detailed category list for debugging
+      console.log('📊 Category counts:');
+      sortedCategories.forEach(cat => {
+        console.log(`   - "${cat}": ${categoryCount[cat]} suppliers`);
+      });
+
+      if (categoryCount[filters.mainCategory]) {
+        console.log(`✅ Found ${categoryCount[filters.mainCategory]} suppliers with exact category "${filters.mainCategory}"`);
+      } else {
+        console.log(`⚠️ No exact match found for "${filters.mainCategory}"`);
+
+        // Try to find similar categories
+        const similar = sortedCategories.filter(cat =>
+          cat.toLowerCase().includes('business') ||
+          cat.toLowerCase().includes('consulting')
+        );
+        if (similar.length > 0) {
+          console.log(`💡 Similar categories found:`, similar);
+        }
+      }
+    }
     
     querySnapshot.forEach((doc) => {
       const data = doc.data() as SupplierDocument;
       const original = data.original || {};
       
-      // Apply fuzzy filters
+      // Apply filters
       let matches = true;
-      
-      // Main Category filter (fuzzy)
+
+      // Main Category filter - EXACT match for LOV field
       if (filters.mainCategory && filters.mainCategory !== 'all' && filters.mainCategory !== '') {
-        matches = matches && fuzzyMatch(original['Supplier Main Category'], filters.mainCategory);
+        // Exact match for main category (it's a LOV field)
+        const rawCategory = original['Supplier Main Category'];
+        const supplierCategory = rawCategory?.trim();
+        const searchCategory = filters.mainCategory.trim();
+
+        // Debug: Show exact comparison
+        if (searchCategory === 'Leased workforce') {
+          console.log(`🔎 Checking doc ${doc.id}:`, {
+            raw: rawCategory,
+            trimmed: supplierCategory,
+            search: searchCategory,
+            matches: supplierCategory === searchCategory,
+            rawLength: rawCategory?.length,
+            trimmedLength: supplierCategory?.length,
+            searchLength: searchCategory.length
+          });
+        }
+
+        matches = matches && (supplierCategory === searchCategory);
+
+        // Debug logging for mismatches
+        if (!matches && supplierCategory && searchCategory === 'Leased workforce') {
+          console.log(`❌ Category mismatch for "${original['Company']}": Has "${supplierCategory}" (length: ${supplierCategory.length}), searching for "${searchCategory}" (length: ${searchCategory.length})`);
+        }
       }
       
-      // Supplier Categories filter (fuzzy)
+      // Supplier Categories filter (fuzzy) - only filter if field exists
       if (filters.supplierCategories && filters.supplierCategories !== '') {
-        matches = matches && fuzzyMatch(original['Supplier Categories'], filters.supplierCategories);
+        const supplierCats = original['Supplier Categories'];
+        // Only exclude if field exists and doesn't match
+        if (supplierCats && supplierCats.trim() !== '') {
+          matches = matches && fuzzyMatch(supplierCats, filters.supplierCategories);
+        }
+        // If field doesn't exist or is empty, don't exclude the supplier
       }
       
       // Country filter (fuzzy)
@@ -160,7 +228,19 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
     // Apply limit after filtering
     const maxResults = filters.maxResults || 200;
     const limitedSuppliers = suppliers.slice(0, maxResults);
-    
+
+    console.log(`✅ Found ${suppliers.length} matching suppliers`);
+
+    // Debug: Show first few matches if main category search
+    if (filters.mainCategory && suppliers.length > 0) {
+      console.log('🔎 Sample matches:');
+      suppliers.slice(0, 3).forEach((s, i) => {
+        console.log(`  ${i + 1}. ${s.original['Company']} - Category: "${s.original['Supplier Main Category']}"`);
+      });
+    } else if (filters.mainCategory && suppliers.length === 0) {
+      console.log(`❌ No suppliers found for Main Category: "${filters.mainCategory}"`);
+    }
+
     return {
       suppliers: limitedSuppliers,
       totalCount: suppliers.length,

@@ -264,12 +264,6 @@ export const PurchaseRequisitionPanel: React.FC = () => {
                 Refresh
               </Button>
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Requisition
-                  </Button>
-                </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Create Purchase Requisition</DialogTitle>

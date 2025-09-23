@@ -167,7 +167,7 @@ ${policyContexts.join('\n')}
       if (!latestPrompt?.systemPrompt) {
         // Use default system prompt from public folder
         try {
-          const response = await fetch('/sample_promtp.md');
+          const response = await fetch('/system_prompt.md');
           if (response.ok) {
             systemPrompt = await response.text();
             aiModel = 'gemini-2.5-pro';
