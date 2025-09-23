@@ -1,9 +1,10 @@
 # Deployment Status
 
 ## Latest Deployment
-- **Date**: 2025-09-23
+- **Date**: 2025-09-23 16:45 EEST
 - **Branch**: main
-- **Status**: Triggering deployment
+- **Status**: Force deployment trigger
+- **Build**: Production release
 
 ## Recent Changes
 - Fixed Main Category LOV values to use full hierarchical paths
