@@ -56,7 +56,8 @@ export interface PurchaseRequisition {
   id?: string; // Firestore document ID
   externalCode: string; // Basware external reference
   requisitionNumber?: string; // Auto-generated
-  
+  creatorEmail?: string; // Email of the user who created this requisition
+
   // 2. Requester Information
   requesterId: string;
   requesterName: string;
@@ -117,23 +118,28 @@ export class PurchaseRequisitionService {
    * Create a new purchase requisition
    */
   async createRequisition(
-    userId: string, 
-    requisition: Omit<PurchaseRequisition, 'id' | 'createdDate' | 'requisitionNumber'>
+    userId: string,
+    requisition: Omit<PurchaseRequisition, 'id' | 'createdDate' | 'requisitionNumber'>,
+    userEmail?: string
   ): Promise<string> {
     try {
-      // Generate requisition number
-      const requisitionNumber = await this.generateRequisitionNumber();
-      
+      // Generate requisition number with new format: creator-email-vendor-date-time
+      const requisitionNumber = await this.generateRequisitionNumber(
+        userEmail || requisition.requesterEmail,
+        requisition.preferredSupplier || requisition.lineItems[0]?.supplierName || 'unknown'
+      );
+
       // Calculate total amount from line items
       const totalAmount = requisition.lineItems.reduce(
-        (sum, item) => sum + item.totalAmount, 
+        (sum, item) => sum + item.totalAmount,
         0
       );
-      
-      // Prepare document
+
+      // Prepare document with creator email
       const docData = {
         ...requisition,
         requisitionNumber,
+        creatorEmail: userEmail || requisition.requesterEmail,
         totalAmount,
         createdDate: serverTimestamp(),
         lastModifiedDate: serverTimestamp(),
@@ -208,22 +214,30 @@ export class PurchaseRequisitionService {
    */
   async getUserRequisitions(userId: string): Promise<PurchaseRequisition[]> {
     try {
+      // Simplified query without ordering to avoid index requirement
+      // TODO: Add composite index for (requesterId, createdDate) for better performance
       const q = query(
         collection(db, this.collectionName),
-        where('requesterId', '==', userId),
-        orderBy('createdDate', 'desc')
+        where('requesterId', '==', userId)
       );
-      
+
       const querySnapshot = await getDocs(q);
       const requisitions: PurchaseRequisition[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         requisitions.push({
           id: doc.id,
           ...doc.data()
         } as PurchaseRequisition);
       });
-      
+
+      // Sort in memory instead of in query to avoid index requirement
+      requisitions.sort((a, b) => {
+        const dateA = a.createdDate?.toDate?.() || new Date(0);
+        const dateB = b.createdDate?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime(); // Descending order
+      });
+
       return requisitions;
     } catch (error) {
       console.error('❌ Error getting user requisitions:', error);
@@ -323,22 +337,21 @@ export class PurchaseRequisitionService {
   /**
    * Generate unique requisition number
    */
-  private async generateRequisitionNumber(): Promise<string> {
-    const year = new Date().getFullYear();
-    const month = String(new Date().getMonth() + 1).padStart(2, '0');
-    
-    // Count existing requisitions for this month
-    const q = query(
-      collection(db, this.collectionName),
-      where('requisitionNumber', '>=', `PR-${year}${month}-0000`),
-      where('requisitionNumber', '<=', `PR-${year}${month}-9999`)
-    );
-    
-    const snapshot = await getDocs(q);
-    const count = snapshot.size + 1;
-    const sequence = String(count).padStart(4, '0');
-    
-    return `PR-${year}${month}-${sequence}`;
+  private async generateRequisitionNumber(email: string, vendor: string): Promise<string> {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hour = String(now.getHours()).padStart(2, '0');
+    const minute = String(now.getMinutes()).padStart(2, '0');
+
+    // Format: creator-email-vendor-date-time
+    // Extract username from email
+    const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    // Clean vendor name
+    const vendorClean = vendor.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10);
+
+    return `${username}-${vendorClean}-${year}${month}${day}-${hour}${minute}`;
   }
 }
 

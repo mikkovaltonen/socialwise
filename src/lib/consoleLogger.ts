@@ -277,9 +277,10 @@ class ConsoleLogger {
         }
       };
 
-      await addDoc(collection(db, 'consoleLogsWithFeedback'), batch);
+      // Removed: Writing to consoleLogsWithFeedback collection - logs are already captured in continuous improvement session
+      // await addDoc(collection(db, 'consoleLogsWithFeedback'), batch);
 
-      this.originalConsole.log(`📤 Sent ${logsToSend.length} logs with ${feedback} feedback to Firebase`);
+      this.originalConsole.log(`📤 Console logs collected with ${feedback} feedback (${logsToSend.length} logs)`);
 
       // Clear buffer after successful send with feedback
       this.logBuffer = [];
@@ -300,19 +301,9 @@ class ConsoleLogger {
   }
 
   public async sendCriticalLog(message: string, data?: any): Promise<void> {
-    try {
-      await addDoc(collection(db, 'criticalLogs'), {
-        sessionId: this.sessionId,
-        userId: this.userId || null, // Ensure null instead of undefined
-        message: message || 'No message provided',
-        data: data || {},
-        timestamp: serverTimestamp(),
-        url: window.location.href,
-        userAgent: navigator.userAgent
-      });
-    } catch (error) {
-      this.originalConsole.error('Failed to send critical log:', error);
-    }
+    // Removed: Writing to criticalLogs collection - just log to console instead
+    // Critical errors are already captured in the console logs and continuous improvement session
+    this.originalConsole.error('🚨 CRITICAL ERROR:', message, data);
   }
 
   // Get session info for debugging

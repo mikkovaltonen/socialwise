@@ -521,9 +521,9 @@ export const PurchaseRequisitionPanel: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Detail Dialog */}
+      {/* Detail Dialog - Full Screen */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Purchase Requisition Details
@@ -532,75 +532,269 @@ export const PurchaseRequisitionPanel: React.FC = () => {
           
           {selectedRequisition && (
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Requisition Number</Label>
-                  <p className="font-medium">{selectedRequisition.requisitionNumber}</p>
-                </div>
-                <div>
-                  <Label>Status</Label>
-                  <p>{getStatusBadge(selectedRequisition.status)}</p>
-                </div>
-                <div>
-                  <Label>Created Date</Label>
-                  <p>{formatDate(selectedRequisition.createdDate)}</p>
-                </div>
-                <div>
-                  <Label>Requested Delivery</Label>
-                  <p>{selectedRequisition.requestedDeliveryDate}</p>
-                </div>
-                <div>
-                  <Label>Department</Label>
-                  <p>{selectedRequisition.department}</p>
-                </div>
-                <div>
-                  <Label>Total Amount</Label>
-                  <p className="font-semibold text-lg">
-                    €{selectedRequisition.totalAmount?.toFixed(2) || '0.00'}
-                  </p>
+              {/* Header Information */}
+              <div className="space-y-2 border-b pb-4">
+                <h3 className="font-semibold text-lg">Basic Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Requisition Number</Label>
+                    <p className="font-medium">{selectedRequisition.requisitionNumber || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>External Code</Label>
+                    <p className="font-medium">{selectedRequisition.externalCode || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <p>{getStatusBadge(selectedRequisition.status)}</p>
+                  </div>
+                  <div>
+                    <Label>Urgency Level</Label>
+                    <Badge variant={
+                      selectedRequisition.urgencyLevel === 'critical' ? 'destructive' :
+                      selectedRequisition.urgencyLevel === 'high' ? 'default' :
+                      'secondary'
+                    }>
+                      {selectedRequisition.urgencyLevel || 'medium'}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <Label>Business Justification</Label>
+              {/* Requester Information */}
+              <div className="space-y-2 border-b pb-4">
+                <h3 className="font-semibold text-lg">Requester Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Requester Name</Label>
+                    <p>{selectedRequisition.requesterName || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>Requester Email</Label>
+                    <p>{selectedRequisition.requesterEmail || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>Creator Email</Label>
+                    <p>{selectedRequisition.creatorEmail || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>Department</Label>
+                    <p>{selectedRequisition.department}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="space-y-2 border-b pb-4">
+                <h3 className="font-semibold text-lg">Dates</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Created Date</Label>
+                    <p>{formatDate(selectedRequisition.createdDate)}</p>
+                  </div>
+                  <div>
+                    <Label>Last Modified</Label>
+                    <p>{formatDate(selectedRequisition.lastModifiedDate)}</p>
+                  </div>
+                  <div>
+                    <Label>Requested Delivery</Label>
+                    <p>{selectedRequisition.requestedDeliveryDate}</p>
+                  </div>
+                  {selectedRequisition.approvalDate && (
+                    <div>
+                      <Label>Approval Date</Label>
+                      <p>{formatDate(selectedRequisition.approvalDate)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Financial Information */}
+              <div className="space-y-2 border-b pb-4">
+                <h3 className="font-semibold text-lg">Financial Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Total Amount</Label>
+                    <p className="font-semibold text-lg">
+                      €{selectedRequisition.totalAmount?.toFixed(2) || '0.00'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Currency</Label>
+                    <p>{selectedRequisition.currency || 'EUR'}</p>
+                  </div>
+                  <div>
+                    <Label>Budget Code</Label>
+                    <p>{selectedRequisition.budgetCode || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>Project Code</Label>
+                    <p>{selectedRequisition.projectCode || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Supplier Information */}
+              <div className="space-y-2 border-b pb-4">
+                <h3 className="font-semibold text-lg">Supplier Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Preferred Supplier</Label>
+                    <p>{selectedRequisition.preferredSupplier || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>Supplier Code</Label>
+                    <p>{selectedRequisition.supplierCode || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Information */}
+              <div className="space-y-2 border-b pb-4">
+                <h3 className="font-semibold text-lg">Delivery Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Location Code</Label>
+                    <p>{selectedRequisition.deliveryAddress?.locationCode || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>Location Name</Label>
+                    <p>{selectedRequisition.deliveryAddress?.locationName || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>Street Address</Label>
+                    <p>{selectedRequisition.deliveryAddress?.streetAddress || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>City</Label>
+                    <p>{selectedRequisition.deliveryAddress?.city || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>Postal Code</Label>
+                    <p>{selectedRequisition.deliveryAddress?.postalCode || '-'}</p>
+                  </div>
+                  <div>
+                    <Label>Country</Label>
+                    <p>{selectedRequisition.deliveryAddress?.country || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Business Justification */}
+              <div className="space-y-2 border-b pb-4">
+                <h3 className="font-semibold text-lg">Business Justification</h3>
                 <p className="text-sm">{selectedRequisition.businessJustification}</p>
               </div>
 
-              <div>
-                <Label>Line Items</Label>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>#</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead>Unit Price</TableHead>
-                      <TableHead>Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedRequisition.lineItems?.map((item) => (
-                      <TableRow key={item.lineNumber}>
-                        <TableCell>{item.lineNumber}</TableCell>
-                        <TableCell>{item.itemDescription}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>{item.unitOfMeasure}</TableCell>
-                        <TableCell>€{item.unitPrice?.toFixed(2)}</TableCell>
-                        <TableCell>€{item.totalAmount?.toFixed(2)}</TableCell>
-                      </TableRow>
+              {/* Notes */}
+              {(selectedRequisition.internalNotes || selectedRequisition.supplierNotes) && (
+                <div className="space-y-2 border-b pb-4">
+                  <h3 className="font-semibold text-lg">Notes</h3>
+                  {selectedRequisition.internalNotes && (
+                    <div>
+                      <Label>Internal Notes</Label>
+                      <p className="text-sm">{selectedRequisition.internalNotes}</p>
+                    </div>
+                  )}
+                  {selectedRequisition.supplierNotes && (
+                    <div className="mt-2">
+                      <Label>Supplier Notes</Label>
+                      <p className="text-sm">{selectedRequisition.supplierNotes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Attachments */}
+              {selectedRequisition.attachments && selectedRequisition.attachments.length > 0 && (
+                <div className="space-y-2 border-b pb-4">
+                  <h3 className="font-semibold text-lg">Attachments</h3>
+                  <ul className="list-disc list-inside">
+                    {selectedRequisition.attachments.map((attachment, index) => (
+                      <li key={index}>
+                        <a href={attachment} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                          Attachment {index + 1}
+                        </a>
+                      </li>
                     ))}
-                  </TableBody>
-                </Table>
+                  </ul>
+                </div>
+              )}
+
+              {/* Line Items */}
+              <div className="space-y-2 border-b pb-4">
+                <h3 className="font-semibold text-lg">Line Items</h3>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>#</TableHead>
+                        <TableHead>External Code</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Product Code</TableHead>
+                        <TableHead>Qty</TableHead>
+                        <TableHead>Unit</TableHead>
+                        <TableHead>Unit Price</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Supplier</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Account Code</TableHead>
+                        <TableHead>Cost Center</TableHead>
+                        <TableHead>Requested Date</TableHead>
+                        <TableHead>Notes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedRequisition.lineItems?.map((item) => (
+                        <TableRow key={item.lineNumber}>
+                          <TableCell>{item.lineNumber}</TableCell>
+                          <TableCell>{item.externalCode || '-'}</TableCell>
+                          <TableCell>{item.itemDescription}</TableCell>
+                          <TableCell>{item.productCode || '-'}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>{item.unitOfMeasure}</TableCell>
+                          <TableCell>€{item.unitPrice?.toFixed(2)}</TableCell>
+                          <TableCell>€{item.totalAmount?.toFixed(2)}</TableCell>
+                          <TableCell>{item.supplierName || '-'}<br/><small>{item.supplierCode || ''}</small></TableCell>
+                          <TableCell>{item.categoryName || '-'}<br/><small>{item.categoryCode || ''}</small></TableCell>
+                          <TableCell>{item.accountCode || '-'}</TableCell>
+                          <TableCell>{item.costCenter || '-'}</TableCell>
+                          <TableCell>{item.requestedDate || '-'}</TableCell>
+                          <TableCell>{item.notes || '-'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
 
-              {selectedRequisition.approverName && (
-                <div>
-                  <Label>Approval Information</Label>
-                  <p>Approved by: {selectedRequisition.approverName}</p>
-                  <p>Date: {formatDate(selectedRequisition.approvalDate)}</p>
+              {/* Approval Information */}
+              {(selectedRequisition.approverName || selectedRequisition.approvalLevel) && (
+                <div className="space-y-2 pb-4">
+                  <h3 className="font-semibold text-lg">Approval Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Approval Level</Label>
+                      <p>{selectedRequisition.approvalLevel || '-'}</p>
+                    </div>
+                    <div>
+                      <Label>Approver ID</Label>
+                      <p>{selectedRequisition.approverId || '-'}</p>
+                    </div>
+                    <div>
+                      <Label>Approver Name</Label>
+                      <p>{selectedRequisition.approverName || '-'}</p>
+                    </div>
+                    <div>
+                      <Label>Approval Date</Label>
+                      <p>{formatDate(selectedRequisition.approvalDate)}</p>
+                    </div>
+                  </div>
                   {selectedRequisition.approvalComments && (
-                    <p>Comments: {selectedRequisition.approvalComments}</p>
+                    <div className="mt-2">
+                      <Label>Approval Comments</Label>
+                      <p className="text-sm">{selectedRequisition.approvalComments}</p>
+                    </div>
                   )}
                 </div>
               )}

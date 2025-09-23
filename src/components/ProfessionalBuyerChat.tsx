@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { GoogleGenerativeAI, Part } from '@google/generative-ai';
+// Using OpenRouter API instead of Google Generative AI
+type Part = { text: string };
 import { Loader2, Send, RotateCcw, Paperclip, Bot, LogOut, Settings, ThumbsUp, ThumbsDown } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -26,12 +28,14 @@ interface ProfessionalBuyerChatProps {
   onLogout?: () => void;
   leftPanel?: React.ReactNode;
   leftPanelVisible?: boolean;
+  chatVisible?: boolean;
+  onChatVisibleChange?: (visible: boolean) => void;
   topRightControls?: React.ReactNode;
 }
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-// Use gemini-2.5-flash model
-const geminiModel = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash';
+const openRouterApiKey = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
+// Using Grok-4-fast model via OpenRouter (free tier)
+const geminiModel = 'x-ai/grok-4-fast:free';
 
 // Supplier Search Function Definition for Gemini
 const searchSuppliersFunction = {
@@ -183,13 +187,14 @@ const createRequisitionFunction = {
   }
 };
 
-// Debug: Log Gemini API config
-console.log('Gemini API config:', {
-  apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined',
-  model: geminiModel
+// Debug: Log OpenRouter API config
+console.log('OpenRouter API config v1.6:', {
+  version: '1.6-requisition-fix',
+  apiKey: openRouterApiKey ? `${openRouterApiKey.substring(0, 10)}...` : 'undefined',
+  model: geminiModel,  // x-ai/grok-4-fast:free
+  timestamp: new Date().toISOString(),
+  toolSupport: true
 });
-
-const genAI = new GoogleGenerativeAI(apiKey);
 
 interface CitationSource {
   startIndex?: number;
@@ -226,7 +231,7 @@ const processTextWithCitations = (text: string, citationSources?: CitationSource
   return { originalText, formattedSources };
 };
 
-const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout, leftPanel, leftPanelVisible = false, topRightControls }) => {
+const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout, leftPanel, leftPanelVisible = false, chatVisible = true, onChatVisibleChange, topRightControls }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -352,6 +357,45 @@ What can I help you with today?`
     const textToSend = messageText || input;
     if (!textToSend.trim() || isLoading) return;
 
+    // OpenRouter API helper function
+    const callOpenRouterAPI = async (messages: any[], systemPrompt: string, tools?: any[]) => {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openRouterApiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin || 'https://valmet-buyer.firebaseapp.com',
+          'X-Title': 'Valmet Procurement Assistant'
+        },
+        body: JSON.stringify({
+          model: geminiModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages.map((msg: any) => ({
+              role: msg.role === 'model' ? 'assistant' : msg.role,
+              content: typeof msg.parts[0] === 'object' ? msg.parts[0].text : msg.parts[0]
+            }))
+          ],
+          temperature: 0.2,
+          ...(tools && tools.length > 0 ? { tools, tool_choice: 'auto' } : {})
+        })
+      });
+
+      if (!response.ok) {
+        let errorMessage = '';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error?.message || errorData.message || JSON.stringify(errorData);
+        } catch {
+          errorMessage = await response.text();
+        }
+        throw new Error(`OpenRouter API error ${response.status}: ${errorMessage}`);
+      }
+
+      const data = await response.json();
+      return data;
+    };
+
     // System prompt check removed - default prompt is always available
 
     // Initialize continuous improvement if not already done
@@ -398,34 +442,49 @@ What can I help you with today?`
         }
       }
 
-      const model = genAI.getGenerativeModel({
-        model: geminiModel,
-        generationConfig: { temperature: 0.2 },
-        tools: [
-          { functionDeclarations: [searchSuppliersFunction, createRequisitionFunction] }
-        ]
+      // Prepare tools for OpenRouter
+      const openRouterTools = [
+        {
+          type: 'function',
+          function: {
+            name: 'search_suppliers',
+            description: searchSuppliersFunction.description,
+            parameters: searchSuppliersFunction.parameters
+          }
+        },
+        {
+          type: 'function',
+          function: {
+            name: 'create_purchase_requisition',
+            description: createRequisitionFunction.description,
+            parameters: createRequisitionFunction.parameters
+          }
+        }
+      ];
+
+      // Add current message to history for OpenRouter
+      const messagesWithCurrent = [...messages, { role: 'user', parts: [{ text: textToSend }] }];
+
+      const result = await callOpenRouterAPI(messagesWithCurrent, systemPrompt, openRouterTools);
+      console.log('OpenRouter response structure:', {
+        hasChoices: !!result?.choices,
+        hasToolCalls: !!result?.choices?.[0]?.message?.tool_calls,
+        toolCallsCount: result?.choices?.[0]?.message?.tool_calls?.length || 0
       });
 
-      const history = messages.map(msg => ({ role: msg.role, parts: msg.parts }));
-      const result = await model.generateContent({
-        contents: [
-          { role: 'user', parts: [{ text: systemPrompt }] },
-          ...history, 
-          { role: 'user', parts: [{ text: textToSend }] }
-        ]
-      });
+      if (result && result.choices && result.choices.length > 0) {
+        const choice = result.choices[0];
+        const content = choice.message;
 
-      const response = result.response;
-      if (response && response.candidates && response.candidates.length > 0) {
-        const candidate = response.candidates[0];
-        const content = candidate.content;
-        
-        // Check for function calls
-        if (content?.parts) {
-          for (const part of content.parts) {
-            if (part.functionCall) {
-              const functionName = part.functionCall.name;
-              const functionArgs = part.functionCall.args;
+        // Check for function calls (OpenRouter format)
+        if (content?.tool_calls && content.tool_calls.length > 0) {
+          console.log('Tool calls detected:', content.tool_calls);
+          for (const toolCall of content.tool_calls) {
+            if (toolCall.function) {
+              const functionName = toolCall.function.name;
+              const functionArgs = typeof toolCall.function.arguments === 'string'
+                ? JSON.parse(toolCall.function.arguments)
+                : toolCall.function.arguments;
               
               if (functionName === 'search_suppliers') {
                 try {
@@ -500,20 +559,18 @@ What can I help you with today?`
                     }]
                   };
                   
-                  // Generate follow-up response with function results
-                  const followUpResult = await model.generateContent({
-                    contents: [
-                      { role: 'user', parts: [{ text: systemPrompt }] },
-                      ...history,
-                      { role: 'user', parts: [{ text: textToSend }] },
-                      { role: 'model', parts: [part] }, // Original function call
-                      functionResponse // Function response
-                    ]
-                  });
-                  
-                  const followUpResponse = followUpResult.response;
-                  if (followUpResponse?.candidates?.[0]?.content) {
-                    const aiResponseText = followUpResponse.candidates[0].content?.parts?.[0]?.text || "No response text";
+                  // Generate follow-up response with function results using OpenRouter
+                  const messagesWithFunctionResult = [
+                    ...messages,
+                    { role: 'user', parts: [{ text: textToSend }] },
+                    { role: 'model', parts: [{ text: `Calling function: ${functionName}` }] },
+                    { role: 'user', parts: [{ text: `Function result: ${JSON.stringify(searchResult)}` }] }
+                  ];
+
+                  const followUpResult = await callOpenRouterAPI(messagesWithFunctionResult, systemPrompt);
+
+                  if (followUpResult?.choices?.[0]?.message) {
+                    const aiResponseText = followUpResult.choices[0].message.content || "No response text";
                     
                     // Log AI's final response
                     console.log('💬 AI FINAL RESPONSE [' + aiRequestId + ']:', {
@@ -535,7 +592,7 @@ What can I help you with today?`
                     
                     setMessages(prev => [...prev, {
                       role: 'model',
-                      parts: followUpResponse.candidates[0].content?.parts || [{ text: "I executed the search but couldn't format the response." }]
+                      parts: [{ text: aiResponseText }]
                     }]);
                   }
                   return;
@@ -596,8 +653,8 @@ What can I help you with today?`
                   // Create requisition using our service with Basware header data
                   const requisitionData = {
                     externalCode: header.requisitionId || `AI-${Date.now()}`,
-                    requesterId: header.requester || user.uid,
-                    requesterName: user.email || 'Unknown',
+                    requesterId: user.uid, // Always use the authenticated user's ID
+                    requesterName: header.requester || user.email || 'Unknown',
                     requesterEmail: user.email || '',
                     department: header.companyCode || 'General',
                     requestedDeliveryDate: lines[0]?.deliveryDate || new Date().toISOString().split('T')[0],
@@ -620,7 +677,8 @@ What can I help you with today?`
 
                   const requisitionId = await purchaseRequisitionService.createRequisition(
                     user.uid,
-                    requisitionData
+                    requisitionData,
+                    user.email || undefined
                   );
 
                   // Log success
@@ -658,27 +716,24 @@ What can I help you with today?`
               }
             }
           }
-        }
-        
-        let processedCitationMetadata: { citationSources: CitationSource[] } | undefined = undefined;
-        if (candidate.citationMetadata && candidate.citationMetadata.citationSources) {
-          processedCitationMetadata = candidate.citationMetadata;
-        }
+        } else {
+          // No tool calls - regular text response
+          const aiResponseText = content?.content || "No response text";
+          console.log('Regular text response:', aiResponseText.substring(0, 100));
 
-        // Log regular AI response (non-function call)
-        const aiResponseText = content?.parts?.[0]?.text || "No response text";
-        if (continuousImprovementSessionId) {
-          await addTechnicalLog(continuousImprovementSessionId, {
-            event: 'ai_response',
-            aiResponse: aiResponseText.substring(0, 500) // First 500 chars to avoid too much data
-          });
-        }
+          if (continuousImprovementSessionId) {
+            await addTechnicalLog(continuousImprovementSessionId, {
+              event: 'ai_response',
+              aiResponse: aiResponseText.substring(0, 500) // First 500 chars to avoid too much data
+            });
+          }
 
-        setMessages(prev => [...prev, {
-          role: 'model',
-          parts: content?.parts || [{ text: "I couldn't generate a response." }],
-          citationMetadata: processedCitationMetadata
-        }]);
+          setMessages(prev => [...prev, {
+            role: 'model',
+            parts: [{ text: aiResponseText }],
+            citationMetadata: undefined  // OpenRouter doesn't provide citations
+          }]);
+        }
       } else {
         throw new Error('No response from AI model');
       }
@@ -705,6 +760,10 @@ What can I help you with today?`
       if (error instanceof Error) {
         if (error.message.includes('overloaded') || error.message.includes('503')) {
           errorMessage = "The AI service is temporarily overloaded. Please wait a moment and try again.";
+        } else if (error.message.includes('402')) {
+          errorMessage = "OpenRouter API credits exhausted. Please check your account balance.";
+        } else if (error.message.includes('401')) {
+          errorMessage = "OpenRouter authentication failed. Please check your API key.";
         } else if (error.message.includes('API key')) {
           errorMessage = "There's an issue with the API configuration. Please contact support.";
         } else if (error.message.includes('429')) {
@@ -925,25 +984,37 @@ What can I help you with today?`
       {/* Controls row under header */}
       <div className="max-w-7xl mx-auto px-4 mt-4 flex justify-between w-full">
         {topRightControls}
-        <Button
-          variant="outline"
-          onClick={handleResetChat}
-          className="text-red-600 border-red-200 hover:bg-red-50"
-          size="sm"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Reset Chat
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="chat-toggle" className="text-xs text-gray-500">Show chat</Label>
+            <Switch
+              id="chat-toggle"
+              checked={chatVisible}
+              onCheckedChange={onChatVisibleChange}
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleResetChat}
+            className="text-red-600 border-red-200 hover:bg-red-50"
+            size="sm"
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Reset Chat
+          </Button>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-2 pb-6 w-full">
-        {leftPanelVisible ? (
+        {leftPanelVisible && chatVisible ? (
+          // Both panels visible - use resizable layout
           <ResizablePanelGroup direction="horizontal" className="h-full min-h-[60vh]">
             <ResizablePanel defaultSize={35} minSize={20} maxSize={60} className="pr-2">
               {leftPanel}
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={65} minSize={40} className="pl-2">
+              {chatVisible && (
               <div className={"flex flex-col items-stretch"}>
 
 
@@ -1110,9 +1181,15 @@ What can I help you with today?`
               </div>
             </div>
               </div>
+              )}
             </ResizablePanel>
           </ResizablePanelGroup>
-        ) : (
+        ) : leftPanelVisible && !chatVisible ? (
+          // Only left panel visible
+          <div className="h-full min-h-[60vh]">
+            {leftPanel}
+          </div>
+        ) : chatVisible ? (
           <div>
             {/* When no left panel, show full-width chat */}
             <div className={"flex flex-col items-stretch"}>
@@ -1235,6 +1312,11 @@ What can I help you with today?`
                 </div>
               </div>
             </div>
+          </div>
+        ) : (
+          // Neither panel visible - show message
+          <div className="flex items-center justify-center h-64 text-gray-500">
+            <p>Please enable either the chat or verification panel using the toggles above.</p>
           </div>
         )}
       </div>
