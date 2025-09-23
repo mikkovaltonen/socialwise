@@ -1,0 +1,11 @@
+{
+  "name": "valmet-firestore-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "load-supplier-data": "node loadSupplierDataToFirestore.js"
+  },
+  "dependencies": {
+    "firebase": "^10.14.1"
+  }
+}

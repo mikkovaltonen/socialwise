@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
 import { loadLatestPrompt } from '../lib/firestoreService';
+import { searchSuppliersForChat, getMainCategoriesForChat, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-const geminiModel = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-pro-preview-03-25';
+const geminiModel = 'gemini-2.5-pro';
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
@@ -158,7 +159,13 @@ const ProcurementChat: React.FC<ProcurementChatProps> = ({
       ).join('\n');
       
       initialMessageParts.push({
-        text: `\n\nUploaded Documents for Analysis:\n${documentSummary}\n\nPlease provide an initial analysis overview of these documents and suggest what insights you can provide.`
+        text: `\n\nUploaded Documents for Analysis:\n${documentSummary}\n\n**Supplier Search Capability:**
+You can search Valmet's supplier database with ${MAIN_CATEGORY_LOV.reduce((sum, cat) => sum + cat.count, 0)} verified suppliers across these main categories:
+${getMainCategoriesForChat()}
+
+Use the searchSuppliersForChat function to find suppliers by main category, supplier categories, country, or city.
+
+Please provide an initial analysis overview of these documents and suggest what insights you can provide.`
       });
 
       // Process each file and add to message parts
@@ -207,20 +214,76 @@ const ProcurementChat: React.FC<ProcurementChatProps> = ({
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', parts: [{ text: input }] };
+    const userInput = input;
+    const userMessage: Message = { role: 'user', parts: [{ text: userInput }] };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
+      // Check if the user is asking about suppliers or vendors
+      const searchKeywords = ['supplier', 'vendor', 'find', 'search', 'list', 'show', 'consulting', 'training', 'legal', 'service'];
+      const shouldSearch = searchKeywords.some(keyword => userInput.toLowerCase().includes(keyword));
+      
+      let enhancedInput = userInput;
+      
+      if (shouldSearch) {
+        // Try to extract search criteria from the user's message
+        let searchParams: any = {};
+        
+        // Check for main categories
+        MAIN_CATEGORY_LOV.forEach(cat => {
+          if (userInput.toLowerCase().includes(cat.value.toLowerCase())) {
+            searchParams.mainCategory = cat.value;
+          }
+        });
+        
+        // Check for country mentions
+        const countryPatterns = ['finland', 'sweden', 'germany', 'usa', 'uk', 'india'];
+        countryPatterns.forEach(country => {
+          if (userInput.toLowerCase().includes(country)) {
+            searchParams.country = country;
+          }
+        });
+        
+        // If we found search criteria, perform the search
+        if (Object.keys(searchParams).length > 0 || shouldSearch) {
+          searchParams.limit = searchParams.limit || 10;
+          
+          try {
+            const searchResults = await searchSuppliersForChat(searchParams);
+            
+            if (searchResults.success) {
+              // Add search results to the context
+              enhancedInput = `${userInput}
+
+**Search Results:**
+Found ${searchResults.totalFound} suppliers matching your criteria.
+
+${searchResults.suppliers.slice(0, 10).join('\n\n---\n\n')}
+
+${searchResults.totalFound > 10 ? `\n(Showing first 10 of ${searchResults.totalFound} results)` : ''}
+
+**Available Main Categories:**
+${getMainCategoriesForChat()}
+
+Please analyze these search results and provide recommendations based on the user's requirements.`;
+            }
+          } catch (error) {
+            console.error('Error searching suppliers:', error);
+          }
+        }
+      }
+
       const model = genAI.getGenerativeModel({
         model: geminiModel,
         generationConfig: { temperature: 0.2 },
       });
 
       const history = messages.map(msg => ({ role: msg.role, parts: msg.parts }));
+      
       const result = await model.generateContent({
-        contents: [...history, { role: 'user', parts: [{ text: input }] }],
+        contents: [...history, { role: 'user', parts: [{ text: enhancedInput }] }],
         tools: [{ googleSearch: {} }]
       });
 

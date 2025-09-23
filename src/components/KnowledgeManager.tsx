@@ -77,10 +77,10 @@ export const KnowledgeManager: React.FC = () => {
       
       // List of sample knowledge documents to load
       const sampleFiles = [
-        { path: '/DMA_levels_markdown.md', name: 'DMA Authorization Levels' },
-        { path: '/DMA_matrix_combined.md', name: 'DMA Matrix Combined' },
-        { path: '/Operative purchasing process.md', name: 'Operative Purchasing Process' },
-        { path: '/S2P Policy.md', name: 'Source-to-Pay Policy' }
+        { path: '/chat_init_contect/valmet-procurement-policy.md', name: 'Valmet Global Procurement Policy' },
+        { path: '/chat_init_contect/valmet-payment-policy.md', name: 'Valmet Global Payment Policy' },
+        { path: '/chat_init_contect/valmet-approval-limits-policy.md', name: 'Valmet Approval Limits Policy' },
+        { path: '/chat_init_contect/valmet-supplier-spend-data.md', name: 'Valmet Supplier & Spend Data 2023' }
       ];
       
       let successCount = 0;

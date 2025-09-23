@@ -41,7 +41,7 @@ const PromptVersionManager: React.FC<PromptVersionManagerProps> = ({
   useEffect(() => {
     const loadSamplePrompt = async () => {
       try {
-        const response = await fetch('/sample_promtp.md');
+        const response = await fetch('/system_prompt.md');
         if (response.ok) {
           const content = await response.text();
           setSamplePrompt(content.trim()); // Use exactly what's in the file
@@ -162,8 +162,8 @@ const PromptVersionManager: React.FC<PromptVersionManagerProps> = ({
       setPrompt(samplePrompt);
       toast.success('Sample prompt loaded! You can now edit and save it.');
     } else {
-      toast.error('Sample prompt file is empty or missing. Please add content to /public/sample_promtp.md');
-      console.error('Sample prompt file /public/sample_promtp.md is empty or missing');
+      toast.error('Sample prompt file is empty or missing. Please add content to /public/system_prompt.md');
+      console.error('Sample prompt file /public/system_prompt.md is empty or missing');
     }
   };
 
@@ -183,8 +183,8 @@ const PromptVersionManager: React.FC<PromptVersionManagerProps> = ({
         toast.success('Default prompt loaded! You can now edit and save it.');
       }
     } else {
-      toast.error('Default prompt file is empty or missing. Please add content to /public/sample_promtp.md');
-      console.error('Default prompt file /public/sample_promtp.md is empty or missing');
+      toast.error('Default prompt file is empty or missing. Please add content to /public/system_prompt.md');
+      console.error('Default prompt file /public/system_prompt.md is empty or missing');
     }
   };
 

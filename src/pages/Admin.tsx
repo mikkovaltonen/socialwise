@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle } from "lucide-react";
+import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle, Book, Info } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import DocumentAnalysis from "@/components/DocumentAnalysis";
-import { KnowledgeManager } from "@/components/KnowledgeManager";
-import { ERPManager } from "@/components/ERPManager";
+import ChatInitViewer from "@/components/ChatInitViewer";
+import { ValmetSupplierSearchSimple } from "@/components/ValmetSupplierSearchSimple";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [showPdfUpload, setShowPdfUpload] = useState(false);
+  const [showChatInit, setShowChatInit] = useState(false);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
 
   const handleLogout = () => {
@@ -120,27 +120,12 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Visual Overview Section */}
-        <div className="my-8 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Solution Visuals</h2>
-          <div className="grid md:grid-cols-2 gap-6 items-center">
-            <div>
-              <h3 className="text-xl font-medium text-gray-700 mb-2">Valmet Purchaser Tech Stack</h3>
-              <img src="/professiona_buyer_tech_stack.png" alt="Valmet Purchaser Tech Stack" className="rounded-lg shadow-md border border-gray-200 w-full h-auto" />
-            </div>
-            <div>
-              <h3 className="text-xl font-medium text-gray-700 mb-2">Solution Overview</h3>
-              <img src="/solution_overview.png" alt="Solution Overview" className="rounded-lg shadow-md border border-gray-200 w-full h-auto" />
-            </div>
-          </div>
-        </div>
-
         {/* Secondary Tools */}
         <div className="grid md:grid-cols-3 gap-6">
           
           {/* AI Prompt Management - Moved to featured section above */}
 
-          {/* Internal Knowledge Upload */}
+          {/* Internal Knowledge & Chat Initialization */}
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="bg-gray-700 text-white rounded-t-lg">
               <CardTitle className="flex items-center">
@@ -150,41 +135,43 @@ const Admin = () => {
             </CardHeader>
             <CardContent className="p-6">
               <p className="text-gray-600 mb-4">
-                Upload markdown and text documents containing internal procurement policies, procedures, and knowledge base content for AI analysis.
+                View Valmet policies and supplier data that are automatically loaded as context for the AI assistant.
               </p>
-              <Dialog open={showPdfUpload} onOpenChange={setShowPdfUpload}>
+              
+              {/* Chat Initialization Viewer */}
+              <Dialog open={showChatInit} onOpenChange={setShowChatInit}>
                 <DialogTrigger asChild>
                   <Button 
-                    className="w-full bg-gray-700 hover:bg-gray-600 text-white"
+                    className="w-full bg-green-700 hover:bg-green-600 text-white mb-3"
                   >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Manage Knowledge Documents
+                    <Book className="mr-2 h-4 w-4" />
+                    View Chat Initialization Context
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Internal Knowledge Management</DialogTitle>
+                <DialogContent className="sm:max-w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
+                  <DialogHeader className="sr-only">
+                    <DialogTitle>Chat Initialization Context</DialogTitle>
                     <DialogDescription>
-                      Upload and manage markdown and text documents for your internal knowledge base.
+                      View and manage the policy documents that are automatically loaded as context for the AI assistant.
                     </DialogDescription>
                   </DialogHeader>
-                  <KnowledgeManager />
+                  <ChatInitViewer />
                 </DialogContent>
               </Dialog>
             </CardContent>
           </Card>
 
-          {/* ERP/P2P Integration Simulation */}
+          {/* Valmet Supplier Spend Data Search */}
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="bg-gray-700 text-white rounded-t-lg">
               <CardTitle className="flex items-center">
                 <Database className="mr-3 h-6 w-6" />
-                ERP/P2P Integration
+                Valmet Supplier Spend Data Search
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <p className="text-gray-600 mb-4">
-                Upload and manage your structured Excel file to simulate ERP integration.
+                Search and analyze supplier spend data, vendor details, and metadata.
               </p>
               <Dialog open={showExcelUpload} onOpenChange={setShowExcelUpload}>
                 <DialogTrigger asChild>
@@ -192,17 +179,33 @@ const Admin = () => {
                     className="w-full bg-gray-700 hover:bg-gray-600 text-white"
                   >
                     <Database className="mr-2 h-4 w-4" />
-                    Manage ERP Data
+                    Search Supplier Data
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>ERP/P2P Integration Management</DialogTitle>
-                    <DialogDescription>
-                      Upload and manage your structured Excel file to simulate ERP integration.
-                    </DialogDescription>
+                <DialogContent className="sm:max-w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
+                  <DialogHeader className="px-6 pt-6 pb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <DialogTitle>Valmet Supplier Spend Data Search</DialogTitle>
+                        <DialogDescription>
+                          Search and analyze supplier spend data, vendor details, metadata, and training information.
+                        </DialogDescription>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => window.open('/vendor_search.md', '_blank')}
+                          title="View Documentation"
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </DialogHeader>
-                  <ERPManager />
+                  <div className="flex-1 overflow-y-auto px-6 pb-6">
+                    <ValmetSupplierSearchSimple />
+                  </div>
                 </DialogContent>
               </Dialog>
             </CardContent>

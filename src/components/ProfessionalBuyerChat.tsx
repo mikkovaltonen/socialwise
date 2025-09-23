@@ -17,6 +17,10 @@ import { erpApiService } from '../lib/erpApiService';
 import { storageService } from '../lib/storageService';
 import { createPurchaseRequisition } from '@/lib/firestoreService';
 import { useQueryClient } from '@tanstack/react-query';
+import { searchSuppliersForChat, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
+import { purchaseRequisitionService, RequisitionStatus } from '../lib/purchaseRequisitionService';
+import { InteractiveJsonTable } from './InteractiveJsonTable';
+import { consoleLogger } from '../lib/consoleLogger';
 
 interface ProfessionalBuyerChatProps {
   onLogout?: () => void;
@@ -26,75 +30,156 @@ interface ProfessionalBuyerChatProps {
 }
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-const geminiModel = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-pro-preview-03-25';
+// Use gemini-2.5-flash model
+const geminiModel = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash';
 
-// ERP Function Definition for Gemini
-const searchERPFunction = {
-  name: "search_erp_data",
-  description: "Search ERP/purchase order data with various criteria. Use this when user asks about suppliers, orders, purchases, products, or wants to find specific data from their ERP system.",
+// Supplier Search Function Definition for Gemini
+const searchSuppliersFunction = {
+  name: "search_suppliers",
+  description: "Search for verified suppliers in Valmet's supplier database. IMPORTANT: mainCategory must be EXACTLY one of the valid LOV values. For 'vuokratyövoima' or 'henkilöstövuokraus', use 'Leased workforce'. For 'IT-konsultointi', use 'IT consulting'. Always use the exact English LOV values.",
   parameters: {
     type: "object",
     properties: {
-      supplierName: {
+      mainCategory: {
         type: "string",
-        description: "Supplier/vendor name or partial name to search for"
+        enum: MAIN_CATEGORY_LOV.map(c => c.value),
+        description: `Main category to search. MUST be one of these exact values: ${MAIN_CATEGORY_LOV.map(c => c.value).join(', ')}`
       },
-      productDescription: {
-        type: "string", 
-        description: "Product description or partial description to search for"
-      },
-      dateFrom: {
+      supplierCategories: {
         type: "string",
-        description: "Search from date (YYYY-MM-DD format). Filters by 'Receive By' column in the Excel data."
+        description: "Free text search in supplier categories"
       },
-      dateTo: {
+      country: {
         type: "string",
-        description: "Search to date (YYYY-MM-DD format). Filters by 'Receive By' column in the Excel data."
+        description: "Country to filter by (e.g., Finland, Sweden, Germany)"
       },
-      buyerName: {
+      city: {
         type: "string",
-        description: "Buyer/purchaser name or partial name to search for"
+        description: "City to filter by"
+      },
+      limit: {
+        type: "number",
+        description: "Maximum number of results to return (default: 10)"
       }
     }
   }
 };
 
+// ERP search function removed - only supplier search is used
+
+// Purchase Requisition Function (Basware-style as per system prompt)
 const createRequisitionFunction = {
   name: "create_purchase_requisition",
-  description: "Create a purchase requisition document with header and lines to Firestore.",
+  description: "Create a purchase requisition in Basware via POST API. This creates a formal request that needs approval before becoming a purchase order.",
   parameters: {
     type: "object",
     properties: {
       header: {
         type: "object",
+        description: "Object containing requisition header information",
         properties: {
-          templateBatchName: { type: "string" },
-          locationCode: { type: "string" },
-          startDate: { type: "string", description: "YYYY-MM-DD" },
-          endDate: { type: "string", description: "YYYY-MM-DD" },
-          responsibilityCenterOrBuyer: { type: "string" },
-          notes: { type: "string" }
+          requisitionId: {
+            type: "string",
+            description: "External identifier for the requisition (optional)"
+          },
+          requisitionType: {
+            type: "string",
+            description: "Type of requisition (e.g., standard, service)"
+          },
+          status: {
+            type: "string",
+            description: "Initial status (e.g., Draft, Submitted)"
+          },
+          requester: {
+            type: "string",
+            description: "Identifier of the person creating the requisition"
+          },
+          companyCode: {
+            type: "string",
+            description: "Company or business unit code"
+          },
+          costCenter: {
+            type: "string",
+            description: "Cost center or accounting assignment"
+          },
+          supplierId: {
+            type: "string",
+            description: "Supplier identifier (optional)"
+          },
+          contractId: {
+            type: "string",
+            description: "Reference to framework agreement or contract (optional)"
+          },
+          justification: {
+            type: "string",
+            description: "Notes or justification for the request (optional)"
+          }
         },
-        required: ["templateBatchName","locationCode","startDate","endDate","responsibilityCenterOrBuyer"]
+        required: ["requisitionType", "status", "requester", "companyCode"]
       },
       lines: {
         type: "array",
+        description: "Array of requisition line items",
         items: {
           type: "object",
           properties: {
-            itemNoOrDescription: { type: "string" },
-            quantity: { type: "number" },
-            unitOfMeasure: { type: "string" },
-            requestedDate: { type: "string", description: "YYYY-MM-DD" },
-            vendorNoOrName: { type: "string" },
-            directUnitCost: { type: "number" },
-            currency: { type: "string" }
+            lineId: {
+              type: "string",
+              description: "Line item identifier"
+            },
+            description: {
+              type: "string",
+              description: "Item or service description"
+            },
+            quantity: {
+              type: "number",
+              description: "Quantity requested"
+            },
+            unitOfMeasure: {
+              type: "string",
+              description: "Unit of measure (e.g., PCS, H)"
+            },
+            unitPrice: {
+              type: "number",
+              description: "Unit price (optional)"
+            },
+            currency: {
+              type: "string",
+              description: "Currency code (default: EUR)"
+            },
+            glAccount: {
+              type: "string",
+              description: "General ledger account or other coding"
+            },
+            deliveryDate: {
+              type: "string",
+              description: "Requested delivery date (YYYY-MM-DD)"
+            },
+            deliveryAddress: {
+              type: "string",
+              description: "Delivery address"
+            },
+            vendorNoOrName: {
+              type: "string",
+              description: "Suggested supplier (optional)"
+            }
           },
-          required: ["itemNoOrDescription","quantity","unitOfMeasure","requestedDate"]
+          required: ["lineId", "description", "quantity", "unitOfMeasure", "deliveryDate", "deliveryAddress"]
         }
+      },
+      attachments: {
+        type: "array",
+        description: "Array of related files (e.g., technical specifications) - optional",
+        items: {
+          type: "string"
+        }
+      },
+      customFields: {
+        type: "object",
+        description: "Customer-specific extension fields (optional)"
       }
     },
-    required: ["header","lines"]
+    required: ["header", "lines"]
   }
 };
 
@@ -167,7 +252,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
   // System initialization status
   const [statusLoading, setStatusLoading] = useState(false);
   const [initStatus, setInitStatus] = useState<{ hasPrompt: boolean; knowledgeCount: number; erpCount: number }>({
-    hasPrompt: false,
+    hasPrompt: true, // Default to true to allow chat input
     knowledgeCount: 0,
     erpCount: 0
   });
@@ -211,24 +296,19 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
             role: 'model',
             parts: [{
               text: isLikelyNewUser 
-                ? `🎉 **Welcome to Valmet Purchaser AI Assistant!**
+                ? `🎯 **Valmet Finland External Workforce Assistant**
 
-I'm here to transform how you handle procurement and purchasing. As your AI-powered procurement expert, I can help you:
+I help you find and select the best suppliers for external workforce needs in Finland.
 
-**🎯 Get Started (recommended):**
-• **Load Sample Data**: Go to Admin panel → Load sample knowledge documents and ERP data to try me out
-• **Upload Your Files**: Add your own procurement policies and Excel purchase data  
-• **Ask Questions**: "What suppliers do we use?" or "Find me laptop purchases from last quarter"
+**Available services:** IT consulting • Business consulting • Training • Legal services • R&D services • Leased workforce
 
-**💡 My Special Capabilities:**
-✅ Real-time access to your ERP/purchase data through advanced function calling
-✅ Analysis of your internal procurement documents and policies  
-✅ Professional buyer expertise for cost optimization and supplier management
+**Quick actions:**
+• "Find IT consulting suppliers in Finland"
+• "Show me training providers"
+• "List legal service vendors"
 
-**Ready to explore?** Try asking me "Load some sample data so I can see what you can do" or visit the Admin panel to upload your own files!
-
-What would you like to start with?`
-                : `Hello! I'm your Valmet Purchaser AI Assistant. I'm here to help you optimize your procurement processes, negotiate better deals, and achieve significant cost savings.
+520+ verified suppliers ready to search. What service do you need?`
+                : `Hello! I'm your Valmet External Workforce Assistant for Finland. I help you find suppliers for consulting, training, legal, and other professional services.
 
 📚 **Knowledge Base Loaded:** ${session.documentsUsed.length} document(s) available for reference.
 
@@ -253,7 +333,7 @@ What can I help you with today?`
           const welcomeMessage: Message = {
             role: 'model',
             parts: [{
-              text: "Hello! I'm your Valmet Purchaser AI Assistant. I'm here to help you optimize your procurement processes, negotiate better deals, and achieve significant cost savings. What can I help you with today?"
+              text: "Hei! 👋 Olen Valmet-hankinta-avustajasi.\n\nAutan sinua löytämään parhaat toimittajat ulkopuoliselle työvoimalle Suomessa. Minulla on pääsy 520+ vahvistettuun toimittajaan.\n\n**Miten voin auttaa tänään?**\nVoit esimerkiksi sanoa:\n• \"Etsi IT-konsultteja Helsingistä\"\n• \"Näytä koulutuspalvelut\"\n• \"Tarvitsen vuokratyövoimaa\"\n\nKerro vain tarpeesi, niin etsitään sinulle sopivat toimittajat! 🎯"
             }]
           };
           setMessages([welcomeMessage]);
@@ -267,27 +347,12 @@ What can I help you with today?`
     initializeSession();
   }, [sessionActive, user, sessionInitializing]);
 
-  const quickActions = [
-    "Use prenegotiated discount prices",
-    "Get approvals easily and from correct person", 
-    "Find preferred supplier and best price/quality",
-    "Create purcase requisitions and orders easily and correctly"
-  ];
-
-  const handleQuickAction = async (action: string) => {
-    setInput(action);
-    await handleSendMessage(action);
-  };
 
   const handleSendMessage = async (messageText?: string) => {
     const textToSend = messageText || input;
     if (!textToSend.trim() || isLoading) return;
 
-    // Guard: require at least a system prompt
-    if (!initStatus.hasPrompt) {
-      toast.error('No system prompt configured. Please open Admin and set up your prompt.');
-      return;
-    }
+    // System prompt check removed - default prompt is always available
 
     // Initialize continuous improvement if not already done
     if (!continuousImprovementSessionId) {
@@ -337,7 +402,7 @@ What can I help you with today?`
         model: geminiModel,
         generationConfig: { temperature: 0.2 },
         tools: [
-          { functionDeclarations: [searchERPFunction, createRequisitionFunction] }
+          { functionDeclarations: [searchSuppliersFunction, createRequisitionFunction] }
         ]
       });
 
@@ -362,12 +427,12 @@ What can I help you with today?`
               const functionName = part.functionCall.name;
               const functionArgs = part.functionCall.args;
               
-              if (functionName === 'search_erp_data') {
+              if (functionName === 'search_suppliers') {
                 try {
                   const aiRequestId = Math.random().toString(36).substring(2, 8);
                   
                   // Log AI function call details
-                  console.log('🤖 AI FUNCTION CALL [' + aiRequestId + ']:', {
+                  console.log('🤖 AI SUPPLIER SEARCH CALL [' + aiRequestId + ']:', {
                     triggered_by_user_message: textToSend,
                     function_name: functionName,
                     ai_generated_parameters: functionArgs,
@@ -386,18 +451,18 @@ What can I help you with today?`
                     });
                   }
 
-                  // Execute ERP search (this will generate its own logs with request ID)
-                  const searchResult = await erpApiService.searchRecords(user!.uid, functionArgs);
+                  // Execute supplier search
+                  const searchResult = await searchSuppliersForChat(functionArgs);
                   
-                  // Log consolidated AI + ERP results
-                  console.log('🔗 AI-ERP INTEGRATION RESULT [' + aiRequestId + ']:', {
+                  // Log consolidated AI + Supplier search results
+                  console.log('🔗 AI-SUPPLIER SEARCH RESULT [' + aiRequestId + ']:', {
                     user_query: textToSend,
                     ai_function_call: functionName,
                     ai_parameters: functionArgs,
-                    erp_result_summary: {
-                      totalRecords: searchResult.totalCount,
-                      processingTime: searchResult.processingTimeMs + 'ms',
-                      hasData: searchResult.records.length > 0
+                    supplier_result_summary: {
+                      totalRecords: searchResult.totalFound,
+                      success: searchResult.success,
+                      hasData: searchResult.totalFound > 0
                     },
                     execution_timestamp: new Date().toISOString(),
                     ai_request_id: aiRequestId
@@ -410,10 +475,10 @@ What can I help you with today?`
                       functionName: functionName,
                       functionInputs: functionArgs,
                       functionOutputs: {
-                        totalRecords: searchResult.totalCount,
-                        processingTimeMs: searchResult.processingTimeMs,
-                        hasData: searchResult.records.length > 0,
-                        recordsPreview: searchResult.records.slice(0, 3) // First 3 records as preview
+                        totalRecords: searchResult.totalFound,
+                        success: searchResult.success,
+                        hasData: searchResult.totalFound > 0,
+                        suppliersPreview: searchResult.suppliers.slice(0, 3) // First 3 suppliers as preview
                       },
                       aiRequestId: aiRequestId
                     });
@@ -426,9 +491,10 @@ What can I help you with today?`
                       functionResponse: {
                         name: functionName,
                         response: {
-                          records: searchResult.records,
-                          totalCount: searchResult.totalCount,
-                          processingTimeMs: searchResult.processingTimeMs
+                          success: searchResult.success,
+                          totalFound: searchResult.totalFound,
+                          suppliers: searchResult.suppliers,
+                          error: searchResult.error
                         }
                       }
                     }]
@@ -498,7 +564,7 @@ What can I help you with today?`
                   console.error('Function execution failed:', functionError);
                   setMessages(prev => [...prev, {
                     role: 'model',
-                    parts: [{ text: `I tried to search your ERP data but encountered an error: ${functionError instanceof Error ? functionError.message : 'Unknown error'}. Please make sure you have uploaded your ERP data in the Admin panel.` }]
+                    parts: [{ text: `I tried to search for suppliers but encountered an error: ${functionError instanceof Error ? functionError.message : 'Unknown error'}. Please try again with different search criteria.` }]
                   }]);
                   return;
                 }
@@ -507,19 +573,86 @@ What can I help you with today?`
                 try {
                   const aiRequestId = Math.random().toString(36).substring(2, 8);
                   const args = functionArgs as any;
-                  if (!user?.uid) throw new Error('Not authenticated');
-                  const id = await createPurchaseRequisition(user.uid, {
-                    status: 'draft',
-                    header: args.header,
-                    lines: args.lines
-                  } as any);
-                  try {
-                    await queryClient.invalidateQueries({ queryKey: ['purchaseRequisitions', user.uid] });
-                  } catch {}
-                  setMessages(prev => [...prev, { role: 'model', parts: [{ text: `Created purchase requisition ${id}. You can view and edit it in Requisitions.` }] }]);
+
+                  if (!user) throw new Error('Not authenticated');
+
+                  // Extract header and lines from Basware-style structure
+                  const header = args.header || {};
+                  const lines = args.lines || [];
+
+                  // Prepare line items with proper structure for our Firestore
+                  const lineItems = lines.map((item: any, index: number) => ({
+                    lineNumber: parseInt(item.lineId) || (index + 1),
+                    itemDescription: item.description,
+                    quantity: item.quantity,
+                    unitOfMeasure: item.unitOfMeasure,
+                    unitPrice: item.unitPrice || 0,
+                    totalAmount: item.quantity * (item.unitPrice || 0),
+                    supplierName: item.vendorNoOrName || header.supplierId || '',
+                    categoryCode: item.glAccount || '',
+                    requestedDate: item.deliveryDate
+                  }));
+
+                  // Create requisition using our service with Basware header data
+                  const requisitionData = {
+                    externalCode: header.requisitionId || `AI-${Date.now()}`,
+                    requesterId: header.requester || user.uid,
+                    requesterName: user.email || 'Unknown',
+                    requesterEmail: user.email || '',
+                    department: header.companyCode || 'General',
+                    requestedDeliveryDate: lines[0]?.deliveryDate || new Date().toISOString().split('T')[0],
+                    status: header.status === 'Submitted' ? RequisitionStatus.SUBMITTED : RequisitionStatus.DRAFT,
+                    currency: lines[0]?.currency || 'EUR',
+                    preferredSupplier: header.supplierId || '',
+                    deliveryAddress: {
+                      locationCode: header.costCenter || 'FI-HEL-01',
+                      locationName: lines[0]?.deliveryAddress || 'Valmet Helsinki Office',
+                      city: 'Helsinki',
+                      country: 'Finland'
+                    },
+                    lineItems: lineItems,
+                    businessJustification: header.justification || '',
+                    urgencyLevel: 'medium',
+                    contractId: header.contractId,
+                    attachments: args.attachments,
+                    customFields: args.customFields
+                  };
+
+                  const requisitionId = await purchaseRequisitionService.createRequisition(
+                    user.uid,
+                    requisitionData
+                  );
+
+                  // Log success
+                  console.log('✅ Purchase requisition created via AI (Basware format):', requisitionId);
+
+                  // Calculate total
+                  const total = lineItems.reduce((sum: number, item: any) => sum + item.totalAmount, 0);
+
+                  setMessages(prev => [...prev, {
+                    role: 'model',
+                    parts: [{
+                      text: `✅ Purchase requisition created successfully!\n\n` +
+                            `**Requisition ID:** ${requisitionId}\n` +
+                            `**External Reference:** ${requisitionData.externalCode}\n` +
+                            `**Company Code:** ${header.companyCode || 'General'}\n` +
+                            `**Cost Center:** ${header.costCenter || 'Default'}\n` +
+                            `**Total Amount:** €${total.toFixed(2)}\n` +
+                            `**Status:** ${header.status || 'Draft'}\n` +
+                            `**Items:** ${lineItems.length} line item(s)\n\n` +
+                            `The requisition has been created. You can view, edit, and submit it for approval in the Purchase Requisition Verification panel.`
+                    }]
+                  }]);
+
                   return;
                 } catch (err) {
-                  setMessages(prev => [...prev, { role: 'model', parts: [{ text: `Failed to create requisition: ${err instanceof Error ? err.message : 'Unknown error'}` }] }]);
+                  console.error('Failed to create requisition:', err);
+                  setMessages(prev => [...prev, { 
+                    role: 'model', 
+                    parts: [{ 
+                      text: `❌ Failed to create purchase requisition: ${err instanceof Error ? err.message : 'Unknown error'}` 
+                    }] 
+                  }]);
                   return;
                 }
               }
@@ -551,9 +684,39 @@ What can I help you with today?`
       }
     } catch (error) {
       console.error('Error sending message:', error);
+
+      // Log critical error to Firebase
+      await consoleLogger.sendCriticalLog('Chat message send failed', {
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        } : String(error),
+        userId: user?.uid,
+        chatSessionKey,
+        sessionId: continuousImprovementSessionId,
+        model: geminiModel,
+        messageText: textToSend.slice(0, 100) // First 100 chars only for privacy
+      });
+
+      // Provide more detailed error message to user
+      let errorMessage = "Error processing your request. ";
+
+      if (error instanceof Error) {
+        if (error.message.includes('overloaded') || error.message.includes('503')) {
+          errorMessage = "The AI service is temporarily overloaded. Please wait a moment and try again.";
+        } else if (error.message.includes('API key')) {
+          errorMessage = "There's an issue with the API configuration. Please contact support.";
+        } else if (error.message.includes('429')) {
+          errorMessage = "Too many requests. Please wait a moment before trying again.";
+        } else {
+          errorMessage = `Error: ${error.message}. Please try again.`;
+        }
+      }
+
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: "Error processing your request. Please try again." }]
+        parts: [{ text: errorMessage }]
       }]);
     } finally {
       setIsLoading(false);
@@ -600,7 +763,7 @@ What can I help you with today?`
   // Initialize continuous improvement session when user starts chatting
   const initializeContinuousImprovement = async () => {
     if (!user || continuousImprovementSessionId) return;
-    
+
     try {
       // For now, use a default prompt key if we don't have the actual one
       // This should be updated when the user selects/creates a prompt version
@@ -608,17 +771,40 @@ What can I help you with today?`
       const sessionId = await createContinuousImprovementSession(promptKey, chatSessionKey, user.uid);
       setContinuousImprovementSessionId(sessionId);
       console.log('📊 Continuous improvement session initialized:', sessionId);
+
+      // Enable console logging in collecting mode (don't auto-send)
+      consoleLogger.enableCollecting();
+      consoleLogger.setUserId(user.uid);
+
+      // Log session start info
+      console.log('🎯 Console logging enabled for session', {
+        sessionId,
+        userId: user.uid,
+        userEmail: user.email,
+        promptKey,
+        chatSessionKey,
+        model: geminiModel
+      });
     } catch (error) {
       console.error('Failed to initialize continuous improvement session:', error);
+
+      // Send critical error to Firebase
+      await consoleLogger.sendCriticalLog('Failed to initialize continuous improvement', {
+        error: error instanceof Error ? error.message : String(error),
+        userId: user?.uid,
+        chatSessionKey
+      });
     }
   };
 
   // Handle user feedback for specific message - opens dialog
   const handleFeedback = async (feedback: 'thumbs_up' | 'thumbs_down', messageIndex: number) => {
+    console.log(`${feedback === 'thumbs_up' ? '👍' : '👎'} User clicked ${feedback} for message ${messageIndex}`);
+
     if (!continuousImprovementSessionId) {
       await initializeContinuousImprovement();
     }
-    
+
     // Store pending feedback and open dialog
     setPendingFeedback(feedback);
     setPendingMessageIndex(messageIndex);
@@ -629,26 +815,55 @@ What can I help you with today?`
   // Submit feedback with optional comment
   const submitFeedback = async () => {
     if (!continuousImprovementSessionId || !pendingFeedback || pendingMessageIndex === null) {
+      console.warn('⚠️ Missing required data for feedback submission');
       return;
     }
+
+    // Log feedback submission details
+    console.log('════════════════════════════════════════════════');
+    console.log('📨 SUBMITTING USER FEEDBACK');
+    console.log('════════════════════════════════════════════════');
+    console.log(`Message Index: ${pendingMessageIndex}`);
+    console.log(`Feedback Type: ${pendingFeedback} ${pendingFeedback === 'thumbs_up' ? '👍' : '👎'}`);
+    console.log(`Session ID: ${continuousImprovementSessionId}`);
+    console.log(`Chat Session Key: ${chatSessionKey}`);
+
+    // Log the actual message being evaluated
+    if (messages[pendingMessageIndex]) {
+      const evaluatedMessage = messages[pendingMessageIndex];
+      console.log(`Evaluated Message Role: ${evaluatedMessage.role}`);
+      console.log(`Message Preview: ${evaluatedMessage.parts[0]?.text?.substring(0, 100)}...`);
+    }
+
+    if (feedbackComment) {
+      console.log(`User Comment: "${feedbackComment}"`);
+    }
+    console.log('════════════════════════════════════════════════');
 
     try {
       // Add message context to the feedback log
       await addTechnicalLog(continuousImprovementSessionId, {
         event: 'ai_response',
         aiResponse: `User feedback for message ${pendingMessageIndex}: ${pendingFeedback}${feedbackComment ? ` - Comment: ${feedbackComment}` : ''}`,
+        userFeedback: pendingFeedback,
+        userComment: feedbackComment || undefined,
       });
-      
+
       await setUserFeedback(continuousImprovementSessionId, pendingFeedback, feedbackComment || undefined);
-      
+
+      // Send console logs with feedback
+      await consoleLogger.sendLogsWithFeedback(pendingFeedback, feedbackComment || undefined);
+
+      console.log('✅ Feedback and logs submitted successfully');
+
       setFeedbackDialogOpen(false);
       setPendingFeedback(null);
       setPendingMessageIndex(null);
       setFeedbackComment('');
-      
+
       toast.success(pendingFeedback === 'thumbs_up' ? '👍 Thanks for the positive feedback!' : '👎 Thanks for the feedback - we\'ll improve!');
     } catch (error) {
-      console.error('Failed to save feedback:', error);
+      console.error('❌ Failed to save feedback:', error);
       toast.error('Failed to save feedback');
     }
   };
@@ -662,9 +877,9 @@ What can I help you with today?`
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-valmet-lightgray">
       {/* Header */}
-      <div className="bg-black text-white p-8 text-center relative">
+      <div className="bg-gradient-to-r from-valmet-green to-valmet-teal text-white p-8 text-center relative">
         {/* User info top left */}
         {user && (
           <div className="absolute top-4 left-4 text-sm text-gray-300">
@@ -700,7 +915,7 @@ What can I help you with today?`
           <Bot className="h-8 w-8 mr-3" />
           <h1 className="text-3xl font-bold">Valmet Purchaser AI Assistant</h1>
         </div>
-        <p className="text-gray-300 text-lg max-w-4xl mx-auto">
+        <p className="text-gray-100 text-lg max-w-7xl mx-auto">
           Get expert procurement advice, use prenegotiated prices from best suppliers, and do professional level procurement with ease
         </p>
       </div>
@@ -708,11 +923,20 @@ What can I help you with today?`
 
       {/* Main Content under header with optional left panel */}
       {/* Controls row under header */}
-      <div className="container mx-auto px-4 mt-4 flex justify-end">
+      <div className="max-w-7xl mx-auto px-4 mt-4 flex justify-between w-full">
         {topRightControls}
+        <Button
+          variant="outline"
+          onClick={handleResetChat}
+          className="text-red-600 border-red-200 hover:bg-red-50"
+          size="sm"
+        >
+          <RotateCcw className="mr-2 h-4 w-4" />
+          Reset Chat
+        </Button>
       </div>
 
-      <div className="container mx-auto px-4 pb-6">
+      <div className="max-w-7xl mx-auto px-2 pb-6 w-full">
         {leftPanelVisible ? (
           <ResizablePanelGroup direction="horizontal" className="h-full min-h-[60vh]">
             <ResizablePanel defaultSize={35} minSize={20} maxSize={60} className="pr-2">
@@ -721,81 +945,13 @@ What can I help you with today?`
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={65} minSize={40} className="pl-2">
               <div className={"flex flex-col items-stretch"}>
-            {/* Status Panel */}
-            <div className="bg-white border rounded-md p-4 mb-2">
-              {statusLoading ? (
-                <div className="text-sm text-gray-600">Checking system status…</div>
-              ) : (
-                <div className="text-sm">
-                  <div className="flex flex-wrap gap-4">
-                    <div>
-                      <span className={`font-medium ${initStatus.hasPrompt ? 'text-green-700' : 'text-red-700'}`}>System Prompt:</span>
-                      <span className="ml-2 text-gray-700">{initStatus.hasPrompt ? 'Configured' : 'Missing'}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-800">Knowledge Docs:</span>
-                      <span className="ml-2 text-gray-700">{initStatus.knowledgeCount}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-800">ERP Data files:</span>
-                      <span className="ml-2 text-gray-700">{initStatus.erpCount}</span>
-                    </div>
-                    
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <a href="/admin" className="text-xs inline-flex items-center px-3 py-2 border rounded-md hover:bg-gray-50">Open Admin</a>
-                    <a href="/docs/setup_guide.html" target="_blank" rel="noreferrer" className="text-xs inline-flex items-center px-3 py-2 border rounded-md hover:bg-gray-50">Setup Guide (PDF)</a>
-                  </div>
-                  {!initStatus.hasPrompt && (
-                    <div className="mt-2 text-xs text-red-700">
-                      Please open Admin and configure a system prompt before chatting.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
 
-            {/* Action Buttons */}
-            <div className="bg-white border p-4 rounded-md mb-2">
-              <div className="flex gap-3 justify-center">
-                <Button 
-                  variant="outline" 
-                  onClick={handleResetChat}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Reset Chat
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleAttachDocuments}
-                  className="text-gray-700 border-gray-300 hover:bg-gray-100"
-                >
-                  <Paperclip className="mr-2 h-4 w-4" />
-                  Upload Documents
-                </Button>
-              </div>
-            </div>
 
-            {/* Quick Action Pills */}
-            <div className="bg-white border rounded-md p-6 mb-2">
-              <div className="flex flex-wrap gap-3 justify-center max-w-4xl mx-auto">
-                {quickActions.map((action, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="rounded-full px-6 py-2 text-sm bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
-                    onClick={() => handleQuickAction(action)}
-                  >
-                    {action}
-                  </Button>
-                ))}
-              </div>
-            </div>
+            {/* Quick Action Pills removed for simplified interface */}
 
             {/* Chat Messages */}
             <div className="p-2 space-y-6">
-              <div className="max-w-4xl ml-0 mr-auto space-y-6">
+              <div className="max-w-full ml-0 mr-auto space-y-6">
                 
           {sessionInitializing && (
             <div className="flex justify-start">
@@ -816,7 +972,7 @@ What can I help you with today?`
               key={index}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className="flex items-start space-x-3 max-w-3xl w-full">
+              <div className="flex items-start space-x-3 max-w-full w-full">
                 {message.role === 'model' && (
                   <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                     <Bot className="h-5 w-5 text-gray-700" />
@@ -826,27 +982,61 @@ What can I help you with today?`
                   <div
                     className={`px-6 py-4 rounded-2xl ${
                       message.role === 'user'
-                        ? 'bg-black text-white ml-auto max-w-lg'
+                        ? 'bg-valmet-green text-white ml-auto max-w-lg'
                         : 'bg-white shadow-sm border'
                     }`}
                   >
-                    {message.parts.map((part, partIndex) => (
-                      <div key={partIndex}>
-                        {part.text && (
-                          <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none`}>
-                            <ReactMarkdown>
-                              {(() => {
-                                const { originalText, formattedSources } = processTextWithCitations(
-                                  part.text,
-                                  message.citationMetadata?.citationSources
-                                );
-                                return originalText + (formattedSources.length > 0 ? '\n\n**Sources:**\n' + formattedSources.join('\n') : '');
-                              })()}
-                            </ReactMarkdown>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {message.parts.map((part, partIndex) => {
+                      // Try to detect JSON supplier comparison table
+                      let jsonTable = null;
+                      let textWithoutJson = part.text || '';
+
+                      if (part.text && message.role === 'model') {
+                        // Look for JSON code block
+                        const jsonMatch = part.text.match(/```json\s*([\s\S]*?)\s*```/);
+                        if (jsonMatch) {
+                          try {
+                            const jsonData = JSON.parse(jsonMatch[1]);
+                            if (jsonData.type === 'supplier_comparison_table') {
+                              jsonTable = jsonData;
+                              // Remove JSON from text
+                              textWithoutJson = part.text.replace(/```json[\s\S]*?```/, '').trim();
+                            }
+                          } catch (e) {
+                            console.log('Failed to parse JSON table:', e);
+                          }
+                        }
+                      }
+
+                      return (
+                        <div key={partIndex}>
+                          {textWithoutJson && (
+                            <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none`}>
+                              <ReactMarkdown>
+                                {(() => {
+                                  const { originalText, formattedSources } = processTextWithCitations(
+                                    textWithoutJson,
+                                    message.citationMetadata?.citationSources
+                                  );
+                                  return originalText + (formattedSources.length > 0 ? '\n\n**Sources:**\n' + formattedSources.join('\n') : '');
+                                })()}
+                              </ReactMarkdown>
+                            </div>
+                          )}
+                          {jsonTable && (
+                            <div className="mt-4">
+                              <InteractiveJsonTable
+                                data={jsonTable}
+                                compact={true}
+                                enableExport={false}
+                                enableSearch={false}
+                                enableSort={true}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   
                   {/* Feedback buttons for AI responses only */}
@@ -895,7 +1085,7 @@ What can I help you with today?`
 
             {/* Input Area */}
             <div className="bg-white border rounded-md p-6">
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-full mx-auto">
                 <div className="flex space-x-4 items-end">
                   <div className="flex-1">
                     <Input
@@ -905,14 +1095,14 @@ What can I help you with today?`
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      disabled={isLoading || !initStatus.hasPrompt}
-                      className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent"
+                      disabled={isLoading}
+                      className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-valmet-green focus:border-transparent"
                     />
                   </div>
                   <Button
                     onClick={() => handleSendMessage()}
-                    disabled={!input.trim() || isLoading || !initStatus.hasPrompt}
-                    className="h-12 px-6 bg-black hover:bg-gray-800 text-white rounded-xl"
+                    disabled={!input.trim() || isLoading}
+                    className="h-12 px-6 bg-valmet-green hover:bg-valmet-darkgreen text-white rounded-xl"
                   >
                     <Send className="h-5 w-5" />
                   </Button>
@@ -926,63 +1116,10 @@ What can I help you with today?`
           <div>
             {/* When no left panel, show full-width chat */}
             <div className={"flex flex-col items-stretch"}>
-              <div className="bg-white border p-4 rounded-md mb-2">
-                <div className="flex gap-3 justify-center">
-                  <Button variant="outline" onClick={handleResetChat} className="text-red-600 border-red-200 hover:bg-red-50">
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Reset Chat
-                  </Button>
-                  <Button variant="outline" onClick={handleAttachDocuments} className="text-gray-700 border-gray-300 hover:bg-gray-100">
-                    <Paperclip className="mr-2 h-4 w-4" />
-                    Upload Documents
-                  </Button>
-                </div>
-              </div>
-              {/* Status Panel */}
-              <div className="bg-white border rounded-md p-4 mb-2">
-                {statusLoading ? (
-                  <div className="text-sm text-gray-600">Checking system status…</div>
-                ) : (
-                  <div className="text-sm">
-                    <div className="flex flex-wrap gap-4">
-                      <div>
-                        <span className={`font-medium ${initStatus.hasPrompt ? 'text-green-700' : 'text-red-700'}`}>System Prompt:</span>
-                        <span className="ml-2 text-gray-700">{initStatus.hasPrompt ? 'Configured' : 'Missing'}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-800">Knowledge Docs:</span>
-                        <span className="ml-2 text-gray-700">{initStatus.knowledgeCount}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-800">ERP Data files:</span>
-                        <span className="ml-2 text-gray-700">{initStatus.erpCount}</span>
-                      </div>
-                      
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <a href="/admin" className="text-xs inline-flex items-center px-3 py-2 border rounded-md hover:bg-gray-50">Open Admin</a>
-                      <a href="/docs/setup_guide.html" target="_blank" rel="noreferrer" className="text-xs inline-flex items-center px-3 py-2 border rounded-md hover:bg-gray-50">Setup Guide (PDF)</a>
-                    </div>
-                    {!initStatus.hasPrompt && (
-                      <div className="mt-2 text-xs text-red-700">
-                        Please open Admin and configure a system prompt before chatting.
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
 
-              <div className="bg-white border rounded-md p-6 mb-2">
-                <div className="flex flex-wrap gap-3 justify-center max-w-4xl mx-auto">
-                  {quickActions.map((action, index) => (
-                    <Button key={index} variant="outline" className="rounded-full px-6 py-2 text-sm bg-white border-gray-300 text-gray-700 hover:bg-gray-100" onClick={() => handleQuickAction(action)}>
-                      {action}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              {/* Quick Action Pills removed for simplified interface */}
               <div className="p-2 space-y-6">
-                <div className="max-w-4xl mx-auto space-y-6">
+                <div className="max-w-full mx-auto space-y-6">
                   {sessionInitializing && (
                     <div className="flex justify-start">
                       <div className="flex items-start space-x-3">
@@ -998,28 +1135,62 @@ What can I help you with today?`
                   )}
                   {messages.map((message, index) => (
                     <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className="flex items-start space-x-3 max-w-3xl w-full">
+                      <div className="flex items-start space-x-3 max-w-full w-full">
                         {message.role === 'model' && (
                           <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                             <Bot className="h-5 w-5 text-gray-700" />
                           </div>
                         )}
                         <div className="flex flex-col space-y-2 flex-1">
-                          <div className={`px-6 py-4 rounded-2xl ${message.role === 'user' ? 'bg-black text-white ml-auto max-w-lg' : 'bg-white shadow-sm border'}`}>
-                            {message.parts.map((part, partIndex) => (
-                              <div key={partIndex}>
-                                {part.text && (
-                                  <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none`}>
-                                    <ReactMarkdown>
-                                      {(() => {
-                                        const { originalText, formattedSources } = processTextWithCitations(part.text, message.citationMetadata?.citationSources);
-                                        return originalText + (formattedSources.length > 0 ? '\n\n**Sources:**\n' + formattedSources.join('\n') : '');
-                                      })()}
-                                    </ReactMarkdown>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                          <div className={`px-6 py-4 rounded-2xl ${message.role === 'user' ? 'bg-valmet-green text-white ml-auto max-w-lg' : 'bg-white shadow-sm border'}`}>
+                            {message.parts.map((part, partIndex) => {
+                              // Try to detect JSON supplier comparison table
+                              let jsonTable = null;
+                              let textWithoutJson = part.text || '';
+
+                              if (part.text && message.role === 'model') {
+                                // Look for JSON code block
+                                const jsonMatch = part.text.match(/```json\s*([\s\S]*?)\s*```/);
+                                if (jsonMatch) {
+                                  try {
+                                    const jsonData = JSON.parse(jsonMatch[1]);
+                                    if (jsonData.type === 'supplier_comparison_table') {
+                                      jsonTable = jsonData;
+                                      // Remove JSON from text
+                                      textWithoutJson = part.text.replace(/```json[\s\S]*?```/, '').trim();
+                                    }
+                                  } catch (e) {
+                                    console.log('Failed to parse JSON table:', e);
+                                  }
+                                }
+                              }
+
+                              return (
+                                <div key={partIndex}>
+                                  {textWithoutJson && (
+                                    <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none`}>
+                                      <ReactMarkdown>
+                                        {(() => {
+                                          const { originalText, formattedSources } = processTextWithCitations(textWithoutJson, message.citationMetadata?.citationSources);
+                                          return originalText + (formattedSources.length > 0 ? '\n\n**Sources:**\n' + formattedSources.join('\n') : '');
+                                        })()}
+                                      </ReactMarkdown>
+                                    </div>
+                                  )}
+                                  {jsonTable && (
+                                    <div className="mt-4">
+                                      <InteractiveJsonTable
+                                        data={jsonTable}
+                                        compact={true}
+                                        enableExport={false}
+                                        enableSearch={false}
+                                        enableSort={true}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                           {message.role === 'model' && (
                             <div className="flex items-center space-x-2 ml-2">
@@ -1052,12 +1223,12 @@ What can I help you with today?`
                 </div>
               </div>
               <div className="bg-white border rounded-md p-6">
-                <div className="max-w-4xl mx-auto">
+                <div className="max-w-full mx-auto">
                   <div className="flex space-x-4 items-end">
                     <div className="flex-1">
-                      <Input ref={inputRef} type="text" placeholder="Ask about procurement strategies, cost optimization, supplier management..." value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !initStatus.hasPrompt} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent" />
+                      <Input ref={inputRef} type="text" placeholder="Ask about procurement strategies, cost optimization, supplier management..." value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !initStatus.hasPrompt} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-valmet-green focus:border-transparent" />
                     </div>
-                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !initStatus.hasPrompt} className="h-12 px-6 bg-black hover:bg-gray-800 text-white rounded-xl">
+                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !initStatus.hasPrompt} className="h-12 px-6 bg-valmet-green hover:bg-valmet-darkgreen text-white rounded-xl">
                       <Send className="h-5 w-5" />
                     </Button>
                   </div>
