@@ -22,11 +22,14 @@ export interface SupplierSearchFilters {
   // Category filters (fuzzy search)
   mainCategory?: string;
   supplierCategories?: string;
-  
+
   // Location filters (fuzzy search)
   country?: string;
   city?: string;
-  
+
+  // Vendor name filter (fuzzy search in Company, Branch, Corporation)
+  vendorName?: string;
+
   // Limit
   maxResults?: number;
 }
@@ -195,7 +198,28 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
       if (filters.city && filters.city !== '') {
         matches = matches && fuzzyMatch(original['City (Street Address)'], filters.city);
       }
-      
+
+      // Vendor name filter (fuzzy search in Company, Branch, Corporation)
+      if (filters.vendorName && filters.vendorName !== '') {
+        const vendorNameMatch =
+          fuzzyMatch(original['Company'], filters.vendorName) ||
+          fuzzyMatch(original['Branch'], filters.vendorName) ||
+          fuzzyMatch(original['Corporation'], filters.vendorName);
+
+        // Debug logging for vendor name search
+        if (matches && !vendorNameMatch) {
+          console.log(`🔍 Vendor name check for "${filters.vendorName}":`, {
+            documentId: doc.id,
+            Company: original['Company'],
+            Branch: original['Branch'],
+            Corporation: original['Corporation'],
+            vendorNameMatch: vendorNameMatch
+          });
+        }
+
+        matches = matches && vendorNameMatch;
+      }
+
       if (matches) {
         // Include full document with all original fields
         suppliers.push({

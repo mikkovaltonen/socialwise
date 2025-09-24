@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import MarkdownEditor from "@/components/MarkdownEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -28,7 +29,6 @@ const PromptVersionManager: React.FC<PromptVersionManagerProps> = ({
 }) => {
   const { user } = useAuth();
   const [prompt, setPrompt] = useState(currentPrompt);
-  const [evaluation, setEvaluation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [versions, setVersions] = useState<SystemPromptVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<SystemPromptVersion | null>(null);
@@ -121,13 +121,12 @@ const PromptVersionManager: React.FC<PromptVersionManagerProps> = ({
       const versionNumber = await savePromptVersion(
         user.uid,
         prompt,
-        evaluation,
+        '', // No evaluation notes
         undefined, // Use default AI model from environment
         user.email || undefined
       );
-      
+
       toast.success(`Saved as version ${versionNumber}`);
-      setEvaluation(''); // Clear evaluation after saving
       await loadVersionHistory(); // Reload history
     } catch (error) {
       console.error('Error saving prompt version:', error);
@@ -140,7 +139,6 @@ const PromptVersionManager: React.FC<PromptVersionManagerProps> = ({
   const handleLoadVersion = async (version: SystemPromptVersion) => {
     setSelectedVersion(version);
     setPrompt(version.systemPrompt);
-    setEvaluation(version.evaluation);
     setActiveTab('editor');
     toast.success(`Loaded version ${version.version}`);
   };
@@ -210,25 +208,14 @@ const PromptVersionManager: React.FC<PromptVersionManagerProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="prompt">System Prompt</Label>
-                <Textarea
-                  id="prompt"
+              <div className="h-[calc(95vh-300px)]">
+                <MarkdownEditor
                   value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Enter your system prompt for the AI agent..."
-                  className="min-h-[200px] font-mono text-sm"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="evaluation">Evaluation Notes</Label>
-                <Textarea
-                  id="evaluation"
-                  value={evaluation}
-                  onChange={(e) => setEvaluation(e.target.value)}
-                  placeholder="Add your evaluation notes for this prompt version..."
-                  className="min-h-[100px]"
+                  onChange={setPrompt}
+                  placeholder="Enter your system prompt for the AI agent... Supports Markdown formatting!"
+                  label="System Prompt"
+                  minHeight="calc(95vh - 400px)"
+                  className="h-full"
                 />
               </div>
 
@@ -250,28 +237,20 @@ const PromptVersionManager: React.FC<PromptVersionManagerProps> = ({
                 </div>
               )}
 
-              {/* Restore Default button - always visible */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
-                <p className="text-sm text-amber-800">
-                  <strong>Default Prompt:</strong> Restore the system default prompt that new users receive.
-                </p>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleRestoreDefault} 
-                    variant="outline"
-                    className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-100"
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Restore Default Prompt
-                  </Button>
-                </div>
-              </div>
-
+              {/* Buttons row */}
               <div className="flex gap-2">
-                <Button 
-                  onClick={handleSaveVersion} 
+                <Button
+                  onClick={handleRestoreDefault}
+                  variant="outline"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Restore Default
+                </Button>
+                <Button
+                  onClick={handleSaveVersion}
                   disabled={isLoading || !prompt.trim()}
-                  className="flex-1"
+                  className="bg-green-600 hover:bg-green-700"
                 >
                   {isLoading ? (
                     <>

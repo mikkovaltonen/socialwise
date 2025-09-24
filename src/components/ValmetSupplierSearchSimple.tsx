@@ -45,11 +45,12 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [allCategories, setAllCategories] = useState<string[]>([]);
 
-  // Search filters - only the 4 requested fields
+  // Search filters
   const [mainCategory, setMainCategory] = useState('');
   const [supplierCategories, setSupplierCategories] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
+  const [vendorName, setVendorName] = useState('');
 
   // Load statistics on mount
   useEffect(() => {
@@ -102,6 +103,7 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
         supplierCategories: supplierCategories || undefined,
         country: country || undefined,
         city: city || undefined,
+        vendorName: vendorName || undefined,
         limit: 500
       });
 
@@ -123,6 +125,7 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
           supplierCategories: supplierCategories || undefined,
           country: country || undefined,
           city: city || undefined,
+          vendorName: vendorName || undefined,
           maxResults: 500
         };
         const rawResults = await searchSuppliers(filters);
@@ -142,6 +145,7 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
     setSupplierCategories('');
     setCountry('');
     setCity('');
+    setVendorName('');
     setSuppliers([]);
     setSelectedSupplier(null);
     setError(null);
@@ -271,6 +275,18 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                     />
                     <p className="text-xs text-gray-500">Case-insensitive search</p>
+                  </div>
+
+                  {/* Vendor Name - Fuzzy text input */}
+                  <div className="space-y-2">
+                    <Label>Vendor Name (fuzzy search)</Label>
+                    <Input
+                      placeholder="e.g. Accenture, IBM, Nokia..."
+                      value={vendorName}
+                      onChange={(e) => setVendorName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    />
+                    <p className="text-xs text-gray-500">Search in Company, Branch, Corporation</p>
                   </div>
                 </div>
 

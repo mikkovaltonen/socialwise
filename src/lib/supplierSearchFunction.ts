@@ -12,6 +12,7 @@ export interface ChatSupplierSearchParams {
   supplierCategories?: string;
   country?: string;
   city?: string;
+  vendorName?: string;
   limit?: number;
 }
 
@@ -138,6 +139,7 @@ export async function searchSuppliersForChat(params: ChatSupplierSearchParams): 
       supplierCategories: params.supplierCategories,
       country: params.country,
       city: params.city,
+      vendorName: params.vendorName,
       maxResults: params.limit || 10
     };
     

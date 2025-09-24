@@ -106,7 +106,7 @@ const Admin = () => {
                     Open Prompt Manager
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[700px]">
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>System Prompt Version Manager</DialogTitle>
                     <DialogDescription>

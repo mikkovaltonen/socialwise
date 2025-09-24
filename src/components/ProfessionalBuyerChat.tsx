@@ -22,7 +22,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { searchSuppliersForChat, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
 import { purchaseRequisitionService, RequisitionStatus } from '../lib/purchaseRequisitionService';
 import { InteractiveJsonTable } from './InteractiveJsonTable';
-import { consoleLogger } from '../lib/consoleLogger';
 
 interface ProfessionalBuyerChatProps {
   onLogout?: () => void;
@@ -60,6 +59,10 @@ const searchSuppliersFunction = {
       city: {
         type: "string",
         description: "City to filter by"
+      },
+      vendorName: {
+        type: "string",
+        description: "Vendor/company name to search for (fuzzy search in Company, Branch, Corporation fields)"
       },
       limit: {
         type: "number",
@@ -376,7 +379,7 @@ What can I help you with today?`
               content: typeof msg.parts[0] === 'object' ? msg.parts[0].text : msg.parts[0]
             }))
           ],
-          temperature: 0.2,
+          temperature: 0,
           ...(tools && tools.length > 0 ? { tools, tool_choice: 'auto' } : {})
         })
       });
@@ -740,8 +743,8 @@ What can I help you with today?`
     } catch (error) {
       console.error('Error sending message:', error);
 
-      // Log critical error to Firebase
-      await consoleLogger.sendCriticalLog('Chat message send failed', {
+      // Log critical error
+      console.error('Chat message send failed', {
         error: error instanceof Error ? {
           message: error.message,
           stack: error.stack,
@@ -831,9 +834,6 @@ What can I help you with today?`
       setContinuousImprovementSessionId(sessionId);
       console.log('📊 Continuous improvement session initialized:', sessionId);
 
-      // Enable console logging in collecting mode (don't auto-send)
-      consoleLogger.enableCollecting();
-      consoleLogger.setUserId(user.uid);
 
       // Log session start info
       console.log('🎯 Console logging enabled for session', {
@@ -847,8 +847,8 @@ What can I help you with today?`
     } catch (error) {
       console.error('Failed to initialize continuous improvement session:', error);
 
-      // Send critical error to Firebase
-      await consoleLogger.sendCriticalLog('Failed to initialize continuous improvement', {
+      // Log critical error
+      console.error('Failed to initialize continuous improvement', {
         error: error instanceof Error ? error.message : String(error),
         userId: user?.uid,
         chatSessionKey
@@ -910,8 +910,6 @@ What can I help you with today?`
 
       await setUserFeedback(continuousImprovementSessionId, pendingFeedback, feedbackComment || undefined);
 
-      // Send console logs with feedback
-      await consoleLogger.sendLogsWithFeedback(pendingFeedback, feedbackComment || undefined);
 
       console.log('✅ Feedback and logs submitted successfully');
 
