@@ -6,7 +6,7 @@ This is the Valmet Procurement AI Assistant application built with React, TypeSc
 ## Core Features
 
 ### 1. Valmet Supplier Search
-- **Database**: 520+ verified suppliers in Firestore `supplier_spend` collection
+- **Database**: ~400 verified external labour suppliers in Firestore `ext_labour_suppliers` collection
 - **Search Capabilities**: Fuzzy, case-insensitive matching
 - **Search Fields**:
   - Main Category (text search)
@@ -85,7 +85,7 @@ src/
 
 ## Database Structure
 
-### `supplier_spend` Collection (520 documents)
+### `ext_labour_suppliers` Collection (~400 documents after cleanup)
 ```javascript
 {
   documentId: string,           // Unique identifier
@@ -144,6 +144,12 @@ VITE_FIREBASE_APP_ID=your-app-id
 VITE_GEMINI_API_KEY=your-gemini-key
 VITE_GEMINI_MODEL=gemini-2.5-flash-preview-04-17
 ```
+
+## Recent Data Cleanup (September 2025)
+- Removed IT Consulting categories (103 suppliers)
+- Removed IT Services categories (8 suppliers)
+- Renamed collection from `supplier_spend` to `ext_labour_suppliers`
+- Updated system prompt to reflect available categories
 
 ## Component Usage
 

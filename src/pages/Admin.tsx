@@ -6,7 +6,7 @@ import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle, Bo
 import { useAuth } from "@/hooks/useAuth";
 import DocumentAnalysis from "@/components/DocumentAnalysis";
 import ChatInitViewer from "@/components/ChatInitViewer";
-import { ValmetSupplierSearchSimple } from "@/components/ValmetSupplierSearchSimple";
+import { FirestoreDataTester } from "@/components/FirestoreDataTester";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ const Admin = () => {
   const { user, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showChatInit, setShowChatInit] = useState(false);
-  const [showExcelUpload, setShowExcelUpload] = useState(false);
+  const [showFirestoreTester, setShowFirestoreTester] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -161,50 +161,40 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          {/* Valmet Supplier Spend Data Search */}
+          {/* Consolidated Data Search & Testing */}
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="bg-gray-700 text-white rounded-t-lg">
+            <CardHeader className="bg-blue-700 text-white rounded-t-lg">
               <CardTitle className="flex items-center">
                 <Database className="mr-3 h-6 w-6" />
-                Valmet Supplier Spend Data Search
+                Procurement Data Search & Testing
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <p className="text-gray-600 mb-4">
-                Search and analyze supplier spend data, vendor details, and metadata.
+                Search all procurement data: External Labour Suppliers (520+), Training Invoices, iPRO Contracts, and Training Suppliers.
               </p>
-              <Dialog open={showExcelUpload} onOpenChange={setShowExcelUpload}>
+              <Dialog open={showFirestoreTester} onOpenChange={setShowFirestoreTester}>
                 <DialogTrigger asChild>
-                  <Button 
-                    className="w-full bg-gray-700 hover:bg-gray-600 text-white"
+                  <Button
+                    className="w-full bg-blue-700 hover:bg-blue-600 text-white"
                   >
                     <Database className="mr-2 h-4 w-4" />
-                    Search Supplier Data
+                    Search Procurement Data
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
                   <DialogHeader className="px-6 pt-6 pb-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <DialogTitle>Valmet Supplier Spend Data Search</DialogTitle>
+                        <DialogTitle>Procurement Data Search & Testing</DialogTitle>
                         <DialogDescription>
-                          Search and analyze supplier spend data, vendor details, metadata, and training information.
+                          Search and test all procurement data: External Labour Suppliers (520+), Training Invoices, iPRO Contracts, and Training Suppliers.
                         </DialogDescription>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => window.open('/vendor_search.md', '_blank')}
-                          title="View Documentation"
-                        >
-                          <Info className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
                   </DialogHeader>
                   <div className="flex-1 overflow-y-auto px-6 pb-6">
-                    <ValmetSupplierSearchSimple />
+                    <FirestoreDataTester />
                   </div>
                 </DialogContent>
               </Dialog>

@@ -17,7 +17,7 @@ import {
   Mail,
   User,
   Download,
-  ChartBar
+  BarChart
 } from 'lucide-react';
 import {
   Select,
@@ -201,7 +201,7 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
             Supplier Search Function - Tester
           </CardTitle>
           <CardDescription>
-            Test searchSuppliersForChat function (same function used by AI) with 520+ suppliers database
+            Test searchSuppliersForChat function (same function used by AI) with 410+ suppliers database
           </CardDescription>
         </CardHeader>
         <CardContent>

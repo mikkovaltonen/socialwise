@@ -22,7 +22,7 @@ import {
   FileText,
   Filter,
   Download,
-  ChartBar
+  BarChart
 } from 'lucide-react';
 import { 
   searchSuppliers, 

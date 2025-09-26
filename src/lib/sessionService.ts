@@ -115,7 +115,10 @@ Please use this internal knowledge to provide accurate, company-specific guidanc
       '/chat_init_contect/valmet-procurement-policy.md',
       '/chat_init_contect/valmet-payment-policy.md',
       '/chat_init_contect/valmet-approval-limits-policy.md',
-      '/chat_init_contect/valmet-supplier-spend-data.md'
+      '/chat_init_contect/valmet-supplier-spend-data.md',
+      '/chat_init_contect/basware-shop-instructions.md',
+      '/chat_init_contect/leased-workers-process.md',
+      '/chat_init_contect/external-workforce-policy.md'
     ];
 
     const policyContexts: string[] = [];

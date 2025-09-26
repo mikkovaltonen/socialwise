@@ -9,7 +9,10 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "preview": "vite preview",
     "test:openai": "node tests/openai-test.mjs",
-    "test": "node tests/chatbot_roles_test.cjs"
+    "test": "node tests/chatbot_roles_test.cjs",
+    "migrate:excel": "python3 convert_excel_to_json.py",
+    "migrate:firestore": "node migrate_to_firestore.mjs",
+    "migrate:all": "python3 convert_excel_to_json.py && node migrate_to_firestore.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
@@ -35,6 +38,7 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "firebase": "^11.9.0",
+    "firebase-admin": "^13.5.0",
     "html2canvas": "^1.4.1",
     "i18next": "^25.0.0",
     "i18next-browser-languagedetector": "^8.0.4",

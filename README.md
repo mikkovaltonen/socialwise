@@ -5,14 +5,14 @@ A specialized AI-powered procurement assistant for Valmet, focused on supplier s
 ## 🎯 Purpose
 
 This application serves as Valmet's intelligent procurement assistant, helping users:
-- Search and analyze 520+ verified suppliers
+- Search and analyze 410+ verified external labour suppliers (IT categories excluded)
 - Find vendors for professional services (IT consulting, business consulting, training, R&D, legal services)
 - Access procurement policies and guidelines
 - Make data-driven vendor selection decisions
 
 ## Features
 
-- **Valmet Supplier Search**: Fuzzy, case-insensitive search across 520+ suppliers
+- **External Labour Supplier Search**: Fuzzy, case-insensitive search across 410+ suppliers
 - **AI-Powered Chat**: Google Gemini AI for intelligent procurement assistance
 - **Document Analysis**: Process and analyze procurement documents (PDF, Excel, Word, CSV)
 - **Policy Context Viewer**: Browse Valmet procurement policies with paged navigation

@@ -1,7 +1,8 @@
 /**
- * Valmet Supplier Spend Data Search Functions
- * 
- * Search and filter functions for the supplier_spend collection
+ * External Labour Suppliers Search Functions
+ *
+ * Search and filter functions for the ext_labour_suppliers collection
+ * Contains 410+ external labour suppliers (excluding IT categories)
  */
 
 import { 
@@ -95,7 +96,7 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
   console.log('🔍 Searching suppliers with filters:', filters);
 
   try {
-    const supplierRef = collection(db, 'supplier_spend');
+    const supplierRef = collection(db, 'ext_labour_suppliers');
 
     // Get all documents (we'll filter in memory for fuzzy matching)
     const querySnapshot = await getDocs(supplierRef);
@@ -206,17 +207,6 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
           fuzzyMatch(original['Branch'], filters.vendorName) ||
           fuzzyMatch(original['Corporation'], filters.vendorName);
 
-        // Debug logging for vendor name search
-        if (matches && !vendorNameMatch) {
-          console.log(`🔍 Vendor name check for "${filters.vendorName}":`, {
-            documentId: doc.id,
-            Company: original['Company'],
-            Branch: original['Branch'],
-            Corporation: original['Corporation'],
-            vendorNameMatch: vendorNameMatch
-          });
-        }
-
         matches = matches && vendorNameMatch;
       }
 
@@ -255,7 +245,7 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
 
     console.log(`✅ Found ${suppliers.length} matching suppliers`);
 
-    // Debug: Show first few matches if main category search
+    // Debug: Show results summary
     if (filters.mainCategory && suppliers.length > 0) {
       console.log('🔎 Sample matches:');
       suppliers.slice(0, 3).forEach((s, i) => {
@@ -263,6 +253,16 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
       });
     } else if (filters.mainCategory && suppliers.length === 0) {
       console.log(`❌ No suppliers found for Main Category: "${filters.mainCategory}"`);
+    }
+
+    // Debug for vendor name search
+    if (filters.vendorName) {
+      if (suppliers.length === 0) {
+        console.log(`❌ No suppliers found with vendor name containing: "${filters.vendorName}"`);
+        console.log(`💡 Tip: The search looks for "${filters.vendorName}" in Company, Branch, or Corporation fields (case-insensitive partial match)`);
+      } else {
+        console.log(`✅ Found ${suppliers.length} suppliers matching vendor name: "${filters.vendorName}"`);
+      }
     }
 
     return {
@@ -285,7 +285,7 @@ export async function getSupplierDetails(supplierId: string): Promise<SupplierDo
   console.log('📋 Getting supplier details for:', supplierId);
   
   try {
-    const docRef = doc(db, 'supplier_spend', supplierId);
+    const docRef = doc(db, 'ext_labour_suppliers', supplierId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -312,7 +312,7 @@ export async function getAllCategories(): Promise<string[]> {
   console.log('📂 Getting all categories...');
   
   try {
-    const supplierRef = collection(db, 'supplier_spend');
+    const supplierRef = collection(db, 'ext_labour_suppliers');
     const querySnapshot = await getDocs(supplierRef);
     
     const categoriesSet = new Set<string>();
@@ -342,7 +342,7 @@ export async function getAllCountries(): Promise<string[]> {
   console.log('🌍 Getting all countries...');
   
   try {
-    const supplierRef = collection(db, 'supplier_spend');
+    const supplierRef = collection(db, 'ext_labour_suppliers');
     const querySnapshot = await getDocs(supplierRef);
     
     const countriesSet = new Set<string>();
@@ -380,7 +380,7 @@ export async function getSupplierStats(): Promise<{
   console.log('📊 Getting supplier statistics...');
   
   try {
-    const supplierRef = collection(db, 'supplier_spend');
+    const supplierRef = collection(db, 'ext_labour_suppliers');
     const querySnapshot = await getDocs(supplierRef);
     
     let totalSuppliers = 0;

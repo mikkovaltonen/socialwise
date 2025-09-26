@@ -303,20 +303,21 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           const welcomeMessage: Message = {
             role: 'model',
             parts: [{
-              text: isLikelyNewUser 
+              text: isLikelyNewUser
                 ? `🎯 **Valmet Finland External Workforce Assistant**
 
 I help you find and select the best suppliers for external workforce needs in Finland.
 
-**Available services:** IT consulting • Business consulting • Training • Legal services • R&D services • Leased workforce
+**Available services:** Business consulting • Training & people development • Engineering services • Testing & inspection • Leased workforce
 
 **Quick actions:**
-• "Find IT consulting suppliers in Finland"
+• "Find business consulting suppliers in Finland"
 • "Show me training providers"
-• "List legal service vendors"
+• "List engineering service vendors"
+• "Search for leased workforce"
 
-520+ verified suppliers ready to search. What service do you need?`
-                : `Hello! I'm your Valmet External Workforce Assistant for Finland. I help you find suppliers for consulting, training, legal, and other professional services.
+410 verified suppliers ready to search (IT services excluded). What service do you need?`
+                : `Hello! I'm your Valmet External Workforce Assistant for Finland. I help you find suppliers for business consulting, training, engineering, and other professional services (IT services excluded).
 
 📚 **Knowledge Base Loaded:** ${session.documentsUsed.length} document(s) available for reference.
 
@@ -341,7 +342,7 @@ What can I help you with today?`
           const welcomeMessage: Message = {
             role: 'model',
             parts: [{
-              text: "Hei! 👋 Olen Valmet-hankinta-avustajasi.\n\nAutan sinua löytämään parhaat toimittajat ulkopuoliselle työvoimalle Suomessa. Minulla on pääsy 520+ vahvistettuun toimittajaan.\n\n**Miten voin auttaa tänään?**\nVoit esimerkiksi sanoa:\n• \"Etsi IT-konsultteja Helsingistä\"\n• \"Näytä koulutuspalvelut\"\n• \"Tarvitsen vuokratyövoimaa\"\n\nKerro vain tarpeesi, niin etsitään sinulle sopivat toimittajat! 🎯"
+              text: "Hei! 👋 Olen Valmet-hankinta-avustajasi.\n\nAutan sinua löytämään parhaat toimittajat ulkopuoliselle työvoimalle Suomessa. Minulla on pääsy 410 vahvistettuun toimittajaan (IT-palvelut eivät kuulu laajuuteen).\n\n**Miten voin auttaa tänään?**\nVoit esimerkiksi sanoa:\n• \"Etsi liikkeenjohdon konsultteja\"\n• \"Näytä koulutuspalvelut\"\n• \"Tarvitsen vuokratyövoimaa\"\n• \"Etsi insinööripalveluita\"\n\nKerro vain tarpeesi, niin etsitään sinulle sopivat toimittajat! 🎯"
             }]
           };
           setMessages([welcomeMessage]);

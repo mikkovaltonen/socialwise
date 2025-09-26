@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { FileText, Book, CreditCard, CheckCircle, Loader2, TrendingUp, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { FileText, Book, CreditCard, CheckCircle, Loader2, TrendingUp, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ShoppingCart, Users, Briefcase, FileImage, ExternalLink, Download } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PDFViewer } from './PDFViewer';
 
 interface PolicyDocument {
   id: string;
@@ -14,7 +16,9 @@ interface PolicyDocument {
   description: string;
   icon: React.ReactNode;
   path: string;
+  pdfPath?: string;
   content?: string;
+  type?: 'markdown' | 'pdf' | 'both';
 }
 
 const ChatInitViewer: React.FC = () => {
@@ -23,7 +27,10 @@ const ChatInitViewer: React.FC = () => {
     procurement: 1,
     payment: 1,
     approval: 1,
-    'supplier-spend': 1
+    'supplier-spend': 1,
+    'basware-shop': 1,
+    'leased-workers': 1,
+    'external-workforce': 1
   });
   const LINES_PER_PAGE = 50; // Approximate lines per page
   const [documents, setDocuments] = useState<PolicyDocument[]>([
@@ -54,6 +61,29 @@ const ChatInitViewer: React.FC = () => {
       description: 'Finland supplier spending data, categories, and payment metrics for 2023 operations',
       icon: <TrendingUp className="h-5 w-5" />,
       path: '/chat_init_contect/valmet-supplier-spend-data.md'
+    },
+    {
+      id: 'basware-shop',
+      title: 'Basware Shop Instructions',
+      description: 'Guided freetext order instructions for Basware Shop procurement system (includes visual guides)',
+      icon: <ShoppingCart className="h-5 w-5" />,
+      path: '/chat_init_contect/basware-shop-instructions.md',
+      pdfPath: '/chat_init_contect/Guided freetext order instructions for Basware Shop.pdf',
+      type: 'both'
+    },
+    {
+      id: 'leased-workers',
+      title: 'Leased Workers Process',
+      description: 'Process instructions for managing leased workers in Workday system',
+      icon: <Users className="h-5 w-5" />,
+      path: '/chat_init_contect/leased-workers-process.md'
+    },
+    {
+      id: 'external-workforce',
+      title: 'External Workforce Policy',
+      description: 'Policy guidelines for external workforce management and compliance',
+      icon: <Briefcase className="h-5 w-5" />,
+      path: '/chat_init_contect/external-workforce-policy.md'
     }
   ]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -144,7 +174,7 @@ const ChatInitViewer: React.FC = () => {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="px-6 pt-4">
-          <TabsList className="grid grid-cols-2 lg:grid-cols-4 w-full max-w-5xl">
+          <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 w-full max-w-7xl">
             {documents.map((doc) => (
               <TabsTrigger 
                 key={doc.id} 
@@ -154,10 +184,13 @@ const ChatInitViewer: React.FC = () => {
                 {doc.icon}
                 <span className="hidden sm:inline">{doc.title.replace('Valmet Global ', '').replace('Valmet ', '')}</span>
                 <span className="sm:hidden">
-                  {doc.id === 'procurement' ? 'Procurement' : 
-                   doc.id === 'payment' ? 'Payment' : 
+                  {doc.id === 'procurement' ? 'Procurement' :
+                   doc.id === 'payment' ? 'Payment' :
                    doc.id === 'approval' ? 'Approval' :
-                   'Spend Data'}
+                   doc.id === 'supplier-spend' ? 'Spend Data' :
+                   doc.id === 'basware-shop' ? 'Basware' :
+                   doc.id === 'leased-workers' ? 'Leased' :
+                   'External'}
                 </span>
               </TabsTrigger>
             ))}
@@ -181,6 +214,42 @@ const ChatInitViewer: React.FC = () => {
                   <p className="text-sm text-gray-600 mt-2">{doc.description}</p>
                 </CardHeader>
                 <CardContent className="flex-1 p-0 relative min-h-0 overflow-hidden">
+                  {/* Show PDF/Markdown toggle for documents with both formats */}
+                  {doc.type === 'both' && (
+                    <div className="px-6 py-3 bg-blue-50 border-b flex items-center justify-between">
+                      <Alert className="mb-0">
+                        <FileImage className="h-4 w-4" />
+                        <AlertDescription>
+                          This document has visual content. View the PDF for complete information including images and diagrams.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(doc.pdfPath, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View PDF
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = doc.pdfPath || '';
+                            link.download = doc.pdfPath?.split('/').pop() || 'document.pdf';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download PDF
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                   {loading ? (
                     <div className="flex items-center justify-center h-full">
                       <Loader2 className="h-8 w-8 animate-spin text-green-600" />

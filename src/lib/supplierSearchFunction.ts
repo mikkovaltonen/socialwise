@@ -1,8 +1,9 @@
 /**
- * Supplier Search Function for AI Chat
- * 
- * This function replicates the ValmetSupplierSearchSimple functionality
- * for use by the AI chatbot to search suppliers programmatically.
+ * External Labour Supplier Search Function for AI Chat
+ *
+ * This function provides AI chatbot access to search the external labour suppliers database
+ * containing 410+ verified suppliers for professional services and temporary workforce.
+ * (IT categories excluded)
  */
 
 import { searchSuppliers, SupplierSearchFilters, SupplierDocument } from './valmetSupplierSearch';
@@ -23,16 +24,14 @@ export interface ChatSupplierSearchParams {
  */
 export const MAIN_CATEGORY_LOV = [
   { value: 'Indirect procurement iPRO, Professional services, Business consulting', label: 'Business consulting', count: 131 },
-  { value: 'Indirect procurement iPRO, Office IT, IT consulting', label: 'IT consulting', count: 103 },
-  { value: 'Indirect procurement iPRO, Professional services, Training & people development', label: 'Training & people development', count: 100 },
-  { value: 'Indirect procurement iPRO, Professional services, R&D services & materials', label: 'R&D services & materials', count: 55 },
+  { value: 'Indirect procurement iPRO, Personnel, Training & people development', label: 'Training & people development', count: 100 },
+  { value: 'Indirect procurement iPRO, Professional services, R&D services & materials', label: 'R&D services & materials', count: 52 },
   { value: 'Indirect procurement iPRO, Professional services, Legal services', label: 'Legal services', count: 45 },
   { value: 'Indirect procurement iPRO, Professional services, Certification, standardization & audits', label: 'Certification, standardization & audits', count: 26 },
   { value: 'Indirect procurement iPRO, Professional services, Patent services', label: 'Patent services', count: 26 },
   { value: 'Indirect procurement iPRO, Personnel, Leased workforce', label: 'Leased workforce', count: 14 },
-  { value: 'Indirect procurement iPRO, Office IT, IT Services', label: 'IT Services', count: 8 },
-  { value: 'Indirect procurement iPRO, Professional services, Measurement & inspection', label: 'Measurement & inspection', count: 2 },
-  { value: 'Indirect procurement iPRO, Facility investments', label: 'Facility investments', count: 1 }
+  { value: 'Indirect procurement iPRO, Professional services, Testing, measurement & inspection', label: 'Testing, measurement & inspection', count: 2 },
+  { value: 'Indirect procurement iPRO, Facilities, Facility investments', label: 'Facility investments', count: 1 }
 ];
 
 /**
@@ -88,13 +87,47 @@ function formatSupplierForChat(supplier: SupplierDocument): string {
 }
 
 /**
- * Search suppliers for chat interface
+ * Search external labour suppliers for chat interface
  * Returns formatted results suitable for chat display
+ * Searches 410+ verified external labour suppliers
  */
+/**
+ * Format external labour suppliers as table for display
+ */
+function formatSuppliersAsTable(suppliers: any[]): any {
+  if (suppliers.length === 0) return null;
+
+  const rows = suppliers.map(supplier => {
+    const o = supplier.original || {};
+    return {
+      'Company': o['Company'] || o['Branch'] || o['Corporation'] || 'N/A',
+      'ID': o['Company ID'] || 'N/A',
+      'Main Category': o['Supplier Main Category']?.split(',').pop()?.trim() || 'N/A',
+      'Categories': o['Supplier Categories'] || 'N/A',
+      'Country': o['Country/Region (Street Address)'] || 'N/A',
+      'City': o['City (Street Address)'] || 'N/A',
+      'Contact': o['Supplier Main Contact'] || 'N/A',
+      'Email': o['Supplier Main Contact eMail'] || 'N/A',
+      'Preferred': o['Preferred Supplier'] === 'X' ? '✅' : '❌',
+      'Code of Conduct': o['Valmet Supplier Code of Conduct signed'] === 'X' ? '✅' : '❌'
+    };
+  });
+
+  return {
+    type: 'data_table',
+    title: 'External Labour Suppliers',
+    description: `Found ${rows.length} suppliers`,
+    columns: ['Company', 'ID', 'Main Category', 'Categories', 'Country', 'City', 'Contact', 'Email', 'Preferred', 'Code of Conduct'],
+    rows: rows,
+    format: 'table'
+  };
+}
+
 export async function searchSuppliersForChat(params: ChatSupplierSearchParams): Promise<{
   success: boolean;
   totalFound: number;
   suppliers: string[];
+  tableData?: any;
   error?: string;
 }> {
   console.log('📥 searchSuppliersForChat called with params:', JSON.stringify(params, null, 2));
@@ -144,14 +177,50 @@ export async function searchSuppliersForChat(params: ChatSupplierSearchParams): 
     };
     
     const results = await searchSuppliers(filters);
-    
+
     // Format results for chat
     const formattedSuppliers = results.suppliers.map(formatSupplierForChat);
-    
+
+    // If no results found, provide helpful feedback
+    if (results.totalCount === 0 && params.vendorName) {
+      console.log(`💡 No suppliers found with name containing "${params.vendorName}"`);
+      return {
+        success: true,
+        totalFound: 0,
+        suppliers: [
+          `No suppliers found with vendor name containing "${params.vendorName}"\n\n` +
+          `Search performed in: Company, Branch, and Corporation fields\n` +
+          `Search type: Case-insensitive partial match\n\n` +
+          `Tips:\n` +
+          `• Try a shorter search term (e.g., just "Zeal" instead of "Zeal Sourcing")\n` +
+          `• Check for alternative spellings\n` +
+          `• The supplier might not be in the database`
+        ]
+      };
+    }
+
+    // If no results for other searches
+    if (results.totalCount === 0) {
+      const searchCriteria = [];
+      if (params.mainCategory) searchCriteria.push(`Category: ${params.mainCategory}`);
+      if (params.supplierCategories) searchCriteria.push(`Supplier Categories: ${params.supplierCategories}`);
+      if (params.country) searchCriteria.push(`Country: ${params.country}`);
+      if (params.city) searchCriteria.push(`City: ${params.city}`);
+
+      return {
+        success: true,
+        totalFound: 0,
+        suppliers: [
+          `No suppliers found matching the following criteria:\n${searchCriteria.join('\n')}`
+        ]
+      };
+    }
+
     return {
       success: true,
       totalFound: results.totalCount,
-      suppliers: formattedSuppliers
+      suppliers: formattedSuppliers,
+      tableData: formatSuppliersAsTable(results.suppliers)
     };
   } catch (error) {
     console.error('Error in searchSuppliersForChat:', error);

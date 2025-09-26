@@ -90,14 +90,14 @@ export async function searchSupplierData(filters: SearchFilters): Promise<{
   }
   
   // Execute query on supplier_spend collection
-  const spendQuery = query(collection(db, 'supplier_spend'), ...constraints);
+  const spendQuery = query(collection(db, 'ext_labour_suppliers'), ...constraints);
   const spendSnapshot = await getDocs(spendQuery);
   
   spendSnapshot.forEach((doc) => {
     results.push({
       id: doc.id,
       data: doc.data(),
-      collection: 'supplier_spend'
+      collection: 'ext_labour_suppliers'
     });
   });
   
@@ -124,7 +124,7 @@ export async function getCategories(): Promise<{
   mainCategories: string[];
   subCategories: string[];
 }> {
-  const spendSnapshot = await getDocs(collection(db, 'supplier_spend'));
+  const spendSnapshot = await getDocs(collection(db, 'ext_labour_suppliers'));
   const mainCategories = new Set<string>();
   const subCategories = new Set<string>();
   
@@ -216,7 +216,7 @@ export async function getCategorySpendAnalysis(): Promise<{
   bySubCategory: Map<string, number>;
   total: number;
 }> {
-  const snapshot = await getDocs(collection(db, 'supplier_spend'));
+  const snapshot = await getDocs(collection(db, 'ext_labour_suppliers'));
   const byMainCategory = new Map<string, number>();
   const bySubCategory = new Map<string, number>();
   let total = 0;

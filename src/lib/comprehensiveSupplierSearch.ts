@@ -227,10 +227,10 @@ export async function searchSuppliers(
     // First, let's check what data exists in the collection
     if (!filters.category?.main || filters.category.main === 'DEBUG_ALL') {
       console.log('📁 Fetching ALL suppliers to analyze data...');
-      const q = query(collection(db, 'supplier_spend'), firestoreLimit(100));
+      const q = query(collection(db, 'ext_labour_suppliers'), firestoreLimit(100));
       const snapshot = await getDocs(q);
       allDocs = snapshot.docs;
-      console.log(`✅ Found ${allDocs.length} total documents in supplier_spend collection`);
+      console.log(`✅ Found ${allDocs.length} total documents in ext_labour_suppliers collection`);
       
       if (allDocs.length > 0) {
         // Analyze the data structure
@@ -275,7 +275,7 @@ export async function searchSuppliers(
       for (const fieldName of fieldVariations) {
         console.log(`🔍 Trying field: "${fieldName}"`);
         const q = query(
-          collection(db, 'supplier_spend'),
+          collection(db, 'ext_labour_suppliers'),
           where(fieldName, '==', filters.category.main),
           firestoreLimit(1000)
         );
@@ -440,7 +440,7 @@ export async function getVendorDetails(
 ): Promise<VendorDetailOutput | null> {
   try {
     // Get main spend data
-    const spendDoc = await getDoc(doc(db, 'supplier_spend', vendorId));
+    const spendDoc = await getDoc(doc(db, 'ext_labour_suppliers', vendorId));
     if (!spendDoc.exists()) {
       return null;
     }
@@ -547,7 +547,7 @@ export async function findAlternativeSuppliers(
 ): Promise<VendorListItem[]> {
   try {
     // Get current vendor's category
-    const currentVendor = await getDoc(doc(db, 'supplier_spend', currentVendorId));
+    const currentVendor = await getDoc(doc(db, 'ext_labour_suppliers', currentVendorId));
     if (!currentVendor.exists()) {
       return [];
     }
