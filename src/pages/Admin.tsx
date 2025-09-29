@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import PromptEditor from "../components/PromptEditor";
+import SystemPromptManager from "../components/SystemPromptManager";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -87,15 +88,15 @@ const Admin = () => {
             <CardHeader className="bg-gray-800 text-white rounded-t-lg p-8">
               <CardTitle className="flex items-center text-2xl">
                 <Settings className="mr-4 h-8 w-8" />
-                AI Prompt Management
+                AI Prompt Version Management
               </CardTitle>
               <p className="text-gray-300 mt-2 text-lg">
-                Primary configuration tool for evaluating AI performance
+                Manage production and testing versions of AI prompts
               </p>
             </CardHeader>
             <CardContent className="p-8">
               <p className="text-gray-600 mb-6 text-lg">
-                Create, edit, and evaluate different versions of the AI system prompt. This is the most important evaluation feature for testing different AI configurations and measuring performance improvements.
+                Manage two versions of the system prompt: Production (stable, default for all users) and Testing (experimental features). Each user can select which version they want to use. Changes to production affect all users using the default setting.
               </p>
               <Dialog>
                 <DialogTrigger asChild>
@@ -110,10 +111,10 @@ const Admin = () => {
                   <DialogHeader>
                     <DialogTitle>System Prompt Version Manager</DialogTitle>
                     <DialogDescription>
-                      Create, edit, and evaluate different versions of the AI system prompt. This is a key evaluation feature for testing different AI configurations.
+                      Manage production and testing versions of the AI system prompt. Each user can select which version to use.
                     </DialogDescription>
                   </DialogHeader>
-                  <PromptEditor />
+                  <SystemPromptManager />
                 </DialogContent>
               </Dialog>
             </CardContent>

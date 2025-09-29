@@ -85,15 +85,9 @@ export interface ContractSearchParams {
 }
 
 export interface TrainingSupplierSearchParams {
-  companyName?: string;
-  country?: string;
   deliveryCountry?: string;
   natureOfService?: string;
   trainingArea?: string;
-  classification?: string;
-  hseProvider?: boolean;
-  preferredOnly?: boolean;
-  hasContract?: boolean;
   limit?: number;
 }
 
@@ -307,21 +301,7 @@ export async function searchTrainingSuppliers(params: TrainingSupplierSearchPara
       records.push({ id: doc.id, ...doc.data() } as TrainingSupplierRecord);
     });
 
-    // Apply filters
-    if (params.companyName) {
-      const searchLower = params.companyName.toLowerCase();
-      records = records.filter(r =>
-        r.company_name && r.company_name.toLowerCase().includes(searchLower)
-      );
-    }
-
-    if (params.country) {
-      const searchLower = params.country.toLowerCase();
-      records = records.filter(r =>
-        r.country && r.country.toLowerCase().includes(searchLower)
-      );
-    }
-
+    // Apply filters - only 3 allowed fields
     if (params.deliveryCountry) {
       const searchLower = params.deliveryCountry.toLowerCase();
       records = records.filter(r =>
@@ -341,26 +321,6 @@ export async function searchTrainingSuppliers(params: TrainingSupplierSearchPara
       records = records.filter(r =>
         r.training_area && r.training_area.toLowerCase().includes(searchLower)
       );
-    }
-
-    if (params.classification) {
-      records = records.filter(r => r.classification === params.classification);
-    }
-
-    if (params.hseProvider) {
-      records = records.filter(r => r.hse_training_provider === 'x');
-    }
-
-    if (params.preferredOnly) {
-      records = records.filter(r => r.preferred_supplier === true);
-    }
-
-    if (params.hasContract !== undefined) {
-      if (params.hasContract) {
-        records = records.filter(r => r.contract_available === true || r.contract_available === 'Y');
-      } else {
-        records = records.filter(r => r.contract_available === false || r.contract_available === 'N');
-      }
     }
 
     // Sort by classification (A first, then B, then C) and company name

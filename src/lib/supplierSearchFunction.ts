@@ -88,11 +88,9 @@ function formatSupplierForChat(supplier: SupplierDocument): string {
 
 /**
  * Search external labour suppliers for chat interface
+ * Collection: ext_labour_suppliers
  * Returns formatted results suitable for chat display
  * Searches 410+ verified external labour suppliers
- */
-/**
- * Format external labour suppliers as table for display
  */
 function formatSuppliersAsTable(suppliers: any[]): any {
   if (suppliers.length === 0) return null;
@@ -123,7 +121,7 @@ function formatSuppliersAsTable(suppliers: any[]): any {
   };
 }
 
-export async function searchSuppliersForChat(params: ChatSupplierSearchParams): Promise<{
+export async function search_ext_labour_suppliers(params: ChatSupplierSearchParams): Promise<{
   success: boolean;
   totalFound: number;
   suppliers: string[];

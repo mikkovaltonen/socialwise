@@ -1,8 +1,10 @@
 import { db } from './firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { storageService, KnowledgeDocument } from './storageService';
+import { getSystemPromptForUser } from './systemPromptService';
 
 export interface ChatSession {
+  sessionId: string;
   systemPrompt: string;
   knowledgeContext: string;
   fullContext: string;
@@ -115,7 +117,6 @@ Please use this internal knowledge to provide accurate, company-specific guidanc
       '/chat_init_contect/valmet-procurement-policy.md',
       '/chat_init_contect/valmet-payment-policy.md',
       '/chat_init_contect/valmet-approval-limits-policy.md',
-      '/chat_init_contect/valmet-supplier-spend-data.md',
       '/chat_init_contect/basware-shop-instructions.md',
       '/chat_init_contect/leased-workers-process.md',
       '/chat_init_contect/external-workforce-policy.md'
@@ -162,27 +163,23 @@ ${policyContexts.join('\n')}
    */
   async initializeChatSession(userId: string): Promise<ChatSession> {
     try {
-      // Get latest system prompt or use default
-      const latestPrompt = await this.getLatestSystemPrompt(userId);
-      let systemPrompt: string;
-      let aiModel: string;
-      
-      if (!latestPrompt?.systemPrompt) {
-        // Use default system prompt from public folder
+      // Use the new versioned prompt system (production/testing)
+      // This will use the user's selected version or production as default
+      const systemPrompt = await getSystemPromptForUser({ uid: userId } as any);
+      const aiModel = 'gemini-2.5-pro';
+
+      if (!systemPrompt) {
+        // Fallback to default if no prompt configured
         try {
           const response = await fetch('/system_prompt.md');
           if (response.ok) {
-            systemPrompt = await response.text();
-            aiModel = 'gemini-2.5-pro';
+            const systemPrompt = await response.text();
           } else {
             throw new Error('No system prompt configured. Please create a prompt in the Admin panel.');
           }
         } catch (err) {
           throw new Error('No system prompt configured. Please create a prompt in the Admin panel.');
         }
-      } else {
-        systemPrompt = latestPrompt.systemPrompt;
-        aiModel = latestPrompt.aiModel || 'gemini-2.5-pro';
       }
 
       // Get knowledge documents
@@ -200,7 +197,12 @@ ${policyContexts.join('\n')}
       // Combine system prompt with knowledge context
       const fullContext = this.combineContexts(systemPrompt, fullKnowledgeContext);
 
+      // Generate unique session ID
+      const sessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log(`🆕 NEW CHAT SESSION CREATED: ${sessionId}`);
+
       return {
+        sessionId,
         systemPrompt,
         knowledgeContext: fullKnowledgeContext,
         fullContext,

@@ -15,13 +15,15 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { loadLatestPrompt, createContinuousImprovementSession, addTechnicalLog, setUserFeedback } from '../lib/firestoreService';
 import { sessionService, ChatSession } from '../lib/sessionService';
+import { getSystemPromptForUser } from '../lib/systemPromptService';
 import { erpApiService } from '../lib/erpApiService';
 import { storageService } from '../lib/storageService';
 import { createPurchaseRequisition } from '@/lib/firestoreService';
 import { useQueryClient } from '@tanstack/react-query';
-import { searchSuppliersForChat, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
+import { search_ext_labour_suppliers, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
 import { purchaseRequisitionService, RequisitionStatus } from '../lib/purchaseRequisitionService';
 import { InteractiveJsonTable } from './InteractiveJsonTable';
+import { search_training_suppliers } from '../lib/chatFunctions';
 
 interface ProfessionalBuyerChatProps {
   onLogout?: () => void;
@@ -36,9 +38,9 @@ const openRouterApiKey = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
 // Using Grok-4-fast model via OpenRouter (free tier)
 const geminiModel = 'x-ai/grok-4-fast:free';
 
-// Supplier Search Function Definition for Gemini
-const searchSuppliersFunction = {
-  name: "search_suppliers",
+// External Labour Suppliers Search Function (Collection: ext_labour_suppliers)
+const searchExtLabourSuppliersFunction = {
+  name: "search_ext_labour_suppliers",
   description: "Search for verified suppliers in Valmet's supplier database. IMPORTANT: mainCategory must be EXACTLY one of the valid LOV values. For 'vuokratyövoima' or 'henkilöstövuokraus', use 'Leased workforce'. For 'IT-konsultointi', use 'IT consulting'. Always use the exact English LOV values.",
   parameters: {
     type: "object",
@@ -72,7 +74,105 @@ const searchSuppliersFunction = {
   }
 };
 
-// ERP search function removed - only supplier search is used
+// Training Invoices Search Function (Collection: invoices_training_2023)
+const searchInvoicesTraining2023Function = {
+  name: "search_invoices_training_2023",
+  description: "Search training invoices from 2023 by supplier, amount, status. Returns formatted invoice records.",
+  parameters: {
+    type: "object",
+    properties: {
+      businessPartner: {
+        type: "string",
+        description: "Supplier/vendor name (partial match supported)"
+      },
+      status: {
+        type: "string",
+        enum: ["Completed", "Pending", "In Review", "Rejected", "Paid"],
+        description: "Invoice status"
+      },
+      minAmount: {
+        type: "number",
+        description: "Minimum invoice amount in EUR"
+      },
+      maxAmount: {
+        type: "number",
+        description: "Maximum invoice amount in EUR"
+      },
+      approver: {
+        type: "string",
+        description: "Name of the approver"
+      },
+      reviewer: {
+        type: "string",
+        description: "Name of the reviewer"
+      },
+      limit: {
+        type: "number",
+        description: "Maximum results to return (default: 10)"
+      }
+    }
+  }
+};
+
+// Contracts Search Function (Collection: ipro_contracts)
+const searchIproContractsFunction = {
+  name: "search_ipro_contracts",
+  description: "Search iPRO contracts by supplier, status, active/expired. Returns contract records with details.",
+  parameters: {
+    type: "object",
+    properties: {
+      supplier: {
+        type: "string",
+        description: "Supplier name (fuzzy search)"
+      },
+      searchText: {
+        type: "string",
+        description: "General text search across all contract fields"
+      },
+      activeOnly: {
+        type: "boolean",
+        description: "Filter for active contracts only"
+      },
+      status: {
+        type: "string",
+        enum: ["Active", "Expired", "Draft", "Terminated", "Renewed"],
+        description: "Contract state"
+      },
+      limit: {
+        type: "number",
+        description: "Maximum results to return (default: 10)"
+      }
+    }
+  }
+};
+
+// Training Suppliers Search Function (Collection: training_suppliers)
+// LIMITED TO: deliveryCountry, natureOfService, trainingArea only
+const searchTrainingSuppliersFunction = {
+  name: "search_training_suppliers",
+  description: "Search training suppliers database. NOTE: Search is limited to delivery country, nature of service, and training area only.",
+  parameters: {
+    type: "object",
+    properties: {
+      deliveryCountry: {
+        type: "string",
+        description: "Country where training can be delivered (e.g., Finland, Sweden, Global)"
+      },
+      natureOfService: {
+        type: "string",
+        description: "Type/nature of the training service (e.g., Leadership, HSE, Coaching)"
+      },
+      trainingArea: {
+        type: "string",
+        description: "Specific training area or topic (e.g., Safety training, EMBA, Coaching)"
+      },
+      limit: {
+        type: "number",
+        description: "Maximum results to return (default: 10)"
+      }
+    }
+  }
+};
 
 // Purchase Requisition Function (Basware-style as per system prompt)
 const createRequisitionFunction = {
@@ -190,11 +290,20 @@ const createRequisitionFunction = {
   }
 };
 
+// Version and configuration logging
+console.log('🔧 ProfessionalBuyerChat v3.6-fixed-prompt-source - using versioned prompts:', {
+  version: '2.1-debug-functions',
+  changes: 'Added extensive debugging to track function knowledge source',
+  date: '2025-09-29',
+  author: 'Claude',
+  debug: 'Check console for TOOLS DEBUG, SYSTEM PROMPT DEBUG, and OPENROUTER API CALL DEBUG'
+});
+
 // Debug: Log OpenRouter API config
-console.log('OpenRouter API config v1.6:', {
-  version: '1.6-requisition-fix',
+console.log('OpenRouter API config:', {
   apiKey: openRouterApiKey ? `${openRouterApiKey.substring(0, 10)}...` : 'undefined',
   model: geminiModel,  // x-ai/grok-4-fast:free
+  temperature: 0,  // Deterministic mode for procurement use case
   timestamp: new Date().toISOString(),
   toolSupport: true
 });
@@ -242,6 +351,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   const [sessionInitializing, setSessionInitializing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasReceivedResponseRef = useRef<boolean>(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -289,13 +399,35 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
 
   // Initialize chat session with context
   React.useEffect(() => {
+    console.log('🔄 COMPONENT MOUNTED/REMOUNTED - Initializing fresh session');
+    console.log('Current messages count:', messages.length);
+    console.log('Session active:', sessionActive);
+
     const initializeSession = async () => {
       if (!sessionActive && user && !sessionInitializing) {
-        setSessionInitializing(true);
+        setSessionInitializing(true)
+        console.log('🆕 Starting fresh session initialization...');
         try {
           // Initialize session with system prompt + knowledge documents
           const session = await sessionService.initializeChatSession(user.uid);
           setChatSession(session);
+          console.log('🆕 Chat session initialized:', {
+            sessionId: session.sessionId,
+            createdAt: session.createdAt,
+            documentsUsed: session.documentsUsed.length,
+            documentsNames: session.documentsUsed.map(d => d.fileName || d.name || 'unknown'),
+            promptLength: session.systemPrompt.length,
+            knowledgeContextLength: session.knowledgeContext?.length,
+            contextLength: session.fullContext.length
+          });
+
+          // LOG ALL INITIALIZATION DATA
+          console.log('🔴🔴🔴 COMPLETE SESSION INITIALIZATION DATA:');
+          console.log('1. SYSTEM PROMPT:', session.systemPrompt);
+          console.log('2. KNOWLEDGE CONTEXT:', session.knowledgeContext);
+          console.log('3. FULL CONTEXT:', session.fullContext);
+          console.log('4. DOCUMENTS USED:', session.documentsUsed);
+          console.log('🔴🔴🔴 END OF INITIALIZATION DATA');
           
           // Check if this is a new user (no documents loaded)
           const isLikelyNewUser = session.documentsUsed.length === 0;
@@ -303,25 +435,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           const welcomeMessage: Message = {
             role: 'model',
             parts: [{
-              text: isLikelyNewUser
-                ? `🎯 **Valmet Finland External Workforce Assistant**
-
-I help you find and select the best suppliers for external workforce needs in Finland.
-
-**Available services:** Business consulting • Training & people development • Engineering services • Testing & inspection • Leased workforce
-
-**Quick actions:**
-• "Find business consulting suppliers in Finland"
-• "Show me training providers"
-• "List engineering service vendors"
-• "Search for leased workforce"
-
-410 verified suppliers ready to search (IT services excluded). What service do you need?`
-                : `Hello! I'm your Valmet External Workforce Assistant for Finland. I help you find suppliers for business consulting, training, engineering, and other professional services (IT services excluded).
-
-📚 **Knowledge Base Loaded:** ${session.documentsUsed.length} document(s) available for reference.
-
-What can I help you with today?`
+              text: `How can I help you with external labour purchasing today?`
             }]
           };
           setMessages([welcomeMessage]);
@@ -361,43 +475,119 @@ What can I help you with today?`
     const textToSend = messageText || input;
     if (!textToSend.trim() || isLoading) return;
 
-    // OpenRouter API helper function
-    const callOpenRouterAPI = async (messages: any[], systemPrompt: string, tools?: any[]) => {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openRouterApiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': window.location.origin || 'https://valmet-buyer.firebaseapp.com',
-          'X-Title': 'Valmet Procurement Assistant'
-        },
-        body: JSON.stringify({
-          model: geminiModel,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages.map((msg: any) => ({
-              role: msg.role === 'model' ? 'assistant' : msg.role,
-              content: typeof msg.parts[0] === 'object' ? msg.parts[0].text : msg.parts[0]
-            }))
-          ],
-          temperature: 0,
-          ...(tools && tools.length > 0 ? { tools, tool_choice: 'auto' } : {})
-        })
-      });
+    // Timeout helper with AbortController
+    const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number = 30000) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      if (!response.ok) {
-        let errorMessage = '';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error?.message || errorData.message || JSON.stringify(errorData);
-        } catch {
-          errorMessage = await response.text();
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error(`Request timeout after ${timeoutMs / 1000} seconds. Please try again.`);
         }
-        throw new Error(`OpenRouter API error ${response.status}: ${errorMessage}`);
+        throw error;
       }
+    };
 
-      const data = await response.json();
-      return data;
+    // OpenRouter API helper function with retry logic
+    const callOpenRouterAPI = async (messages: any[], systemPrompt: string, tools?: any[], retryCount: number = 0) => {
+      // DEBUG: Log what's being sent to OpenRouter
+      console.log('🚀 OPENROUTER API CALL DEBUG:', {
+        hasTools: !!tools,
+        toolCount: tools?.length || 0,
+        toolNames: tools?.map(t => t.function?.name || 'unknown') || [],
+        systemPromptLength: systemPrompt.length
+      });
+      const maxRetries = 2;
+
+      try {
+        const response = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openRouterApiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': window.location.origin || 'https://valmet-buyer.firebaseapp.com',
+            'X-Title': 'Valmet Procurement Assistant'
+          },
+          body: JSON.stringify((() => {
+            const requestBody = {
+              model: geminiModel,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                ...messages.map((msg: any) => ({
+                  role: msg.role === 'model' ? 'assistant' : msg.role,
+                  content: typeof msg.parts[0] === 'object' ? msg.parts[0].text : msg.parts[0]
+                }))
+              ],
+              temperature: 0,
+              ...(tools && tools.length > 0 ? { tools, tool_choice: 'auto' } : {})
+            };
+
+            // CRITICAL DEBUG: Log EXACTLY what we're sending
+            console.log('🔴 EXACT API REQUEST BODY:', {
+              toolsInRequest: requestBody.tools?.map((t: any) => t.function?.name) || 'NO TOOLS',
+              systemPromptContainsInvoice: systemPrompt.toLowerCase().includes('invoice'),
+              systemPromptContainsContract: systemPrompt.toLowerCase().includes('contract'),
+              systemPromptContains2023: systemPrompt.toLowerCase().includes('2023'),
+              systemPromptContainsTraining: systemPrompt.toLowerCase().includes('training'),
+              systemPromptLength: systemPrompt.length,
+              messagesCount: requestBody.messages.length,
+              historyMessages: messages.length,
+              isFirstMessage: messages.length === 0,
+              messageRoles: requestBody.messages.map((m: any) => m.role),
+              // Log first 2000 chars to see what's actually in the prompt
+              systemPromptPreview: systemPrompt.substring(0, 2000),
+              fullRequestBody: JSON.stringify(requestBody).substring(0, 1000)
+            });
+
+            return requestBody;
+          })())
+        }, 30000); // 30 second timeout
+
+        if (!response.ok) {
+          let errorMessage = '';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error?.message || errorData.message || JSON.stringify(errorData);
+          } catch {
+            errorMessage = await response.text();
+          }
+
+          // Retry on 503 or 429 errors
+          if ((response.status === 503 || response.status === 429) && retryCount < maxRetries) {
+            console.log(`Retrying API call (attempt ${retryCount + 2}/${maxRetries + 1})...`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1))); // Exponential backoff
+            return callOpenRouterAPI(messages, systemPrompt, tools, retryCount + 1);
+          }
+
+          throw new Error(`OpenRouter API error ${response.status}: ${errorMessage}`);
+        }
+
+        const data = await response.json();
+
+        // Validate response structure
+        if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+          console.error('Invalid API response structure:', data);
+          throw new Error('Invalid response from AI service. Please try again.');
+        }
+
+        return data;
+      } catch (error: any) {
+        // Retry on network errors if we haven't exceeded retry limit
+        if (retryCount < maxRetries && (error.message.includes('fetch') || error.message.includes('network'))) {
+          console.log(`Network error, retrying (attempt ${retryCount + 2}/${maxRetries + 1})...`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+          return callOpenRouterAPI(messages, systemPrompt, tools, retryCount + 1);
+        }
+        throw error;
+      }
     };
 
     // System prompt check removed - default prompt is always available
@@ -411,6 +601,39 @@ What can I help you with today?`
     setMessages(prev => [...prev, userMessage]);
     if (!messageText) setInput('');
     setIsLoading(true);
+
+    // Reset the response flag for new message
+    hasReceivedResponseRef.current = false;
+
+    // Auto-reset loading state after 45 seconds as failsafe
+    let loadingTimeoutId = setTimeout(() => {
+      // Only show error if we're still loading and haven't received a response
+      setIsLoading(currentLoading => {
+        if (currentLoading && !hasReceivedResponseRef.current) {
+          console.error('Message processing timeout - resetting loading state');
+
+          // Log timeout error
+          if (continuousImprovementSessionId) {
+            addTechnicalLog(continuousImprovementSessionId, {
+              event: 'error_occurred',
+              errorType: 'response_timeout',
+              userMessage: textToSend,
+              timeoutAfterMs: 45000,
+              timestamp: new Date().toISOString()
+            });
+          }
+
+          // Only show error message if we haven't received any response
+          setMessages(prev => [...prev, {
+            role: 'model',
+            parts: [{ text: '⚠️ Response timeout. The request took too long to process. Please try again with a simpler query.' }]
+          }]);
+        } else {
+          console.log('Timeout reached but response already received - suppressing error message');
+        }
+        return false;
+      });
+    }, 45000);
     
     // Log user message
     if (continuousImprovementSessionId) {
@@ -426,17 +649,51 @@ What can I help you with today?`
       
       if (chatSession) {
         // Use the full context from initialized session (system prompt + knowledge documents)
+        console.log('📦 USING CHAT SESSION FULL CONTEXT', {
+          sessionId: chatSession.sessionId,
+          createdAt: chatSession.createdAt,
+          age: new Date().getTime() - new Date(chatSession.createdAt).getTime(),
+          ageInMinutes: Math.floor((new Date().getTime() - new Date(chatSession.createdAt).getTime()) / 60000),
+          systemPromptLength: chatSession.systemPrompt?.length,
+          knowledgeContextLength: chatSession.knowledgeContext?.length,
+          fullContextLength: chatSession.fullContext?.length,
+          documentsUsed: chatSession.documentsUsed?.length
+        });
+
+        // LOG THE COMPLETE FULL CONTEXT
+        console.log('🔍 FULL CONTEXT BEING SENT (COMPLETE):', chatSession.fullContext);
+
         systemPrompt = chatSession.fullContext;
       } else {
-        // Fallback: try to load latest prompt for this user
-        if (user?.uid) {
-          try {
-            const latestPrompt = await loadLatestPrompt(user.uid);
-            if (latestPrompt) {
-              systemPrompt = latestPrompt;
+        // Try to load versioned prompt for this user
+        try {
+          const versionedPrompt = await getSystemPromptForUser(user);
+          if (versionedPrompt) {
+            console.log('✅ USING VERSIONED PROMPT (production/testing)');
+            console.log('🔍 VERSIONED PROMPT COMPLETE:', versionedPrompt);
+            systemPrompt = versionedPrompt;
+          }
+        } catch (error) {
+          console.error('Error loading versioned prompt:', error);
+
+          // Fallback: try to load latest prompt for this user (legacy)
+          if (user?.uid) {
+            try {
+              const latestPrompt = await loadLatestPrompt(user.uid);
+              if (latestPrompt) {
+                console.warn('⚠️ USING LEGACY PROMPT FROM FIRESTORE - MAY CONTAIN OLD DATA');
+                console.log('Legacy prompt preview:', latestPrompt.substring(0, 200));
+                // Check if it contains old functions
+                if (latestPrompt.includes('Training Invoices') || latestPrompt.includes('iPRO')) {
+                  console.error('🚨 LEGACY PROMPT CONTAINS REMOVED FUNCTIONS - NOT USING IT');
+                  // Don't use this prompt
+                } else {
+                  systemPrompt = latestPrompt;
+                }
+              }
+            } catch (error) {
+              console.error('Error loading latest prompt:', error);
             }
-          } catch (error) {
-            console.error('Error loading latest prompt:', error);
           }
         }
 
@@ -446,14 +703,22 @@ What can I help you with today?`
         }
       }
 
-      // Prepare tools for OpenRouter
+      // Prepare tools for OpenRouter - only 3 functions as per system prompt
       const openRouterTools = [
         {
           type: 'function',
           function: {
-            name: 'search_suppliers',
-            description: searchSuppliersFunction.description,
-            parameters: searchSuppliersFunction.parameters
+            name: 'search_ext_labour_suppliers',
+            description: searchExtLabourSuppliersFunction.description,
+            parameters: searchExtLabourSuppliersFunction.parameters
+          }
+        },
+        {
+          type: 'function',
+          function: {
+            name: 'search_training_suppliers',
+            description: searchTrainingSuppliersFunction.description,
+            parameters: searchTrainingSuppliersFunction.parameters
           }
         },
         {
@@ -466,8 +731,25 @@ What can I help you with today?`
         }
       ];
 
+      // DEBUG: Log tools being sent to OpenRouter
+      console.log('🔍 TOOLS DEBUG - Functions sent to OpenRouter:', {
+        sessionId: chatSession?.sessionId || 'NO_SESSION',
+        count: openRouterTools.length,
+        functions: openRouterTools.map(t => t.function.name),
+        fullTools: openRouterTools
+      });
+
       // Add current message to history for OpenRouter
       const messagesWithCurrent = [...messages, { role: 'user', parts: [{ text: textToSend }] }];
+
+      // DEBUG: Log system prompt content
+      console.log('📝 SYSTEM PROMPT DEBUG:', {
+        length: systemPrompt.length,
+        first500Chars: systemPrompt.substring(0, 500),
+        includesInvoice: systemPrompt.includes('invoice'),
+        includesContract: systemPrompt.includes('contract'),
+        includesTraining2023: systemPrompt.includes('training_2023')
+      });
 
       const result = await callOpenRouterAPI(messagesWithCurrent, systemPrompt, openRouterTools);
       console.log('OpenRouter response structure:', {
@@ -490,7 +772,8 @@ What can I help you with today?`
                 ? JSON.parse(toolCall.function.arguments)
                 : toolCall.function.arguments;
               
-              if (functionName === 'search_suppliers') {
+              // Handle different function calls
+              if (functionName === 'search_ext_labour_suppliers') {
                 try {
                   const aiRequestId = Math.random().toString(36).substring(2, 8);
                   
@@ -515,7 +798,7 @@ What can I help you with today?`
                   }
 
                   // Execute supplier search
-                  const searchResult = await searchSuppliersForChat(functionArgs);
+                  const searchResult = await search_ext_labour_suppliers(functionArgs);
                   
                   // Log consolidated AI + Supplier search results
                   console.log('🔗 AI-SUPPLIER SEARCH RESULT [' + aiRequestId + ']:', {
@@ -594,6 +877,7 @@ What can I help you with today?`
                       });
                     }
                     
+                    hasReceivedResponseRef.current = true; // Mark that we've received a response
                     setMessages(prev => [...prev, {
                       role: 'model',
                       parts: [{ text: aiResponseText }]
@@ -709,11 +993,182 @@ What can I help you with today?`
                   return;
                 } catch (err) {
                   console.error('Failed to create requisition:', err);
-                  setMessages(prev => [...prev, { 
-                    role: 'model', 
-                    parts: [{ 
-                      text: `❌ Failed to create purchase requisition: ${err instanceof Error ? err.message : 'Unknown error'}` 
-                    }] 
+                  setMessages(prev => [...prev, {
+                    role: 'model',
+                    parts: [{
+                      text: `❌ Failed to create purchase requisition: ${err instanceof Error ? err.message : 'Unknown error'}`
+                    }]
+                  }]);
+                  return;
+                }
+              } else if (functionName === 'search_invoices_training_2023') {
+                try {
+                  const aiRequestId = Math.random().toString(36).substring(2, 8);
+                  console.log('🧾 AI INVOICE SEARCH CALL [' + aiRequestId + ']:', functionArgs);
+
+                  // Log function call
+                  if (continuousImprovementSessionId) {
+                    await addTechnicalLog(continuousImprovementSessionId, {
+                      event: 'function_call_triggered',
+                      userMessage: textToSend,
+                      functionName: functionName,
+                      functionInputs: functionArgs,
+                      aiRequestId: aiRequestId
+                    });
+                  }
+
+                  const searchResult = await search_invoices_training_2023(functionArgs);
+
+                  // Generate follow-up response with function results
+                  const messagesWithFunctionResult = [
+                    ...messages,
+                    { role: 'user', parts: [{ text: textToSend }] },
+                    { role: 'model', parts: [{ text: `Searching training invoices...` }] },
+                    { role: 'user', parts: [{ text: `Function result: ${JSON.stringify(searchResult)}` }] }
+                  ];
+
+                  const followUpResult = await callOpenRouterAPI(messagesWithFunctionResult, systemPrompt);
+
+                  if (followUpResult?.choices?.[0]?.message) {
+                    const aiResponseText = followUpResult.choices[0].message.content || "No response text";
+                    hasReceivedResponseRef.current = true; // Mark that we've received a response
+                    setMessages(prev => [...prev, {
+                      role: 'model',
+                      parts: [{ text: aiResponseText }]
+                    }]);
+                  }
+                  return;
+                } catch (err) {
+                  console.error('Failed to search invoices:', err);
+
+                  // Log function error
+                  if (continuousImprovementSessionId) {
+                    await addTechnicalLog(continuousImprovementSessionId, {
+                      event: 'function_call_error',
+                      functionName: functionName,
+                      functionInputs: functionArgs,
+                      error: err instanceof Error ? err.message : String(err),
+                      aiRequestId: aiRequestId
+                    });
+                  }
+
+                  setMessages(prev => [...prev, {
+                    role: 'model',
+                    parts: [{ text: `❌ Failed to search invoices: ${err instanceof Error ? err.message : 'Unknown error'}` }]
+                  }]);
+                  return;
+                }
+              } else if (functionName === 'search_ipro_contracts') {
+                try {
+                  const aiRequestId = Math.random().toString(36).substring(2, 8);
+                  console.log('📄 AI CONTRACT SEARCH CALL [' + aiRequestId + ']:', functionArgs);
+
+                  // Log function call
+                  if (continuousImprovementSessionId) {
+                    await addTechnicalLog(continuousImprovementSessionId, {
+                      event: 'function_call_triggered',
+                      userMessage: textToSend,
+                      functionName: functionName,
+                      functionInputs: functionArgs,
+                      aiRequestId: aiRequestId
+                    });
+                  }
+
+                  const searchResult = await search_ipro_contracts(functionArgs);
+
+                  // Generate follow-up response with function results
+                  const messagesWithFunctionResult = [
+                    ...messages,
+                    { role: 'user', parts: [{ text: textToSend }] },
+                    { role: 'model', parts: [{ text: `Searching contracts...` }] },
+                    { role: 'user', parts: [{ text: `Function result: ${JSON.stringify(searchResult)}` }] }
+                  ];
+
+                  const followUpResult = await callOpenRouterAPI(messagesWithFunctionResult, systemPrompt);
+
+                  if (followUpResult?.choices?.[0]?.message) {
+                    const aiResponseText = followUpResult.choices[0].message.content || "No response text";
+                    hasReceivedResponseRef.current = true; // Mark that we've received a response
+                    setMessages(prev => [...prev, {
+                      role: 'model',
+                      parts: [{ text: aiResponseText }]
+                    }]);
+                  }
+                  return;
+                } catch (err) {
+                  console.error('Failed to search contracts:', err);
+
+                  // Log function error
+                  if (continuousImprovementSessionId) {
+                    await addTechnicalLog(continuousImprovementSessionId, {
+                      event: 'function_call_error',
+                      functionName: functionName,
+                      functionInputs: functionArgs,
+                      error: err instanceof Error ? err.message : String(err),
+                      aiRequestId: aiRequestId
+                    });
+                  }
+
+                  setMessages(prev => [...prev, {
+                    role: 'model',
+                    parts: [{ text: `❌ Failed to search contracts: ${err instanceof Error ? err.message : 'Unknown error'}` }]
+                  }]);
+                  return;
+                }
+              } else if (functionName === 'search_training_suppliers') {
+                try {
+                  const aiRequestId = Math.random().toString(36).substring(2, 8);
+                  console.log('🎓 AI TRAINING SUPPLIER SEARCH CALL [' + aiRequestId + ']:', functionArgs);
+
+                  // Log function call
+                  if (continuousImprovementSessionId) {
+                    await addTechnicalLog(continuousImprovementSessionId, {
+                      event: 'function_call_triggered',
+                      userMessage: textToSend,
+                      functionName: functionName,
+                      functionInputs: functionArgs,
+                      aiRequestId: aiRequestId
+                    });
+                  }
+
+                  const searchResult = await search_training_suppliers(functionArgs);
+
+                  // Generate follow-up response with function results
+                  const messagesWithFunctionResult = [
+                    ...messages,
+                    { role: 'user', parts: [{ text: textToSend }] },
+                    { role: 'model', parts: [{ text: `Searching training suppliers...` }] },
+                    { role: 'user', parts: [{ text: `Function result: ${JSON.stringify(searchResult)}` }] }
+                  ];
+
+                  const followUpResult = await callOpenRouterAPI(messagesWithFunctionResult, systemPrompt);
+
+                  if (followUpResult?.choices?.[0]?.message) {
+                    const aiResponseText = followUpResult.choices[0].message.content || "No response text";
+                    hasReceivedResponseRef.current = true; // Mark that we've received a response
+                    setMessages(prev => [...prev, {
+                      role: 'model',
+                      parts: [{ text: aiResponseText }]
+                    }]);
+                  }
+                  return;
+                } catch (err) {
+                  console.error('Failed to search training suppliers:', err);
+
+                  // Log function error
+                  if (continuousImprovementSessionId) {
+                    await addTechnicalLog(continuousImprovementSessionId, {
+                      event: 'function_call_error',
+                      functionName: functionName,
+                      functionInputs: functionArgs,
+                      error: err instanceof Error ? err.message : String(err),
+                      aiRequestId: aiRequestId
+                    });
+                  }
+
+                  setMessages(prev => [...prev, {
+                    role: 'model',
+                    parts: [{ text: `❌ Failed to search training suppliers: ${err instanceof Error ? err.message : 'Unknown error'}` }]
                   }]);
                   return;
                 }
@@ -722,7 +1177,14 @@ What can I help you with today?`
           }
         } else {
           // No tool calls - regular text response
-          const aiResponseText = content?.content || "No response text";
+          const aiResponseText = content?.content;
+
+          // Validate we have actual content
+          if (!aiResponseText || aiResponseText === "No response text") {
+            console.error('Empty or invalid response from AI');
+            throw new Error('Received empty response from AI service. Please try again.');
+          }
+
           console.log('Regular text response:', aiResponseText.substring(0, 100));
 
           if (continuousImprovementSessionId) {
@@ -732,6 +1194,7 @@ What can I help you with today?`
             });
           }
 
+          hasReceivedResponseRef.current = true; // Mark that we've received a response
           setMessages(prev => [...prev, {
             role: 'model',
             parts: [{ text: aiResponseText }],
@@ -739,7 +1202,8 @@ What can I help you with today?`
           }]);
         }
       } else {
-        throw new Error('No response from AI model');
+        console.error('Invalid response structure from OpenRouter:', result);
+        throw new Error('Invalid response structure from AI service. Please try again.');
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -783,6 +1247,10 @@ What can I help you with today?`
       }]);
     } finally {
       setIsLoading(false);
+      // Clear the loading timeout if it exists
+      if (typeof loadingTimeoutId !== 'undefined') {
+        clearTimeout(loadingTimeoutId);
+      }
     }
   };
 
@@ -888,9 +1356,13 @@ What can I help you with today?`
     console.log(`Session ID: ${continuousImprovementSessionId}`);
     console.log(`Chat Session Key: ${chatSessionKey}`);
 
+    // Get context about the feedback
+    const evaluatedMessage = messages[pendingMessageIndex];
+    const previousUserMessage = pendingMessageIndex > 0 ?
+      messages.slice(0, pendingMessageIndex).reverse().find(m => m.role === 'user') : null;
+
     // Log the actual message being evaluated
-    if (messages[pendingMessageIndex]) {
-      const evaluatedMessage = messages[pendingMessageIndex];
+    if (evaluatedMessage) {
       console.log(`Evaluated Message Role: ${evaluatedMessage.role}`);
       console.log(`Message Preview: ${evaluatedMessage.parts[0]?.text?.substring(0, 100)}...`);
     }
@@ -901,14 +1373,31 @@ What can I help you with today?`
     console.log('════════════════════════════════════════════════');
 
     try {
-      // Add message context to the feedback log
+      // Create comprehensive feedback data
+      const feedbackContext = {
+        originalUserQuery: previousUserMessage?.parts[0]?.text || 'N/A',
+        aiResponsePreview: evaluatedMessage?.parts[0]?.text?.substring(0, 500) || 'N/A',
+        responseLength: evaluatedMessage?.parts[0]?.text?.length || 0,
+        wasResponseComplete: evaluatedMessage?.parts[0]?.text ?
+          !evaluatedMessage.parts[0].text.includes('...') &&
+          evaluatedMessage.parts[0].text.length > 10 : false,
+        responseEndsAbruptly: evaluatedMessage?.parts[0]?.text ?
+          evaluatedMessage.parts[0].text.endsWith('...') ||
+          evaluatedMessage.parts[0].text.endsWith(',') ||
+          evaluatedMessage.parts[0].text.endsWith('-') : false
+      };
+
+      // Log detailed feedback event (avoiding duplicates)
       await addTechnicalLog(continuousImprovementSessionId, {
-        event: 'ai_response',
-        aiResponse: `User feedback for message ${pendingMessageIndex}: ${pendingFeedback}${feedbackComment ? ` - Comment: ${feedbackComment}` : ''}`,
-        userFeedback: pendingFeedback,
+        event: 'user_feedback_submitted',
+        feedbackType: pendingFeedback,
+        messageIndex: pendingMessageIndex,
         userComment: feedbackComment || undefined,
+        context: feedbackContext,
+        timestamp: new Date().toISOString()
       });
 
+      // Store the feedback itself (single call)
       await setUserFeedback(continuousImprovementSessionId, pendingFeedback, feedbackComment || undefined);
 
 

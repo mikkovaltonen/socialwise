@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { FileText, Book, CreditCard, CheckCircle, Loader2, TrendingUp, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ShoppingCart, Users, Briefcase, FileImage, ExternalLink, Download } from "lucide-react";
+import { FileText, Book, CreditCard, CheckCircle, Loader2, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ShoppingCart, Users, Briefcase, FileImage, ExternalLink, Download } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
@@ -27,7 +27,6 @@ const ChatInitViewer: React.FC = () => {
     procurement: 1,
     payment: 1,
     approval: 1,
-    'supplier-spend': 1,
     'basware-shop': 1,
     'leased-workers': 1,
     'external-workforce': 1
@@ -54,13 +53,6 @@ const ChatInitViewer: React.FC = () => {
       description: 'Purchase invoice approval limits, rights management, and compliance framework',
       icon: <CheckCircle className="h-5 w-5" />,
       path: '/chat_init_contect/valmet-approval-limits-policy.md'
-    },
-    {
-      id: 'supplier-spend',
-      title: 'Valmet Supplier & Spend Data 2023',
-      description: 'Finland supplier spending data, categories, and payment metrics for 2023 operations',
-      icon: <TrendingUp className="h-5 w-5" />,
-      path: '/chat_init_contect/valmet-supplier-spend-data.md'
     },
     {
       id: 'basware-shop',
@@ -174,7 +166,7 @@ const ChatInitViewer: React.FC = () => {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="px-6 pt-4">
-          <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 w-full max-w-7xl">
+          <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 w-full max-w-6xl">
             {documents.map((doc) => (
               <TabsTrigger 
                 key={doc.id} 
@@ -187,7 +179,6 @@ const ChatInitViewer: React.FC = () => {
                   {doc.id === 'procurement' ? 'Procurement' :
                    doc.id === 'payment' ? 'Payment' :
                    doc.id === 'approval' ? 'Approval' :
-                   doc.id === 'supplier-spend' ? 'Spend Data' :
                    doc.id === 'basware-shop' ? 'Basware' :
                    doc.id === 'leased-workers' ? 'Leased' :
                    'External'}

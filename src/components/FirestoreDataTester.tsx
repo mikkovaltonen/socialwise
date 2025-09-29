@@ -26,11 +26,11 @@ import {
   SelectValue,
 } from './ui/select';
 import {
-  searchTrainingInvoicesForChat,
-  searchContractsForChat,
-  searchTrainingSuppliersForChat
-} from '../lib/firestoreSearchFunctions';
-import { searchSuppliersForChat, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
+  search_invoices_training_2023,
+  search_ipro_contracts,
+  search_training_suppliers
+} from '../lib/chatFunctions';
+import { search_ext_labour_suppliers, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
 
 export const FirestoreDataTester: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -57,17 +57,11 @@ export const FirestoreDataTester: React.FC = () => {
     limit: '10'
   });
 
-  // Training supplier parameters
+  // Training supplier parameters - limited to 3 search fields
   const [supplierParams, setSupplierParams] = useState({
-    companyName: '',
-    country: '',
     deliveryCountry: '',
     natureOfService: '',
     trainingArea: '',
-    classification: '',
-    preferredOnly: false,
-    hasContract: false,
-    hseProvider: false,
     limit: '10'
   });
 
@@ -96,7 +90,7 @@ export const FirestoreDataTester: React.FC = () => {
         limit: Number(invoiceParams.limit)
       };
 
-      const result = await searchTrainingInvoicesForChat(params);
+      const result = await search_invoices_training_2023(params);
 
       if (result.success) {
         let response = `Found ${result.totalFound} training invoices\n\n`;
@@ -129,7 +123,7 @@ export const FirestoreDataTester: React.FC = () => {
         limit: Number(contractParams.limit)
       };
 
-      const result = await searchContractsForChat(params);
+      const result = await search_ipro_contracts(params);
 
       if (result.success) {
         let response = `Found ${result.totalFound} contracts\n\n`;
@@ -168,7 +162,7 @@ export const FirestoreDataTester: React.FC = () => {
         limit: Number(supplierParams.limit)
       };
 
-      const result = await searchTrainingSuppliersForChat(params);
+      const result = await search_training_suppliers(params);
 
       if (result.success) {
         let response = `Found ${result.totalFound} training suppliers\n\n`;
@@ -204,7 +198,7 @@ export const FirestoreDataTester: React.FC = () => {
         limit: Number(valmetSupplierParams.limit)
       };
 
-      const result = await searchSuppliersForChat(params);
+      const result = await search_ext_labour_suppliers(params);
 
       if (result.success) {
         let response = `Found ${result.totalFound} external labour suppliers\n\n`;
@@ -705,29 +699,12 @@ export const FirestoreDataTester: React.FC = () => {
             <TabsContent value="suppliers" className="space-y-4">
               <div className="space-y-4">
                 <h3 className="font-medium">Search Training Suppliers</h3>
+                <p className="text-sm text-gray-600">Search is limited to: Delivery Country, Nature of Service, and Training Area</p>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Company Name</Label>
-                    <Input
-                      placeholder="e.g., Accenture, IBM..."
-                      value={supplierParams.companyName}
-                      onChange={(e) => setSupplierParams({...supplierParams, companyName: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Country</Label>
-                    <Input
-                      placeholder="e.g., Finland, Germany..."
-                      value={supplierParams.country}
-                      onChange={(e) => setSupplierParams({...supplierParams, country: e.target.value})}
-                    />
-                  </div>
-
                   <div className="space-y-2">
                     <Label>Delivery Country</Label>
                     <Input
-                      placeholder="e.g., Finland, Sweden..."
+                      placeholder="e.g., Finland, Sweden, Global..."
                       value={supplierParams.deliveryCountry}
                       onChange={(e) => setSupplierParams({...supplierParams, deliveryCountry: e.target.value})}
                     />
@@ -736,7 +713,7 @@ export const FirestoreDataTester: React.FC = () => {
                   <div className="space-y-2">
                     <Label>Nature of Service</Label>
                     <Input
-                      placeholder="e.g., Training, Consulting..."
+                      placeholder="e.g., Leadership, HSE, Coaching..."
                       value={supplierParams.natureOfService}
                       onChange={(e) => setSupplierParams({...supplierParams, natureOfService: e.target.value})}
                     />
@@ -745,60 +722,10 @@ export const FirestoreDataTester: React.FC = () => {
                   <div className="space-y-2">
                     <Label>Training Area</Label>
                     <Input
-                      placeholder="e.g., Safety, Technical..."
+                      placeholder="e.g., Safety training, EMBA, Coaching..."
                       value={supplierParams.trainingArea}
                       onChange={(e) => setSupplierParams({...supplierParams, trainingArea: e.target.value})}
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Classification</Label>
-                    <Select
-                      value={supplierParams.classification || "all"}
-                      onValueChange={(value) => setSupplierParams({...supplierParams, classification: value === "all" ? "" : value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="All classifications" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All classifications</SelectItem>
-                        <SelectItem value="A">Class A</SelectItem>
-                        <SelectItem value="B">Class B</SelectItem>
-                        <SelectItem value="C">Class C</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex flex-col gap-2">
-                      <Label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={supplierParams.preferredOnly}
-                          onChange={(e) => setSupplierParams({...supplierParams, preferredOnly: e.target.checked})}
-                          className="rounded"
-                        />
-                        Preferred Only
-                      </Label>
-                      <Label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={supplierParams.hasContract}
-                          onChange={(e) => setSupplierParams({...supplierParams, hasContract: e.target.checked})}
-                          className="rounded"
-                        />
-                        Has Contract
-                      </Label>
-                      <Label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={supplierParams.hseProvider}
-                          onChange={(e) => setSupplierParams({...supplierParams, hseProvider: e.target.checked})}
-                          className="rounded"
-                        />
-                        HSE Provider
-                      </Label>
-                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -838,63 +765,45 @@ export const FirestoreDataTester: React.FC = () => {
                       variant="outline"
                       onClick={() => {
                         setSupplierParams({
-                          companyName: '',
-                          country: 'Finland',
-                          deliveryCountry: '',
+                          deliveryCountry: 'Finland',
                           natureOfService: '',
                           trainingArea: '',
-                          classification: 'A',
-                          preferredOnly: true,
-                          hasContract: false,
-                          hseProvider: false,
                           limit: '10'
                         });
                         setTimeout(searchSuppliers, 100);
                       }}
                     >
-                      Test: Finland Class A Preferred
+                      Test: Finland Delivery
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => {
                         setSupplierParams({
-                          companyName: '',
-                          country: '',
                           deliveryCountry: '',
-                          natureOfService: '',
+                          natureOfService: 'HSE',
                           trainingArea: '',
-                          classification: '',
-                          preferredOnly: false,
-                          hasContract: true,
-                          hseProvider: true,
                           limit: '10'
                         });
                         setTimeout(searchSuppliers, 100);
                       }}
                     >
-                      Test: HSE Providers with Contract
+                      Test: HSE Services
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => {
                         setSupplierParams({
-                          companyName: 'Accenture',
-                          country: '',
                           deliveryCountry: '',
                           natureOfService: '',
-                          trainingArea: '',
-                          classification: '',
-                          preferredOnly: false,
-                          hasContract: false,
-                          hseProvider: false,
+                          trainingArea: 'coaching',
                           limit: '5'
                         });
                         setTimeout(searchSuppliers, 100);
                       }}
                     >
-                      Test: Search Accenture
+                      Test: Coaching Area
                     </Button>
                   </div>
                 </div>
