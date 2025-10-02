@@ -1,20 +1,19 @@
 /**
- * External Labour Supplier Search Function for AI Chat
+ * Unified Supplier Search Function for AI Chat
  *
- * This function provides AI chatbot access to search the external labour suppliers database
- * containing 410+ verified suppliers for professional services and temporary workforce.
- * (IT categories excluded)
+ * This function provides AI chatbot access to search the unified suppliers database
+ * containing all supplier data in a single collection.
  */
 
 import { searchSuppliers, SupplierSearchFilters, SupplierDocument } from './valmetSupplierSearch';
 
 export interface ChatSupplierSearchParams {
-  mainCategory?: string;
-  supplierCategories?: string;
-  country?: string;
-  city?: string;
-  vendorName?: string;
-  limit?: number;
+  mainCategory?: string;              // Filter 1: Exact match from LOV
+  trainingNatureOfService?: string;    // Filter 2: Exact match from LOV
+  country?: string | string[];         // Filter 3: Single or multiple countries from LOV
+  vendorName?: string;                 // Filter 4: Fuzzy text search
+  limit?: number;                      // Filter 5: Max results (default: 20)
+  // EXACTLY 5 filters - no other parameters allowed
 }
 
 /**
@@ -23,6 +22,7 @@ export interface ChatSupplierSearchParams {
  * Categories are stored as hierarchical paths in the database
  */
 export const MAIN_CATEGORY_LOV = [
+  { value: '#', label: '# (data empty or not defined)', count: 0 },
   { value: 'Indirect procurement iPRO, Professional services, Business consulting', label: 'Business consulting', count: 131 },
   { value: 'Indirect procurement iPRO, Personnel, Training & people development', label: 'Training & people development', count: 100 },
   { value: 'Indirect procurement iPRO, Professional services, R&D services & materials', label: 'R&D services & materials', count: 52 },
@@ -35,97 +35,91 @@ export const MAIN_CATEGORY_LOV = [
 ];
 
 /**
- * Format supplier data for chat display
+ * Country List of Values (LOV)
+ * Complete list of countries in supplier database
  */
-function formatSupplierForChat(supplier: SupplierDocument): string {
-  const o = supplier.original || {};
-  const lines: string[] = [];
-  
-  // Company info
-  lines.push(`**${o['Company'] || o['Branch'] || o['Corporation'] || 'Unknown'}**`);
-  if (o['Company ID']) lines.push(`ID: ${o['Company ID']}`);
-  
-  // Categories
-  if (o['Supplier Main Category']) {
-    lines.push(`Main Category: ${o['Supplier Main Category']}`);
-  }
-  if (o['Supplier Categories']) {
-    lines.push(`Categories: ${o['Supplier Categories']}`);
-  }
-  
-  // Location
-  if (o['City (Street Address)'] || o['Country/Region (Street Address)']) {
-    lines.push(`Location: ${[o['City (Street Address)'], o['Country/Region (Street Address)']].filter(Boolean).join(', ')}`);
-  }
-  
-  // Contact
-  if (o['Supplier Main Contact']) {
-    lines.push(`Contact: ${o['Supplier Main Contact']}`);
-  }
-  if (o['Supplier Main Contact eMail']) {
-    lines.push(`Email: ${o['Supplier Main Contact eMail']}`);
-  }
-  
-  // Status indicators
-  const status: string[] = [];
-  if (o['Preferred Supplier'] === 'X') status.push('✓ Preferred');
-  if (o['Valmet Supplier Code of Conduct signed'] === 'X') status.push('✓ Code of Conduct');
-  if (o['Supplier sustainability policy signed'] === 'X') status.push('✓ Sustainability');
-  if (o['Is supplier engaged to Valmet climate program?'] === 'X' || 
-      o['Is supplier engaged to Valmet climate program?'] === 'Yes') status.push('✓ Climate Program');
-  
-  if (status.length > 0) {
-    lines.push(`Status: ${status.join(', ')}`);
-  }
-  
-  // Spend data
-  if (o['Finland spend?']) {
-    lines.push(`Finland Spend: ${o['Finland spend?']}`);
-  }
-  
-  return lines.join('\n');
-}
+export const COUNTRY_LOV = [
+  { value: '#', label: '# (data empty or not defined)', count: 0 },
+  { value: 'Austria', label: 'Austria', count: 1 },
+  { value: 'Belgium', label: 'Belgium', count: 2 },
+  { value: 'Brazil', label: 'Brazil', count: 1 },
+  { value: 'Canada', label: 'Canada', count: 3 },
+  { value: 'Chile', label: 'Chile', count: 1 },
+  { value: 'China', label: 'China', count: 4 },
+  { value: 'Colombia', label: 'Colombia', count: 1 },
+  { value: 'Costa Rica', label: 'Costa Rica', count: 1 },
+  { value: 'Croatia (Hrvatska)', label: 'Croatia (Hrvatska)', count: 1 },
+  { value: 'Czech Republic', label: 'Czech Republic', count: 2 },
+  { value: 'Denmark', label: 'Denmark', count: 5 },
+  { value: 'Egypt', label: 'Egypt', count: 1 },
+  { value: 'Estonia', label: 'Estonia', count: 2 },
+  { value: 'Finland', label: 'Finland', count: 254 },
+  { value: 'France', label: 'France', count: 6 },
+  { value: 'Germany', label: 'Germany', count: 26 },
+  { value: 'Greece', label: 'Greece', count: 1 },
+  { value: 'Hungary', label: 'Hungary', count: 1 },
+  { value: 'India', label: 'India', count: 10 },
+  { value: 'Ireland', label: 'Ireland', count: 2 },
+  { value: 'Italy', label: 'Italy', count: 4 },
+  { value: 'Japan', label: 'Japan', count: 2 },
+  { value: 'Korea, Republic of', label: 'Korea, Republic of', count: 1 },
+  { value: 'Lithuania', label: 'Lithuania', count: 1 },
+  { value: 'Luxembourg', label: 'Luxembourg', count: 2 },
+  { value: 'Netherlands', label: 'Netherlands', count: 8 },
+  { value: 'Norway', label: 'Norway', count: 4 },
+  { value: 'Panama', label: 'Panama', count: 1 },
+  { value: 'Peru', label: 'Peru', count: 1 },
+  { value: 'Poland', label: 'Poland', count: 5 },
+  { value: 'Singapore', label: 'Singapore', count: 2 },
+  { value: 'Spain', label: 'Spain', count: 3 },
+  { value: 'Sweden', label: 'Sweden', count: 19 },
+  { value: 'Switzerland', label: 'Switzerland', count: 6 },
+  { value: 'Tunisia', label: 'Tunisia', count: 1 },
+  { value: 'United Arab Emirates', label: 'United Arab Emirates', count: 2 },
+  { value: 'United Kingdom', label: 'United Kingdom', count: 15 },
+  { value: 'United States', label: 'United States', count: 23 },
+  { value: 'Uruguay', label: 'Uruguay', count: 1 }
+];
 
 /**
- * Search external labour suppliers for chat interface
- * Collection: ext_labour_suppliers
- * Returns formatted results suitable for chat display
- * Searches 410+ verified external labour suppliers
+ * Training Nature of Service List of Values (LOV)
+ * Exact values from database for training suppliers
  */
-function formatSuppliersAsTable(suppliers: any[]): any {
-  if (suppliers.length === 0) return null;
+export const TRAINING_NATURE_OF_SERVICE_LOV = [
+  { value: '#', label: '# (data empty or not defined)', count: 0 },
+  { value: 'General Training', label: 'General Training', count: 8 },
+  { value: 'Product, Service & Technology Training', label: 'Product, Service & Technology Training', count: 7 },
+  { value: 'Business Culture & Language Training', label: 'Business Culture & Language Training', count: 6 },
+  { value: 'Various/Other Skills', label: 'Various/Other Skills', count: 6 },
+  { value: 'Leadership, Management & Team Development', label: 'Leadership, Management & Team Development', count: 5 },
+  { value: 'Coaching & Work Counselling', label: 'Coaching & Work Counselling', count: 5 },
+  { value: 'HSE, Quality & Work Wellbeing', label: 'HSE, Quality & Work Wellbeing', count: 4 },
+  { value: 'E-learning & Digital Learning Solutions', label: 'E-learning & Digital Learning Solutions', count: 3 },
+  { value: 'Global Training Programs', label: 'Global Training Programs', count: 3 },
+  { value: 'Communication Skills Training', label: 'Communication Skills Training', count: 2 },
+  { value: 'Combined Leadership Programs', label: 'Combined Leadership Programs', count: 2 }
+];
 
-  const rows = suppliers.map(supplier => {
-    const o = supplier.original || {};
-    return {
-      'Company': o['Company'] || o['Branch'] || o['Corporation'] || 'N/A',
-      'ID': o['Company ID'] || 'N/A',
-      'Main Category': o['Supplier Main Category']?.split(',').pop()?.trim() || 'N/A',
-      'Categories': o['Supplier Categories'] || 'N/A',
-      'Country': o['Country/Region (Street Address)'] || 'N/A',
-      'City': o['City (Street Address)'] || 'N/A',
-      'Contact': o['Supplier Main Contact'] || 'N/A',
-      'Email': o['Supplier Main Contact eMail'] || 'N/A',
-      'Preferred': o['Preferred Supplier'] === 'X' ? '✅' : '❌',
-      'Code of Conduct': o['Valmet Supplier Code of Conduct signed'] === 'X' ? '✅' : '❌'
-    };
-  });
 
-  return {
-    type: 'data_table',
-    title: 'External Labour Suppliers',
-    description: `Found ${rows.length} suppliers`,
-    columns: ['Company', 'ID', 'Main Category', 'Categories', 'Country', 'City', 'Contact', 'Email', 'Preferred', 'Code of Conduct'],
-    rows: rows,
-    format: 'table'
-  };
-}
+// Mapping from UI values to actual database values
+const TRAINING_NATURE_MAPPING: Record<string, string> = {
+  'General Training': 'Training',
+  'Product, Service & Technology Training': 'Product, service or technology trainings',
+  'Business Culture & Language Training': 'Business culture and language training',
+  'Various/Other Skills': 'Various/other skills',
+  'Leadership, Management & Team Development': 'Leadership, management and team development',
+  'Coaching & Work Counselling': 'Coaching and work counselling',
+  'HSE, Quality & Work Wellbeing': 'HSE, quality and work wellbeing',
+  'E-learning & Digital Learning Solutions': 'Elearnings and digital learning solutions',
+  'Global Training Programs': 'Global training programs',
+  'Communication Skills Training': 'Interaction/ presentation/ communication/ influencing',
+  'Combined Leadership Programs': 'Leadership, management and team development, project management'
+};
 
-export async function search_ext_labour_suppliers(params: ChatSupplierSearchParams): Promise<{
+export async function search_suppliers(params: ChatSupplierSearchParams): Promise<{
   success: boolean;
   totalFound: number;
-  suppliers: string[];
-  tableData?: any;
+  suppliers: any[];
   error?: string;
 }> {
   console.log('📥 searchSuppliersForChat called with params:', JSON.stringify(params, null, 2));
@@ -165,60 +159,43 @@ export async function search_ext_labour_suppliers(params: ChatSupplierSearchPara
       }
     }
     
+    // Handle country as array or string
+    let countryFilter: string | undefined;
+    if (params.country) {
+      if (Array.isArray(params.country)) {
+        // For multiple countries, we'll need to handle this in the search function
+        countryFilter = params.country.join('|'); // Use pipe separator for multiple values
+      } else {
+        countryFilter = params.country;
+      }
+    }
+
+    // Map training nature from UI value to database value
+    let trainingNatureFilter = params.trainingNatureOfService;
+    if (trainingNatureFilter && trainingNatureFilter !== '#') {
+      const mappedValue = TRAINING_NATURE_MAPPING[trainingNatureFilter];
+      if (mappedValue) {
+        console.log(`🔄 Mapping training nature: "${trainingNatureFilter}" -> "${mappedValue}"`);
+        trainingNatureFilter = mappedValue;
+      }
+    }
+
     const filters: SupplierSearchFilters = {
       mainCategory: params.mainCategory,
-      supplierCategories: params.supplierCategories,
-      country: params.country,
-      city: params.city,
+      trainingNatureOfService: trainingNatureFilter,
+      country: countryFilter,
       vendorName: params.vendorName,
       maxResults: params.limit || 10
+      // EXACTLY 5 filters - no other parameters
     };
     
     const results = await searchSuppliers(filters);
 
-    // Format results for chat
-    const formattedSuppliers = results.suppliers.map(formatSupplierForChat);
-
-    // If no results found, provide helpful feedback
-    if (results.totalCount === 0 && params.vendorName) {
-      console.log(`💡 No suppliers found with name containing "${params.vendorName}"`);
-      return {
-        success: true,
-        totalFound: 0,
-        suppliers: [
-          `No suppliers found with vendor name containing "${params.vendorName}"\n\n` +
-          `Search performed in: Company, Branch, and Corporation fields\n` +
-          `Search type: Case-insensitive partial match\n\n` +
-          `Tips:\n` +
-          `• Try a shorter search term (e.g., just "Zeal" instead of "Zeal Sourcing")\n` +
-          `• Check for alternative spellings\n` +
-          `• The supplier might not be in the database`
-        ]
-      };
-    }
-
-    // If no results for other searches
-    if (results.totalCount === 0) {
-      const searchCriteria = [];
-      if (params.mainCategory) searchCriteria.push(`Category: ${params.mainCategory}`);
-      if (params.supplierCategories) searchCriteria.push(`Supplier Categories: ${params.supplierCategories}`);
-      if (params.country) searchCriteria.push(`Country: ${params.country}`);
-      if (params.city) searchCriteria.push(`City: ${params.city}`);
-
-      return {
-        success: true,
-        totalFound: 0,
-        suppliers: [
-          `No suppliers found matching the following criteria:\n${searchCriteria.join('\n')}`
-        ]
-      };
-    }
-
+    // Return raw suppliers data as JSON
     return {
       success: true,
       totalFound: results.totalCount,
-      suppliers: formattedSuppliers,
-      tableData: formatSuppliersAsTable(results.suppliers)
+      suppliers: results.suppliers
     };
   } catch (error) {
     console.error('Error in searchSuppliersForChat:', error);
@@ -232,6 +209,11 @@ export async function search_ext_labour_suppliers(params: ChatSupplierSearchPara
 }
 
 /**
+ * Alias for UI compatibility - both UI and LLM use the same function
+ */
+export const searchSuppliersForChat = search_suppliers;
+
+/**
  * Get main categories list for chat
  */
 export function getMainCategoriesForChat(): string {
@@ -242,14 +224,15 @@ export function getMainCategoriesForChat(): string {
 
 /**
  * Example usage for AI integration:
- * 
- * // Search for IT consulting suppliers in Finland
- * const results = await searchSuppliersForChat({
- *   mainCategory: 'IT consulting',
+ *
+ * // Search for suppliers in Finland
+ * const results = await search_suppliers({
+ *   mainCategory: 'Business consulting',
  *   country: 'Finland',
  *   limit: 5
  * });
- * 
+ *
  * // Get all categories
  * const categories = getMainCategoriesForChat();
  */
+

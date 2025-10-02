@@ -3,20 +3,11 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Badge } from './ui/badge';
-import { Alert, AlertDescription } from './ui/alert';
-import { DataTable } from './DataTable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import {
   Search,
   FileText,
-  Receipt,
-  Users,
-  BarChart,
-  AlertCircle,
   Loader2,
-  Building2,
-  Download
+  Building2
 } from 'lucide-react';
 import {
   Select,
@@ -25,124 +16,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import {
-  search_invoices_training_2023,
-  search_ipro_contracts,
-  search_training_suppliers
-} from '../lib/chatFunctions';
-import { search_ext_labour_suppliers, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
+import { search_suppliers, COUNTRY_LOV } from '../lib/supplierSearchFunction';
+
+// Training Nature of Service LOV
+const TRAINING_NATURE_OF_SERVICE_LOV = [
+  { value: 'General Training', label: 'General Training', count: 8 },
+  { value: 'Product, Service & Technology Training', label: 'Product, Service & Technology Training', count: 7 },
+  { value: 'Business Culture & Language Training', label: 'Business Culture & Language Training', count: 6 },
+  { value: 'Various/Other Skills', label: 'Various/Other Skills', count: 6 },
+  { value: 'Leadership, Management & Team Development', label: 'Leadership, Management & Team Development', count: 5 },
+  { value: 'Coaching & Work Counselling', label: 'Coaching & Work Counselling', count: 5 },
+  { value: 'HSE, Quality & Work Wellbeing', label: 'HSE, Quality & Work Wellbeing', count: 4 },
+  { value: 'E-learning & Digital Learning Solutions', label: 'E-learning & Digital Learning Solutions', count: 3 },
+  { value: 'Global Training Programs', label: 'Global Training Programs', count: 3 },
+  { value: 'Communication Skills Training', label: 'Communication Skills Training', count: 2 },
+  { value: 'Combined Leadership Programs', label: 'Combined Leadership Programs', count: 2 }
+];
 
 export const FirestoreDataTester: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<string>('');
   const [tableData, setTableData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('valmet-suppliers');
 
-  // Invoice search parameters
-  const [invoiceParams, setInvoiceParams] = useState({
-    businessPartner: '',
-    status: '',
-    minAmount: '',
-    maxAmount: '',
-    approver: '',
-    reviewer: '',
-    limit: '10'
-  });
-
-  // Contract search parameters
-  const [contractParams, setContractParams] = useState({
-    supplier: '',
-    searchText: '',
-    activeOnly: false,
-    limit: '10'
-  });
-
-  // Training supplier parameters - limited to 3 search fields
+  // Simplified supplier search parameters
   const [supplierParams, setSupplierParams] = useState({
-    deliveryCountry: '',
-    natureOfService: '',
-    trainingArea: '',
-    limit: '10'
-  });
-
-  // External labour supplier parameters
-  const [valmetSupplierParams, setValmetSupplierParams] = useState({
     mainCategory: '',
-    supplierCategories: '',
-    country: '',
-    city: '',
-    vendorName: '',
+    country: [] as string[],
+    trainingNatureOfService: '',
+    company: '',
+    preferredSupplier: '',
     limit: '20'
   });
-
-  const searchInvoices = async () => {
-    setLoading(true);
-    setResponse('');
-    setTableData(null);
-    try {
-      const params = {
-        businessPartner: invoiceParams.businessPartner || undefined,
-        status: invoiceParams.status || undefined,
-        minAmount: invoiceParams.minAmount ? Number(invoiceParams.minAmount) : undefined,
-        maxAmount: invoiceParams.maxAmount ? Number(invoiceParams.maxAmount) : undefined,
-        approver: invoiceParams.approver || undefined,
-        reviewer: invoiceParams.reviewer || undefined,
-        limit: Number(invoiceParams.limit)
-      };
-
-      const result = await search_invoices_training_2023(params);
-
-      if (result.success) {
-        let response = `Found ${result.totalFound} training invoices\n\n`;
-        if (result.summary) {
-          response += `📊 Summary:\n`;
-          response += `• Total Amount: €${result.summary.totalAmount.toLocaleString()}\n`;
-          response += `• Unique Suppliers: ${result.summary.suppliers.length}\n\n`;
-        }
-        setResponse(response);
-        setTableData(result.tableData);
-      } else {
-        setResponse(`Error: ${result.error}`);
-      }
-    } catch (error) {
-      setResponse(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const searchContracts = async () => {
-    setLoading(true);
-    setResponse('');
-    setTableData(null);
-    try {
-      const params = {
-        supplier: contractParams.supplier || undefined,
-        searchText: contractParams.searchText || undefined,
-        activeOnly: contractParams.activeOnly,
-        limit: Number(contractParams.limit)
-      };
-
-      const result = await search_ipro_contracts(params);
-
-      if (result.success) {
-        let response = `Found ${result.totalFound} contracts\n\n`;
-        if (result.summary) {
-          response += `📊 Summary:\n`;
-          response += `• Active Contracts: ${result.summary.activeCount}\n`;
-          response += `• Unique Suppliers: ${result.summary.suppliers.length}\n\n`;
-        }
-        setResponse(response);
-        setTableData(result.tableData);
-      } else {
-        setResponse(`Error: ${result.error}`);
-      }
-    } catch (error) {
-      setResponse(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const searchSuppliers = async () => {
     setLoading(true);
@@ -150,60 +54,20 @@ export const FirestoreDataTester: React.FC = () => {
     setTableData(null);
     try {
       const params = {
-        companyName: supplierParams.companyName || undefined,
-        country: supplierParams.country || undefined,
-        deliveryCountry: supplierParams.deliveryCountry || undefined,
-        natureOfService: supplierParams.natureOfService || undefined,
-        trainingArea: supplierParams.trainingArea || undefined,
-        classification: supplierParams.classification || undefined,
-        preferredOnly: supplierParams.preferredOnly,
-        hasContract: supplierParams.hasContract,
-        hseProvider: supplierParams.hseProvider,
+        mainCategory: supplierParams.mainCategory || undefined,
+        country: supplierParams.country.length > 0 ? supplierParams.country : undefined,
+        trainingNatureOfService: supplierParams.trainingNatureOfService || undefined,
+        vendorName: supplierParams.company || undefined,
+        preferredSupplier: supplierParams.preferredSupplier || undefined,
         limit: Number(supplierParams.limit)
       };
 
-      const result = await search_training_suppliers(params);
+      const result = await search_suppliers(params);
 
       if (result.success) {
-        let response = `Found ${result.totalFound} training suppliers\n\n`;
-        if (result.summary) {
-          response += `📊 Summary:\n`;
-          response += `• Preferred Suppliers: ${result.summary.preferredCount}\n`;
-          response += `• With Contract: ${result.summary.withContract}\n`;
-          response += `• Classifications - A: ${result.summary.classifications.A}, B: ${result.summary.classifications.B}, C: ${result.summary.classifications.C}\n\n`;
-        }
+        const response = `Found ${result.totalFound} suppliers\n\n`;
         setResponse(response);
-        setTableData(result.tableData);
-      } else {
-        setResponse(`Error: ${result.error}`);
-      }
-    } catch (error) {
-      setResponse(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const searchExternalLabourSuppliers = async () => {
-    setLoading(true);
-    setResponse('');
-    setTableData(null);
-    try {
-      const params = {
-        mainCategory: valmetSupplierParams.mainCategory || undefined,
-        supplierCategories: valmetSupplierParams.supplierCategories || undefined,
-        country: valmetSupplierParams.country || undefined,
-        city: valmetSupplierParams.city || undefined,
-        vendorName: valmetSupplierParams.vendorName || undefined,
-        limit: Number(valmetSupplierParams.limit)
-      };
-
-      const result = await search_ext_labour_suppliers(params);
-
-      if (result.success) {
-        let response = `Found ${result.totalFound} external labour suppliers\n\n`;
-        setResponse(response);
-        setTableData(result.tableData);
+        setTableData(result.suppliers);
       } else {
         setResponse(`Error: ${result.error}`);
       }
@@ -220,597 +84,236 @@ export const FirestoreDataTester: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
-            Procurement Data Search & Testing
+            Supplier Database Search
           </CardTitle>
           <CardDescription>
-            Search and test all procurement data: External Labour Suppliers (410+), Training Invoices, iPRO Contracts, and Training Suppliers
+            Search the unified supplier database (~400 verified suppliers)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid grid-cols-5 w-full">
-              <TabsTrigger value="valmet-suppliers">
-                <Building2 className="w-4 h-4 mr-2" />
-                External Labour
-              </TabsTrigger>
-              <TabsTrigger value="invoices">
-                <Receipt className="w-4 h-4 mr-2" />
-                Invoices
-              </TabsTrigger>
-              <TabsTrigger value="contracts">
-                <FileText className="w-4 h-4 mr-2" />
-                Contracts
-              </TabsTrigger>
-              <TabsTrigger value="suppliers">
-                <Users className="w-4 h-4 mr-2" />
-                Training
-              </TabsTrigger>
-            </TabsList>
-
-            {/* External Labour Suppliers Tab (Main 410+ suppliers) */}
-            <TabsContent value="valmet-suppliers" className="space-y-4">
-              <div className="space-y-4">
-                <h3 className="font-medium">Search External Labour Suppliers (410+ suppliers)</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Main Category</Label>
-                    <Select
-                      value={valmetSupplierParams.mainCategory || "all"}
-                      onValueChange={(value) => setValmetSupplierParams({...valmetSupplierParams, mainCategory: value === "all" ? "" : value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select main category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="Indirect procurement iPRO, Professional services, Business consulting">Business consulting (131)</SelectItem>
-                        <SelectItem value="Indirect procurement iPRO, Personnel, Training & people development">Training & people development (100)</SelectItem>
-                        <SelectItem value="Indirect procurement iPRO, Professional services, R&D services & materials">R&D services & materials (52)</SelectItem>
-                        <SelectItem value="Indirect procurement iPRO, Professional services, Legal services">Legal services (45)</SelectItem>
-                        <SelectItem value="Indirect procurement iPRO, Professional services, Certification, standardization & audits">Certification & audits (26)</SelectItem>
-                        <SelectItem value="Indirect procurement iPRO, Professional services, Patent services">Patent services (26)</SelectItem>
-                        <SelectItem value="Indirect procurement iPRO, Personnel, Leased workforce">Leased workforce (14)</SelectItem>
-                        <SelectItem value="Indirect procurement iPRO, Professional services, Testing, measurement & inspection">Testing & inspection (2)</SelectItem>
-                        <SelectItem value="Indirect procurement iPRO, Facilities, Facility investments">Facility investments (1)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Supplier Categories</Label>
-                    <Input
-                      placeholder="e.g., Testing, Training, Patent..."
-                      value={valmetSupplierParams.supplierCategories}
-                      onChange={(e) => setValmetSupplierParams({...valmetSupplierParams, supplierCategories: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Country/Region</Label>
-                    <Input
-                      placeholder="e.g., Finland, Germany, United..."
-                      value={valmetSupplierParams.country}
-                      onChange={(e) => setValmetSupplierParams({...valmetSupplierParams, country: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>City</Label>
-                    <Input
-                      placeholder="e.g., Helsinki, Espoo, Stockholm..."
-                      value={valmetSupplierParams.city}
-                      onChange={(e) => setValmetSupplierParams({...valmetSupplierParams, city: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Vendor Name</Label>
-                    <Input
-                      placeholder="e.g., Accenture, IBM, Nokia..."
-                      value={valmetSupplierParams.vendorName}
-                      onChange={(e) => setValmetSupplierParams({...valmetSupplierParams, vendorName: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Limit</Label>
-                    <Input
-                      type="number"
-                      value={valmetSupplierParams.limit}
-                      onChange={(e) => setValmetSupplierParams({...valmetSupplierParams, limit: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  onClick={searchExternalLabourSuppliers}
-                  disabled={loading}
-                  className="w-full bg-green-600 hover:bg-green-700"
+          <div className="space-y-4">
+            <h3 className="font-medium flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Search Suppliers (~400 verified suppliers)
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Main Category</Label>
+                <Select
+                  value={supplierParams.mainCategory || "all"}
+                  onValueChange={(value) => setSupplierParams({...supplierParams, mainCategory: value === "all" ? "" : value})}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4 mr-2" />
-                      Search External Labour Suppliers
-                    </>
-                  )}
-                </Button>
-
-                {/* Sample Test Buttons */}
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium mb-2">Quick Tests:</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setValmetSupplierParams({
-                          mainCategory: 'Indirect procurement iPRO, Professional services, Business consulting',
-                          supplierCategories: '',
-                          country: '',
-                          city: '',
-                          vendorName: '',
-                          limit: '10'
-                        });
-                        setTimeout(searchExternalLabourSuppliers, 100);
-                      }}
-                    >
-                      Test: Business Consulting
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setValmetSupplierParams({
-                          mainCategory: '',
-                          supplierCategories: '',
-                          country: 'Finland',
-                          city: '',
-                          vendorName: '',
-                          limit: '10'
-                        });
-                        setTimeout(searchExternalLabourSuppliers, 100);
-                      }}
-                    >
-                      Test: Finland Suppliers
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setValmetSupplierParams({
-                          mainCategory: '',
-                          supplierCategories: '',
-                          country: '',
-                          city: '',
-                          vendorName: 'Accenture',
-                          limit: '5'
-                        });
-                        setTimeout(searchExternalLabourSuppliers, 100);
-                      }}
-                    >
-                      Test: Search Accenture
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setValmetSupplierParams({
-                          mainCategory: 'Indirect procurement iPRO, Personnel, Training & people development',
-                          supplierCategories: '',
-                          country: '',
-                          city: 'Helsinki',
-                          vendorName: '',
-                          limit: '10'
-                        });
-                        setTimeout(searchExternalLabourSuppliers, 100);
-                      }}
-                    >
-                      Test: Training in Helsinki
-                    </Button>
-                  </div>
-                </div>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select main category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="Indirect procurement iPRO, Professional services, Business consulting">Business consulting (131)</SelectItem>
+                    <SelectItem value="Indirect procurement iPRO, Personnel, Training & people development">Training & people development (100)</SelectItem>
+                    <SelectItem value="Indirect procurement iPRO, Professional services, R&D services & materials">R&D services & materials (52)</SelectItem>
+                    <SelectItem value="Indirect procurement iPRO, Professional services, Legal services">Legal services (45)</SelectItem>
+                    <SelectItem value="Indirect procurement iPRO, Professional services, Certification, standardization & audits">Certification & audits (26)</SelectItem>
+                    <SelectItem value="Indirect procurement iPRO, Professional services, Patent services">Patent services (26)</SelectItem>
+                    <SelectItem value="Indirect procurement iPRO, Personnel, Leased workforce">Leased workforce (14)</SelectItem>
+                    <SelectItem value="Indirect procurement iPRO, Professional services, Testing, measurement & inspection">Testing & inspection (2)</SelectItem>
+                    <SelectItem value="Indirect procurement iPRO, Facilities, Facility investments">Facility investments (1)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </TabsContent>
 
-            {/* Training Invoices Tab */}
-            <TabsContent value="invoices" className="space-y-4">
-              <div className="space-y-4">
-                <h3 className="font-medium">Search Training Invoices (2023)</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Business Partner</Label>
-                    <Input
-                      placeholder="e.g., Accenture, IBM..."
-                      value={invoiceParams.businessPartner}
-                      onChange={(e) => setInvoiceParams({...invoiceParams, businessPartner: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select
-                      value={invoiceParams.status || "all"}
-                      onValueChange={(value) => setInvoiceParams({...invoiceParams, status: value === "all" ? "" : value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="All statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All statuses</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="In Review">In Review</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Min Amount (€)</Label>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={invoiceParams.minAmount}
-                      onChange={(e) => setInvoiceParams({...invoiceParams, minAmount: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Max Amount (€)</Label>
-                    <Input
-                      type="number"
-                      placeholder="100000"
-                      value={invoiceParams.maxAmount}
-                      onChange={(e) => setInvoiceParams({...invoiceParams, maxAmount: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Approver</Label>
-                    <Input
-                      placeholder="Name of approver"
-                      value={invoiceParams.approver}
-                      onChange={(e) => setInvoiceParams({...invoiceParams, approver: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Reviewer</Label>
-                    <Input
-                      placeholder="Name of reviewer"
-                      value={invoiceParams.reviewer}
-                      onChange={(e) => setInvoiceParams({...invoiceParams, reviewer: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Limit</Label>
-                    <Input
-                      type="number"
-                      value={invoiceParams.limit}
-                      onChange={(e) => setInvoiceParams({...invoiceParams, limit: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  onClick={searchInvoices}
-                  disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+              <div className="space-y-2">
+                <Label>Country (Multiple Selection)</Label>
+                <Select
+                  value=""
+                  onValueChange={(value) => {
+                    if (value && !supplierParams.country.includes(value)) {
+                      setSupplierParams({...supplierParams, country: [...supplierParams.country, value]});
+                    }
+                  }}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4 mr-2" />
-                      Search Training Invoices
-                    </>
-                  )}
-                </Button>
-
-                {/* Sample Test Buttons */}
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium mb-2">Quick Tests:</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setInvoiceParams({
-                          businessPartner: 'Accenture',
-                          status: '',
-                          minAmount: '',
-                          maxAmount: '',
-                          approver: '',
-                          reviewer: '',
-                          limit: '5'
-                        });
-                        setTimeout(searchInvoices, 100);
-                      }}
-                    >
-                      Test: Accenture Invoices
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setInvoiceParams({
-                          businessPartner: '',
-                          status: 'Completed',
-                          minAmount: '50000',
-                          maxAmount: '',
-                          approver: '',
-                          reviewer: '',
-                          limit: '10'
-                        });
-                        setTimeout(searchInvoices, 100);
-                      }}
-                    >
-                      Test: High-Value Completed
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setInvoiceParams({
-                          businessPartner: '',
-                          status: '',
-                          minAmount: '',
-                          maxAmount: '',
-                          approver: '',
-                          reviewer: '',
-                          limit: '20'
-                        });
-                        setTimeout(searchInvoices, 100);
-                      }}
-                    >
-                      Test: All Invoices (Top 20)
-                    </Button>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select countries...">
+                      {supplierParams.country.length === 0
+                        ? "Select countries..."
+                        : `${supplierParams.country.length} selected`}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {COUNTRY_LOV.map((country) => (
+                      <SelectItem
+                        key={country.value}
+                        value={country.value}
+                        disabled={supplierParams.country.includes(country.value)}
+                      >
+                        {country.label} ({country.count})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {supplierParams.country.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {supplierParams.country.map(c => (
+                      <span
+                        key={c}
+                        className="px-2 py-1 bg-gray-100 rounded text-xs cursor-pointer hover:bg-red-100"
+                        onClick={() => setSupplierParams({...supplierParams, country: supplierParams.country.filter(x => x !== c)})}
+                      >
+                        {c} ×
+                      </span>
+                    ))}
                   </div>
-                </div>
+                )}
               </div>
-            </TabsContent>
 
-            {/* iPRO Contracts Tab */}
-            <TabsContent value="contracts" className="space-y-4">
-              <div className="space-y-4">
-                <h3 className="font-medium">Search iPRO Contracts</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Supplier Name</Label>
-                    <Input
-                      placeholder="e.g., Accenture, IBM..."
-                      value={contractParams.supplier}
-                      onChange={(e) => setContractParams({...contractParams, supplier: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Search Text</Label>
-                    <Input
-                      placeholder="Any text to search for..."
-                      value={contractParams.searchText}
-                      onChange={(e) => setContractParams({...contractParams, searchText: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={contractParams.activeOnly}
-                        onChange={(e) => setContractParams({...contractParams, activeOnly: e.target.checked})}
-                        className="rounded"
-                      />
-                      Active Contracts Only
-                    </Label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Limit</Label>
-                    <Input
-                      type="number"
-                      value={contractParams.limit}
-                      onChange={(e) => setContractParams({...contractParams, limit: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  onClick={searchContracts}
-                  disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+              <div className="space-y-2">
+                <Label>Training Nature of Service</Label>
+                <Select
+                  value={supplierParams.trainingNatureOfService || "all"}
+                  onValueChange={(value) => setSupplierParams({...supplierParams, trainingNatureOfService: value === "all" ? "" : value})}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4 mr-2" />
-                      Search Contracts
-                    </>
-                  )}
-                </Button>
-
-                {/* Sample Test Buttons */}
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium mb-2">Quick Tests:</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setContractParams({
-                          supplier: 'IBM',
-                          searchText: '',
-                          activeOnly: true,
-                          limit: '5'
-                        });
-                        setTimeout(searchContracts, 100);
-                      }}
-                    >
-                      Test: IBM Active Contracts
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setContractParams({
-                          supplier: '',
-                          searchText: 'training',
-                          activeOnly: false,
-                          limit: '10'
-                        });
-                        setTimeout(searchContracts, 100);
-                      }}
-                    >
-                      Test: Training Contracts
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setContractParams({
-                          supplier: '',
-                          searchText: '',
-                          activeOnly: true,
-                          limit: '15'
-                        });
-                        setTimeout(searchContracts, 100);
-                      }}
-                    >
-                      Test: All Active Contracts
-                    </Button>
-                  </div>
-                </div>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select training type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Training Types</SelectItem>
+                    {TRAINING_NATURE_OF_SERVICE_LOV.map(item => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label} ({item.count})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </TabsContent>
 
-            {/* Training Suppliers Tab */}
-            <TabsContent value="suppliers" className="space-y-4">
-              <div className="space-y-4">
-                <h3 className="font-medium">Search Training Suppliers</h3>
-                <p className="text-sm text-gray-600">Search is limited to: Delivery Country, Nature of Service, and Training Area</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Delivery Country</Label>
-                    <Input
-                      placeholder="e.g., Finland, Sweden, Global..."
-                      value={supplierParams.deliveryCountry}
-                      onChange={(e) => setSupplierParams({...supplierParams, deliveryCountry: e.target.value})}
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label>Company Name</Label>
+                <Input
+                  placeholder="e.g., Accenture, IBM, Nokia..."
+                  value={supplierParams.company}
+                  onChange={(e) => setSupplierParams({...supplierParams, company: e.target.value})}
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <Label>Nature of Service</Label>
-                    <Input
-                      placeholder="e.g., Leadership, HSE, Coaching..."
-                      value={supplierParams.natureOfService}
-                      onChange={(e) => setSupplierParams({...supplierParams, natureOfService: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Training Area</Label>
-                    <Input
-                      placeholder="e.g., Safety training, EMBA, Coaching..."
-                      value={supplierParams.trainingArea}
-                      onChange={(e) => setSupplierParams({...supplierParams, trainingArea: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Limit</Label>
-                    <Input
-                      type="number"
-                      value={supplierParams.limit}
-                      onChange={(e) => setSupplierParams({...supplierParams, limit: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  onClick={searchSuppliers}
-                  disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+              <div className="space-y-2">
+                <Label>Preferred Supplier</Label>
+                <Select
+                  value={supplierParams.preferredSupplier || "all"}
+                  onValueChange={(value) => setSupplierParams({...supplierParams, preferredSupplier: value === "all" ? "" : value})}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4 mr-2" />
-                      Search Training Suppliers
-                    </>
-                  )}
-                </Button>
-
-                {/* Sample Test Buttons */}
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium mb-2">Quick Tests:</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSupplierParams({
-                          deliveryCountry: 'Finland',
-                          natureOfService: '',
-                          trainingArea: '',
-                          limit: '10'
-                        });
-                        setTimeout(searchSuppliers, 100);
-                      }}
-                    >
-                      Test: Finland Delivery
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSupplierParams({
-                          deliveryCountry: '',
-                          natureOfService: 'HSE',
-                          trainingArea: '',
-                          limit: '10'
-                        });
-                        setTimeout(searchSuppliers, 100);
-                      }}
-                    >
-                      Test: HSE Services
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSupplierParams({
-                          deliveryCountry: '',
-                          natureOfService: '',
-                          trainingArea: 'coaching',
-                          limit: '5'
-                        });
-                        setTimeout(searchSuppliers, 100);
-                      }}
-                    >
-                      Test: Coaching Area
-                    </Button>
-                  </div>
-                </div>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All suppliers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Suppliers</SelectItem>
+                    <SelectItem value="true">Preferred Only</SelectItem>
+                    <SelectItem value="false">Non-Preferred Only</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </TabsContent>
 
-          </Tabs>
+              <div className="space-y-2">
+                <Label>Max Number of Results</Label>
+                <Input
+                  type="number"
+                  value={supplierParams.limit}
+                  onChange={(e) => setSupplierParams({...supplierParams, limit: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={searchSuppliers}
+              disabled={loading}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4 mr-2" />
+                  Search Suppliers
+                </>
+              )}
+            </Button>
+
+            {/* Sample Test Buttons */}
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm font-medium mb-2">Quick Tests:</p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSupplierParams({
+                      mainCategory: 'Indirect procurement iPRO, Professional services, Business consulting',
+                      country: [],
+                      trainingNatureOfService: '',
+                      company: '',
+                      preferredSupplier: 'true',
+                      limit: '10'
+                    });
+                    setTimeout(searchSuppliers, 100);
+                  }}
+                >
+                  Test: Preferred Business Consulting
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSupplierParams({
+                      mainCategory: '',
+                      country: ['Finland'],
+                      trainingNatureOfService: '',
+                      company: '',
+                      preferredSupplier: '',
+                      limit: '10'
+                    });
+                    setTimeout(searchSuppliers, 100);
+                  }}
+                >
+                  Test: Finland Suppliers
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSupplierParams({
+                      mainCategory: 'Indirect procurement iPRO, Personnel, Training & people development',
+                      country: [],
+                      trainingNatureOfService: 'Leadership, Management & Team Development',
+                      company: '',
+                      preferredSupplier: '',
+                      limit: '10'
+                    });
+                    setTimeout(searchSuppliers, 100);
+                  }}
+                >
+                  Test: Leadership Training
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSupplierParams({
+                      mainCategory: '',
+                      country: [],
+                      trainingNatureOfService: 'HSE, Quality & Work Wellbeing',
+                      company: '',
+                      preferredSupplier: 'true',
+                      limit: '5'
+                    });
+                    setTimeout(searchSuppliers, 100);
+                  }}
+                >
+                  Test: Preferred HSE Training
+                </Button>
+              </div>
+            </div>
+          </div>
 
           {/* Response Display */}
           {response && (
@@ -828,10 +331,19 @@ export const FirestoreDataTester: React.FC = () => {
             </div>
           )}
 
-          {/* Table Display */}
+          {/* Raw JSON Display */}
           {tableData && (
             <div className="mt-6">
-              <DataTable tableData={tableData} />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Raw JSON Results</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre className="whitespace-pre-wrap text-xs bg-gray-50 p-4 rounded-lg overflow-auto max-h-[600px]">
+                    {JSON.stringify(tableData, null, 2)}
+                  </pre>
+                </CardContent>
+              </Card>
             </div>
           )}
         </CardContent>

@@ -12,9 +12,11 @@ import {
   setUserPromptPreference,
   copyPromptVersion,
   initializeSystemPrompts,
-  resetPromptToDefault,
   PromptVersion,
-  SystemPromptData
+  SystemPromptData,
+  getUserLLMModel,
+  setUserLLMModel,
+  LLMModel
 } from '@/lib/systemPromptService';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, Copy, RefreshCw, AlertCircle, Check, FileText, FlaskConical, User, RotateCcw } from 'lucide-react';
+import { Save, Copy, RefreshCw, AlertCircle, Check, FileText, FlaskConical, User, Bot } from 'lucide-react';
 
 export default function SystemPromptManager() {
   const { user } = useAuth();
@@ -41,13 +43,14 @@ export default function SystemPromptManager() {
   const [productionContent, setProductionContent] = useState('');
   const [testingContent, setTestingContent] = useState('');
   const [userVersion, setUserVersion] = useState<PromptVersion>('production');
+  const [selectedModel, setSelectedModel] = useState<LLMModel>('x-ai/grok-4-fast:free');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (user) {
       loadPrompts();
-      loadUserPreference();
+      loadUserPreferences();
     }
   }, [user]);
 
@@ -77,14 +80,18 @@ export default function SystemPromptManager() {
     }
   };
 
-  const loadUserPreference = async () => {
+  const loadUserPreferences = async () => {
     if (!user) return;
 
     try {
-      const preference = await getUserPromptPreference(user.uid);
-      setUserVersion(preference);
+      const [promptPref, modelPref] = await Promise.all([
+        getUserPromptPreference(user.uid),
+        getUserLLMModel(user.uid)
+      ]);
+      setUserVersion(promptPref);
+      setSelectedModel(modelPref);
     } catch (error) {
-      console.error('Error loading user preference:', error);
+      console.error('Error loading user preferences:', error);
     }
   };
 
@@ -136,36 +143,6 @@ export default function SystemPromptManager() {
     }
   };
 
-  const handleResetToDefault = async (version: PromptVersion) => {
-    if (!user) return;
-
-    const confirmed = window.confirm(
-      `Are you sure you want to reset the ${version} prompt to default? This will overwrite the current content.`
-    );
-
-    if (!confirmed) return;
-
-    setSaving(true);
-    setMessage('');
-    setError('');
-
-    try {
-      const success = await resetPromptToDefault(version, user.uid);
-
-      if (success) {
-        setMessage(`${version} prompt reset to default successfully`);
-        // Reload prompts to get updated content
-        await loadPrompts();
-      } else {
-        setError(`Failed to reset ${version} prompt to default`);
-      }
-    } catch (error) {
-      console.error('Error resetting prompt to default:', error);
-      setError(`Error resetting ${version} prompt to default`);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleVersionChange = async (version: PromptVersion) => {
     if (!user) return;
@@ -188,6 +165,27 @@ export default function SystemPromptManager() {
     }
   };
 
+  const handleModelChange = async (model: LLMModel) => {
+    if (!user) return;
+
+    setMessage('');
+    setError('');
+
+    try {
+      const success = await setUserLLMModel(user.uid, model);
+
+      if (success) {
+        setSelectedModel(model);
+        setMessage(`Your LLM model preference updated to ${model.includes('grok') ? 'Grok-4-Fast (Free)' : model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' : 'Gemini 2.5 Pro'}`);
+      } else {
+        setError('Failed to update model preference');
+      }
+    } catch (error) {
+      console.error('Error updating system model:', error);
+      setError('Error updating system model');
+    }
+  };
+
   const formatLastUpdated = (timestamp: any) => {
     if (!timestamp) return 'Never';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -207,46 +205,96 @@ export default function SystemPromptManager() {
 
   return (
     <div className="space-y-6">
-      {/* Version Selector */}
+      {/* Configuration Card - Prompt Version & LLM Model */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
-            Your Active Prompt Version
+            AI Assistant Configuration
           </CardTitle>
           <CardDescription>
-            Select which version of the system prompt to use for your AI assistant
+            Configure your AI assistant's prompt version and language model
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-4">
-            <Label>Active Version:</Label>
-            <Select value={userVersion} onValueChange={(v) => handleVersionChange(v as PromptVersion)}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="production">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    Production
-                  </div>
-                </SelectItem>
-                <SelectItem value="testing">
-                  <div className="flex items-center gap-2">
-                    <FlaskConical className="w-4 h-4" />
-                    Testing
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <div className={`px-3 py-1 rounded-full text-sm ${
-              userVersion === 'production'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-yellow-100 text-yellow-800'
-            }`}>
-              Currently using: {userVersion}
+        <CardContent className="space-y-6">
+          {/* Prompt Version Selector */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">System Prompt Version</Label>
+            <div className="flex items-center space-x-4">
+              <Select value={userVersion} onValueChange={(v) => handleVersionChange(v as PromptVersion)}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="production">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Production
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="testing">
+                    <div className="flex items-center gap-2">
+                      <FlaskConical className="w-4 h-4" />
+                      Testing
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <div className={`px-3 py-1 rounded-full text-sm ${
+                userVersion === 'production'
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                Active: {userVersion}
+              </div>
             </div>
+          </div>
+
+          {/* LLM Model Selector */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Your Language Model Preference (OpenRouter BYOK)</Label>
+            <div className="flex items-center space-x-4">
+              <Select value={selectedModel} onValueChange={(v) => handleModelChange(v as LLMModel)}>
+                <SelectTrigger className="w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="x-ai/grok-4-fast:free">
+                    <div className="flex items-center gap-2">
+                      <Bot className="w-4 h-4" />
+                      <div>
+                        <div className="font-medium">Grok-4-Fast</div>
+                        <div className="text-xs text-gray-500">Free tier, fast responses</div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="google/gemini-2.5-flash">
+                    <div className="flex items-center gap-2">
+                      <Bot className="w-4 h-4" />
+                      <div>
+                        <div className="font-medium">Gemini 2.5 Flash</div>
+                        <div className="text-xs text-gray-500">Fast, efficient model (default)</div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="google/gemini-2.5-pro">
+                    <div className="flex items-center gap-2">
+                      <Bot className="w-4 h-4" />
+                      <div>
+                        <div className="font-medium">Gemini 2.5 Pro</div>
+                        <div className="text-xs text-gray-500">Most capable model</div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                Temperature: 0
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
+              Your personal model preference. Default for all users is Gemini 2.5 Flash.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -301,15 +349,6 @@ export default function SystemPromptManager() {
                   >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy to Testing
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleResetToDefault('production')}
-                    disabled={saving}
-                    className="text-orange-600 hover:text-orange-700"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Reset to Default
                   </Button>
                 </div>
               </div>
@@ -380,21 +419,42 @@ export default function SystemPromptManager() {
       {/* Info Card */}
       <Card>
         <CardHeader>
-          <CardTitle>About Prompt Versions</CardTitle>
+          <CardTitle>About Configuration</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-gray-600">
-          <p>
-            <strong>Production:</strong> The stable version stored in database. Can be edited and saved.
-            Changes here affect all users who haven't selected a specific version.
-          </p>
-          <p>
-            <strong>Testing:</strong> Read-only version that always uses <code className="bg-gray-100 px-1">/public/system_prompt.md</code>.
-            Perfect for testing code changes. Edit the file directly in your code editor.
-          </p>
-          <p>
-            <strong>Your Selection:</strong> Your personal preference is saved and will be used
-            whenever you use the AI assistant.
-          </p>
+        <CardContent className="space-y-4 text-sm text-gray-600">
+          <div>
+            <p className="font-medium mb-1">Prompt Versions:</p>
+            <p>
+              <strong>Production:</strong> The stable version stored in database. Can be edited and saved.
+              Changes here affect all users who haven't selected a specific version.
+            </p>
+            <p className="mt-1">
+              <strong>Testing:</strong> Read-only version that always uses <code className="bg-gray-100 px-1">/public/system_prompt.md</code>.
+              Perfect for testing code changes. Edit the file directly in your code editor.
+            </p>
+          </div>
+
+          <div>
+            <p className="font-medium mb-1">System Language Model (via OpenRouter):</p>
+            <p>
+              <strong>Grok-4-Fast:</strong> Default model. Fast responses, free tier.
+            </p>
+            <p className="mt-1">
+              <strong>Gemini 2.5 Flash:</strong> Google's fast and efficient model for most tasks.
+            </p>
+            <p className="mt-1">
+              <strong>Gemini 2.5 Pro:</strong> Google's most capable model for complex reasoning.
+            </p>
+            <p className="mt-2 text-xs">
+              Each user can select their preferred model. The default for all users is Gemini 2.5 Flash. All models use BYOK (Bring Your Own Key) configuration with temperature set to 0 for consistent responses.
+            </p>
+          </div>
+
+          <div>
+            <p className="font-medium">Configuration Scope:</p>
+            <p><strong>System Prompt Version:</strong> User preference - choose between production or testing prompt.</p>
+            <p><strong>Language Model:</strong> User preference - each user can select their preferred model.</p>
+          </div>
         </CardContent>
       </Card>
     </div>

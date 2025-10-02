@@ -2,6 +2,7 @@ import { db } from './firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { storageService, KnowledgeDocument } from './storageService';
 import { getSystemPromptForUser } from './systemPromptService';
+import { loadChatContext, getActiveDocumentIds, createChatContextHeader } from './chatContextService';
 
 export interface ChatSession {
   sessionId: string;
@@ -11,6 +12,7 @@ export interface ChatSession {
   documentsUsed: KnowledgeDocument[];
   aiModel: string;
   createdAt: Date;
+  activePolicyDocuments?: string[]; // IDs of active policy documents during this session
 }
 
 export interface SystemPromptVersion {
@@ -110,52 +112,19 @@ Please use this internal knowledge to provide accurate, company-specific guidanc
   }
 
   /**
-   * Load Valmet policy documents from chat_init_context
+   * Load Valmet policy documents from chat_init_context based on configuration
    */
   private async loadValmetPolicyDocuments(): Promise<string> {
-    const policyPaths = [
-      '/chat_init_contect/valmet-procurement-policy.md',
-      '/chat_init_contect/valmet-payment-policy.md',
-      '/chat_init_contect/valmet-approval-limits-policy.md',
-      '/chat_init_contect/basware-shop-instructions.md',
-      '/chat_init_contect/leased-workers-process.md',
-      '/chat_init_contect/external-workforce-policy.md'
-    ];
+    // Use the configurable chat context service
+    const policyContext = await loadChatContext();
 
-    const policyContexts: string[] = [];
-
-    for (const path of policyPaths) {
-      try {
-        const response = await fetch(path);
-        if (response.ok) {
-          const content = await response.text();
-          const filename = path.split('/').pop()?.replace('.md', '') || 'policy';
-          const title = filename.split('-').map(w => 
-            w.charAt(0).toUpperCase() + w.slice(1)
-          ).join(' ');
-          
-          policyContexts.push(`
-## ${title}
-
-${content}
-`);
-        }
-      } catch (error) {
-        console.warn(`Failed to load policy document: ${path}`, error);
-      }
+    if (policyContext) {
+      // Log which documents are active
+      const activeIds = getActiveDocumentIds();
+      console.log(`📚 Loaded ${activeIds.length} active policy documents:`, activeIds);
     }
 
-    if (policyContexts.length > 0) {
-      return `
-# VALMET INTERNAL POLICIES AND GUIDELINES
-
-${policyContexts.join('\n')}
-
----
-`;
-    }
-
-    return '';
+    return policyContext;
   }
 
   /**
@@ -188,11 +157,14 @@ ${policyContexts.join('\n')}
       // Build knowledge context
       const knowledgeContext = await this.buildKnowledgeContext(documents);
       
-      // Load Valmet policy documents
+      // Load Valmet policy documents (based on configuration)
       const policyContext = await this.loadValmetPolicyDocuments();
-      
+
+      // Add context header for clarity
+      const contextHeader = await createChatContextHeader();
+
       // Combine all contexts
-      const fullKnowledgeContext = policyContext + knowledgeContext;
+      const fullKnowledgeContext = contextHeader + '\n' + policyContext + knowledgeContext;
 
       // Combine system prompt with knowledge context
       const fullContext = this.combineContexts(systemPrompt, fullKnowledgeContext);
@@ -201,6 +173,10 @@ ${policyContexts.join('\n')}
       const sessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       console.log(`🆕 NEW CHAT SESSION CREATED: ${sessionId}`);
 
+      // Store which policy documents were active during this session
+      const activePolicyDocuments = getActiveDocumentIds();
+      console.log(`📄 Session ${sessionId} created with ${activePolicyDocuments.length} active policy documents`);
+
       return {
         sessionId,
         systemPrompt,
@@ -208,8 +184,9 @@ ${policyContexts.join('\n')}
         fullContext,
         documentsUsed: documents,
         aiModel,
-        createdAt: new Date()
-      };
+        createdAt: new Date(),
+        activePolicyDocuments
+      } as ChatSession;
     } catch (error) {
       console.error('Failed to initialize chat session:', error);
       throw new Error('Failed to initialize chat session');

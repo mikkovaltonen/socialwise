@@ -15,15 +15,15 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { loadLatestPrompt, createContinuousImprovementSession, addTechnicalLog, setUserFeedback } from '../lib/firestoreService';
 import { sessionService, ChatSession } from '../lib/sessionService';
-import { getSystemPromptForUser } from '../lib/systemPromptService';
+import { getSystemPromptForUser, getUserLLMModel } from '../lib/systemPromptService';
 import { erpApiService } from '../lib/erpApiService';
 import { storageService } from '../lib/storageService';
 import { createPurchaseRequisition } from '@/lib/firestoreService';
 import { useQueryClient } from '@tanstack/react-query';
-import { search_ext_labour_suppliers, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
+import { search_suppliers, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
 import { purchaseRequisitionService, RequisitionStatus } from '../lib/purchaseRequisitionService';
 import { InteractiveJsonTable } from './InteractiveJsonTable';
-import { search_training_suppliers } from '../lib/chatFunctions';
+import FunctionUsageIndicator from './FunctionUsageIndicator';
 
 interface ProfessionalBuyerChatProps {
   onLogout?: () => void;
@@ -35,140 +35,35 @@ interface ProfessionalBuyerChatProps {
 }
 
 const openRouterApiKey = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
-// Using Grok-4-fast model via OpenRouter (free tier)
-const geminiModel = 'x-ai/grok-4-fast:free';
 
-// External Labour Suppliers Search Function (Collection: ext_labour_suppliers)
-const searchExtLabourSuppliersFunction = {
-  name: "search_ext_labour_suppliers",
-  description: "Search for verified suppliers in Valmet's supplier database. IMPORTANT: mainCategory must be EXACTLY one of the valid LOV values. For 'vuokratyövoima' or 'henkilöstövuokraus', use 'Leased workforce'. For 'IT-konsultointi', use 'IT consulting'. Always use the exact English LOV values.",
+// Unified Suppliers Search Function (Collection: suppliers_complete)
+const searchSuppliersFunction = {
+  name: "search_suppliers",
+  description: "Search for verified suppliers in Valmet's unified supplier database. IMPORTANT: mainCategory must be EXACTLY one of the valid LOV values. For 'vuokratyövoima' or 'henkilöstövuokraus', use 'Leased workforce'. For 'IT-konsultointi', use 'IT consulting'. Always use the exact English LOV values.",
   parameters: {
     type: "object",
     properties: {
       mainCategory: {
         type: "string",
         enum: MAIN_CATEGORY_LOV.map(c => c.value),
-        description: `Main category to search. MUST be one of these exact values: ${MAIN_CATEGORY_LOV.map(c => c.value).join(', ')}`
+        description: `Filter 1: Main category (exact match from LOV)`
       },
-      supplierCategories: {
+      trainingNatureOfService: {
         type: "string",
-        description: "Free text search in supplier categories"
+        description: "Filter 2: Training nature of service (exact match from LOV for training suppliers)"
       },
       country: {
-        type: "string",
-        description: "Country to filter by (e.g., Finland, Sweden, Germany)"
-      },
-      city: {
-        type: "string",
-        description: "City to filter by"
+        type: "array",
+        items: { type: "string" },
+        description: "Filter 3: Country or countries from LOV (e.g., ['Finland', 'Sweden', 'Germany'])"
       },
       vendorName: {
         type: "string",
-        description: "Vendor/company name to search for (fuzzy search in Company, Branch, Corporation fields)"
+        description: "Filter 4: Vendor/company name (fuzzy search)"
       },
       limit: {
         type: "number",
-        description: "Maximum number of results to return (default: 10)"
-      }
-    }
-  }
-};
-
-// Training Invoices Search Function (Collection: invoices_training_2023)
-const searchInvoicesTraining2023Function = {
-  name: "search_invoices_training_2023",
-  description: "Search training invoices from 2023 by supplier, amount, status. Returns formatted invoice records.",
-  parameters: {
-    type: "object",
-    properties: {
-      businessPartner: {
-        type: "string",
-        description: "Supplier/vendor name (partial match supported)"
-      },
-      status: {
-        type: "string",
-        enum: ["Completed", "Pending", "In Review", "Rejected", "Paid"],
-        description: "Invoice status"
-      },
-      minAmount: {
-        type: "number",
-        description: "Minimum invoice amount in EUR"
-      },
-      maxAmount: {
-        type: "number",
-        description: "Maximum invoice amount in EUR"
-      },
-      approver: {
-        type: "string",
-        description: "Name of the approver"
-      },
-      reviewer: {
-        type: "string",
-        description: "Name of the reviewer"
-      },
-      limit: {
-        type: "number",
-        description: "Maximum results to return (default: 10)"
-      }
-    }
-  }
-};
-
-// Contracts Search Function (Collection: ipro_contracts)
-const searchIproContractsFunction = {
-  name: "search_ipro_contracts",
-  description: "Search iPRO contracts by supplier, status, active/expired. Returns contract records with details.",
-  parameters: {
-    type: "object",
-    properties: {
-      supplier: {
-        type: "string",
-        description: "Supplier name (fuzzy search)"
-      },
-      searchText: {
-        type: "string",
-        description: "General text search across all contract fields"
-      },
-      activeOnly: {
-        type: "boolean",
-        description: "Filter for active contracts only"
-      },
-      status: {
-        type: "string",
-        enum: ["Active", "Expired", "Draft", "Terminated", "Renewed"],
-        description: "Contract state"
-      },
-      limit: {
-        type: "number",
-        description: "Maximum results to return (default: 10)"
-      }
-    }
-  }
-};
-
-// Training Suppliers Search Function (Collection: training_suppliers)
-// LIMITED TO: deliveryCountry, natureOfService, trainingArea only
-const searchTrainingSuppliersFunction = {
-  name: "search_training_suppliers",
-  description: "Search training suppliers database. NOTE: Search is limited to delivery country, nature of service, and training area only.",
-  parameters: {
-    type: "object",
-    properties: {
-      deliveryCountry: {
-        type: "string",
-        description: "Country where training can be delivered (e.g., Finland, Sweden, Global)"
-      },
-      natureOfService: {
-        type: "string",
-        description: "Type/nature of the training service (e.g., Leadership, HSE, Coaching)"
-      },
-      trainingArea: {
-        type: "string",
-        description: "Specific training area or topic (e.g., Safety training, EMBA, Coaching)"
-      },
-      limit: {
-        type: "number",
-        description: "Maximum results to return (default: 10)"
+        description: "Filter 5: Maximum number of results (default: 20)"
       }
     }
   }
@@ -291,7 +186,7 @@ const createRequisitionFunction = {
 };
 
 // Version and configuration logging
-console.log('🔧 ProfessionalBuyerChat v3.6-fixed-prompt-source - using versioned prompts:', {
+console.log('🔧 ProfessionalBuyerChat v3.8-fixed-aiRequestId - Fixed undefined aiRequestId in catch blocks:', {
   version: '2.1-debug-functions',
   changes: 'Added extensive debugging to track function knowledge source',
   date: '2025-09-29',
@@ -302,7 +197,7 @@ console.log('🔧 ProfessionalBuyerChat v3.6-fixed-prompt-source - using version
 // Debug: Log OpenRouter API config
 console.log('OpenRouter API config:', {
   apiKey: openRouterApiKey ? `${openRouterApiKey.substring(0, 10)}...` : 'undefined',
-  model: geminiModel,  // x-ai/grok-4-fast:free
+  model: 'x-ai/grok-4-fast:free (default)',  // Will be dynamically selected based on user preference
   temperature: 0,  // Deterministic mode for procurement use case
   timestamp: new Date().toISOString(),
   toolSupport: true
@@ -320,6 +215,10 @@ interface Message {
   parts: Part[];
   citationMetadata?: {
     citationSources: CitationSource[];
+  };
+  functionsUsed?: {
+    searchSupplier?: boolean;
+    createPurchaseRequisition?: boolean;
   };
 }
 
@@ -351,6 +250,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   const [sessionInitializing, setSessionInitializing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sessionIdRef = useRef<string | null>(null);
   const hasReceivedResponseRef = useRef<boolean>(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -380,13 +280,13 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
       if (!user) return;
       setStatusLoading(true);
       try {
-        const [prompt, knowledge, erp] = await Promise.all([
-          sessionService.getLatestSystemPrompt(user.uid),
+        const [systemPrompt, knowledge, erp] = await Promise.all([
+          getSystemPromptForUser(user),
           storageService.getUserDocuments(user.uid).catch(() => []),
           storageService.getUserERPDocuments(user.uid).catch(() => [])
         ]);
         setInitStatus({
-          hasPrompt: !!prompt?.systemPrompt,
+          hasPrompt: !!systemPrompt,
           knowledgeCount: Array.isArray(knowledge) ? knowledge.length : 0,
           erpCount: Array.isArray(erp) ? erp.length : 0
         });
@@ -399,17 +299,36 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
 
   // Initialize chat session with context
   React.useEffect(() => {
-    console.log('🔄 COMPONENT MOUNTED/REMOUNTED - Initializing fresh session');
+    let mounted = true;
+    let initializationTimeout: NodeJS.Timeout;
+
+    console.log('🔄 COMPONENT MOUNTED - Checking session state');
     console.log('Current messages count:', messages.length);
     console.log('Session active:', sessionActive);
 
     const initializeSession = async () => {
+      if (!mounted) return;
+
+      // Check if we already have a session ID to prevent duplicate init
+      if (sessionIdRef.current) {
+        console.log('✋ Session already initialized with ID:', sessionIdRef.current);
+        return;
+      }
+
       if (!sessionActive && user && !sessionInitializing) {
         setSessionInitializing(true)
         console.log('🆕 Starting fresh session initialization...');
         try {
           // Initialize session with system prompt + knowledge documents
           const session = await sessionService.initializeChatSession(user.uid);
+
+          if (!mounted) {
+            console.log('⚠️ Component unmounted during initialization, aborting');
+            return;
+          }
+
+          // Store the session ID to prevent duplicate initialization
+          sessionIdRef.current = session.sessionId;
           setChatSession(session);
           console.log('🆕 Chat session initialized:', {
             sessionId: session.sessionId,
@@ -428,19 +347,23 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           console.log('3. FULL CONTEXT:', session.fullContext);
           console.log('4. DOCUMENTS USED:', session.documentsUsed);
           console.log('🔴🔴🔴 END OF INITIALIZATION DATA');
-          
+
           // Check if this is a new user (no documents loaded)
           const isLikelyNewUser = session.documentsUsed.length === 0;
-          
-          const welcomeMessage: Message = {
-            role: 'model',
-            parts: [{
-              text: `How can I help you with external labour purchasing today?`
-            }]
-          };
-          setMessages([welcomeMessage]);
+
+          // Only set welcome message if no messages exist yet
+          if (mounted && messages.length === 0) {
+            const welcomeMessage: Message = {
+              role: 'model',
+              parts: [{
+                text: `How can I help you with external labour purchasing today?`
+              }]
+            };
+            setMessages([welcomeMessage]);
+          }
+
           setSessionActive(true);
-          
+
           if (isLikelyNewUser) {
             toast.success("🎉 Welcome! Your AI assistant is ready. Visit the Admin panel to load sample data and explore capabilities.", {
               duration: 6000
@@ -467,8 +390,29 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
       }
     };
 
-    initializeSession();
-  }, [sessionActive, user, sessionInitializing]);
+    // Add slight delay to avoid rapid re-initialization
+    initializationTimeout = setTimeout(() => {
+      if (mounted) {
+        initializeSession();
+      }
+    }, 100);
+
+    // Cleanup function
+    return () => {
+      mounted = false;
+      if (initializationTimeout) {
+        clearTimeout(initializationTimeout);
+      }
+      console.log('🔚 Component unmounting - cleanup performed');
+    };
+  }, [sessionActive, user]); // Removed sessionInitializing from deps to avoid loops
+
+  // Reset session when user changes
+  React.useEffect(() => {
+    return () => {
+      sessionIdRef.current = null;
+    };
+  }, [user]);
 
 
   const handleSendMessage = async (messageText?: string) => {
@@ -498,8 +442,12 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
 
     // OpenRouter API helper function with retry logic
     const callOpenRouterAPI = async (messages: any[], systemPrompt: string, tools?: any[], retryCount: number = 0) => {
+      // Get user's selected model
+      const selectedModel = user ? await getUserLLMModel(user.uid) : 'google/gemini-2.5-flash';
+
       // DEBUG: Log what's being sent to OpenRouter
       console.log('🚀 OPENROUTER API CALL DEBUG:', {
+        model: selectedModel,
         hasTools: !!tools,
         toolCount: tools?.length || 0,
         toolNames: tools?.map(t => t.function?.name || 'unknown') || [],
@@ -518,7 +466,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           },
           body: JSON.stringify((() => {
             const requestBody = {
-              model: geminiModel,
+              model: selectedModel,
               messages: [
                 { role: 'system', content: systemPrompt },
                 ...messages.map((msg: any) => ({
@@ -610,7 +558,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
       // Only show error if we're still loading and haven't received a response
       setIsLoading(currentLoading => {
         if (currentLoading && !hasReceivedResponseRef.current) {
-          console.error('Message processing timeout - resetting loading state');
+          console.warn('Message processing timeout - showing temporary warning');
 
           // Log timeout error
           if (continuousImprovementSessionId) {
@@ -623,11 +571,16 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
             });
           }
 
-          // Only show error message if we haven't received any response
+          // Add timeout message with a unique identifier so we can remove it later
+          const timeoutMessageId = `timeout-${Date.now()}`;
           setMessages(prev => [...prev, {
             role: 'model',
-            parts: [{ text: '⚠️ Response timeout. The request took too long to process. Please try again with a simpler query.' }]
+            parts: [{ text: '⚠️ Response timeout. The request is still processing...' }],
+            id: timeoutMessageId
           }]);
+
+          // Store the timeout message ID so we can remove it if response arrives
+          (window as any).__timeoutMessageId = timeoutMessageId;
         } else {
           console.log('Timeout reached but response already received - suppressing error message');
         }
@@ -708,17 +661,9 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
         {
           type: 'function',
           function: {
-            name: 'search_ext_labour_suppliers',
-            description: searchExtLabourSuppliersFunction.description,
-            parameters: searchExtLabourSuppliersFunction.parameters
-          }
-        },
-        {
-          type: 'function',
-          function: {
-            name: 'search_training_suppliers',
-            description: searchTrainingSuppliersFunction.description,
-            parameters: searchTrainingSuppliersFunction.parameters
+            name: 'search_suppliers',
+            description: searchSuppliersFunction.description,
+            parameters: searchSuppliersFunction.parameters
           }
         },
         {
@@ -773,9 +718,9 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                 : toolCall.function.arguments;
               
               // Handle different function calls
-              if (functionName === 'search_ext_labour_suppliers') {
+              if (functionName === 'search_suppliers') {
+                const aiRequestId = Math.random().toString(36).substring(2, 8); // Moved outside try block
                 try {
-                  const aiRequestId = Math.random().toString(36).substring(2, 8);
                   
                   // Log AI function call details
                   console.log('🤖 AI SUPPLIER SEARCH CALL [' + aiRequestId + ']:', {
@@ -798,7 +743,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                   }
 
                   // Execute supplier search
-                  const searchResult = await search_ext_labour_suppliers(functionArgs);
+                  const searchResult = await search_suppliers(functionArgs);
                   
                   // Log consolidated AI + Supplier search results
                   console.log('🔗 AI-SUPPLIER SEARCH RESULT [' + aiRequestId + ']:', {
@@ -878,9 +823,21 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                     }
                     
                     hasReceivedResponseRef.current = true; // Mark that we've received a response
+
+                    // Remove timeout message if it exists
+                    const timeoutMsgId = (window as any).__timeoutMessageId;
+                    if (timeoutMsgId) {
+                      setMessages(prev => prev.filter(msg => (msg as any).id !== timeoutMsgId));
+                      delete (window as any).__timeoutMessageId;
+                      console.log('✅ Removed timeout message - response received successfully');
+                    }
+
                     setMessages(prev => [...prev, {
                       role: 'model',
-                      parts: [{ text: aiResponseText }]
+                      parts: [{ text: aiResponseText }],
+                      functionsUsed: {
+                        searchSupplier: true
+                      }
                     }]);
                   }
                   return;
@@ -909,7 +866,10 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                   console.error('Function execution failed:', functionError);
                   setMessages(prev => [...prev, {
                     role: 'model',
-                    parts: [{ text: `I tried to search for suppliers but encountered an error: ${functionError instanceof Error ? functionError.message : 'Unknown error'}. Please try again with different search criteria.` }]
+                    parts: [{ text: `I tried to search for suppliers but encountered an error: ${functionError instanceof Error ? functionError.message : 'Unknown error'}. Please try again with different search criteria.` }],
+                    functionsUsed: {
+                      searchSupplier: true
+                    }
                   }]);
                   return;
                 }
@@ -952,7 +912,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                     deliveryAddress: {
                       locationCode: header.costCenter || 'FI-HEL-01',
                       locationName: lines[0]?.deliveryAddress || 'Valmet Helsinki Office',
-                      city: 'Helsinki',
+                      country: ['Finland'],
                       country: 'Finland'
                     },
                     lineItems: lineItems,
@@ -987,7 +947,10 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                             `**Status:** ${header.status || 'Draft'}\n` +
                             `**Items:** ${lineItems.length} line item(s)\n\n` +
                             `The requisition has been created. You can view, edit, and submit it for approval in the Purchase Requisition Verification panel.`
-                    }]
+                    }],
+                    functionsUsed: {
+                      createPurchaseRequisition: true
+                    }
                   }]);
 
                   return;
@@ -997,14 +960,17 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                     role: 'model',
                     parts: [{
                       text: `❌ Failed to create purchase requisition: ${err instanceof Error ? err.message : 'Unknown error'}`
-                    }]
+                    }],
+                    functionsUsed: {
+                      createPurchaseRequisition: true
+                    }
                   }]);
                   return;
                 }
-              } else if (functionName === 'search_invoices_training_2023') {
+              } else if (functionName === 'create_purchase_requisition') {
                 try {
                   const aiRequestId = Math.random().toString(36).substring(2, 8);
-                  console.log('🧾 AI INVOICE SEARCH CALL [' + aiRequestId + ']:', functionArgs);
+                  console.log('📋 AI CREATE REQUISITION CALL [' + aiRequestId + ']:', functionArgs);
 
                   // Log function call
                   if (continuousImprovementSessionId) {
@@ -1032,9 +998,19 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                   if (followUpResult?.choices?.[0]?.message) {
                     const aiResponseText = followUpResult.choices[0].message.content || "No response text";
                     hasReceivedResponseRef.current = true; // Mark that we've received a response
+
+                    // Remove timeout message if it exists
+                    const timeoutMsgId = (window as any).__timeoutMessageId;
+                    if (timeoutMsgId) {
+                      setMessages(prev => prev.filter(msg => (msg as any).id !== timeoutMsgId));
+                      delete (window as any).__timeoutMessageId;
+                      console.log('✅ Removed timeout message - response received successfully');
+                    }
+
                     setMessages(prev => [...prev, {
                       role: 'model',
-                      parts: [{ text: aiResponseText }]
+                      parts: [{ text: aiResponseText }],
+                      functionsUsed: undefined
                     }]);
                   }
                   return;
@@ -1054,7 +1030,8 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
 
                   setMessages(prev => [...prev, {
                     role: 'model',
-                    parts: [{ text: `❌ Failed to search invoices: ${err instanceof Error ? err.message : 'Unknown error'}` }]
+                    parts: [{ text: `❌ Failed to search invoices: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                    functionsUsed: undefined
                   }]);
                   return;
                 }
@@ -1089,9 +1066,19 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                   if (followUpResult?.choices?.[0]?.message) {
                     const aiResponseText = followUpResult.choices[0].message.content || "No response text";
                     hasReceivedResponseRef.current = true; // Mark that we've received a response
+
+                    // Remove timeout message if it exists
+                    const timeoutMsgId = (window as any).__timeoutMessageId;
+                    if (timeoutMsgId) {
+                      setMessages(prev => prev.filter(msg => (msg as any).id !== timeoutMsgId));
+                      delete (window as any).__timeoutMessageId;
+                      console.log('✅ Removed timeout message - response received successfully');
+                    }
+
                     setMessages(prev => [...prev, {
                       role: 'model',
-                      parts: [{ text: aiResponseText }]
+                      parts: [{ text: aiResponseText }],
+                      functionsUsed: undefined
                     }]);
                   }
                   return;
@@ -1111,7 +1098,8 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
 
                   setMessages(prev => [...prev, {
                     role: 'model',
-                    parts: [{ text: `❌ Failed to search contracts: ${err instanceof Error ? err.message : 'Unknown error'}` }]
+                    parts: [{ text: `❌ Failed to search contracts: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                    functionsUsed: undefined
                   }]);
                   return;
                 }
@@ -1146,9 +1134,19 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                   if (followUpResult?.choices?.[0]?.message) {
                     const aiResponseText = followUpResult.choices[0].message.content || "No response text";
                     hasReceivedResponseRef.current = true; // Mark that we've received a response
+
+                    // Remove timeout message if it exists
+                    const timeoutMsgId = (window as any).__timeoutMessageId;
+                    if (timeoutMsgId) {
+                      setMessages(prev => prev.filter(msg => (msg as any).id !== timeoutMsgId));
+                      delete (window as any).__timeoutMessageId;
+                      console.log('✅ Removed timeout message - response received successfully');
+                    }
+
                     setMessages(prev => [...prev, {
                       role: 'model',
-                      parts: [{ text: aiResponseText }]
+                      parts: [{ text: aiResponseText }],
+                      functionsUsed: undefined
                     }]);
                   }
                   return;
@@ -1168,7 +1166,8 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
 
                   setMessages(prev => [...prev, {
                     role: 'model',
-                    parts: [{ text: `❌ Failed to search training suppliers: ${err instanceof Error ? err.message : 'Unknown error'}` }]
+                    parts: [{ text: `❌ Failed to search training suppliers: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                    functionsUsed: undefined
                   }]);
                   return;
                 }
@@ -1195,10 +1194,20 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           }
 
           hasReceivedResponseRef.current = true; // Mark that we've received a response
+
+          // Remove timeout message if it exists
+          const timeoutMsgId = (window as any).__timeoutMessageId;
+          if (timeoutMsgId) {
+            setMessages(prev => prev.filter(msg => (msg as any).id !== timeoutMsgId));
+            delete (window as any).__timeoutMessageId;
+            console.log('✅ Removed timeout message - response received successfully');
+          }
+
           setMessages(prev => [...prev, {
             role: 'model',
             parts: [{ text: aiResponseText }],
-            citationMetadata: undefined  // OpenRouter doesn't provide citations
+            citationMetadata: undefined,  // OpenRouter doesn't provide citations
+            functionsUsed: undefined
           }]);
         }
       } else {
@@ -1218,7 +1227,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
         userId: user?.uid,
         chatSessionKey,
         sessionId: continuousImprovementSessionId,
-        model: geminiModel,
+        model: user ? await getUserLLMModel(user.uid) : 'google/gemini-2.5-flash',
         messageText: textToSend.slice(0, 100) // First 100 chars only for privacy
       });
 
@@ -1304,6 +1313,9 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
       console.log('📊 Continuous improvement session initialized:', sessionId);
 
 
+      // Get system LLM model for logging
+      const systemModel = user ? await getUserLLMModel(user.uid) : 'google/gemini-2.5-flash';
+
       // Log session start info
       console.log('🎯 Console logging enabled for session', {
         sessionId,
@@ -1311,7 +1323,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
         userEmail: user.email,
         promptKey,
         chatSessionKey,
-        model: geminiModel
+        model: systemModel
       });
     } catch (error) {
       console.error('Failed to initialize continuous improvement session:', error);
@@ -1596,8 +1608,13 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                         </div>
                       );
                     })}
+
+                    {/* Function usage indicators */}
+                    {message.functionsUsed && (
+                      <FunctionUsageIndicator functionsUsed={message.functionsUsed} />
+                    )}
                   </div>
-                  
+
                   {/* Feedback buttons for AI responses only */}
                   {message.role === 'model' && (
                     <div className="flex items-center space-x-2 ml-2">
@@ -1756,6 +1773,11 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                                 </div>
                               );
                             })}
+
+                            {/* Function usage indicators */}
+                            {message.functionsUsed && (
+                              <FunctionUsageIndicator functionsUsed={message.functionsUsed} />
+                            )}
                           </div>
                           {message.role === 'model' && (
                             <div className="flex items-center space-x-2 ml-2">

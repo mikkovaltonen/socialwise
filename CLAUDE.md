@@ -6,7 +6,7 @@ This is the Valmet Procurement AI Assistant application built with React, TypeSc
 ## Core Features
 
 ### 1. Valmet Supplier Search
-- **Database**: ~400 verified external labour suppliers in Firestore `ext_labour_suppliers` collection
+- **Database**: ~400 verified suppliers in Firestore `suppliers_complete` collection
 - **Search Capabilities**: Fuzzy, case-insensitive matching
 - **Search Fields**:
   - Main Category (text search)
@@ -85,7 +85,7 @@ src/
 
 ## Database Structure
 
-### `ext_labour_suppliers` Collection (~400 documents after cleanup)
+### `suppliers_complete` Collection (~400 documents)
 ```javascript
 {
   documentId: string,           // Unique identifier
@@ -145,11 +145,11 @@ VITE_GEMINI_API_KEY=your-gemini-key
 VITE_GEMINI_MODEL=gemini-2.5-flash-preview-04-17
 ```
 
-## Recent Data Cleanup (September 2025)
-- Removed IT Consulting categories (103 suppliers)
-- Removed IT Services categories (8 suppliers)
-- Renamed collection from `supplier_spend` to `ext_labour_suppliers`
-- Updated system prompt to reflect available categories
+## Database Structure (October 2025)
+- Unified all suppliers into single `suppliers_complete` collection
+- Contains ~400 verified suppliers across all categories
+- Removed duplicate data and optimized storage
+- System prompt updated with current category counts
 
 ## Component Usage
 
@@ -195,7 +195,7 @@ Features:
 - [ ] Supplier search returns results with partial matches
 - [ ] Case-insensitive search works correctly
 - [ ] CSV export includes all supplier fields
-- [ ] Statistics dashboard shows correct counts
+- [ ] Statistics dashboard shows correct counts (~400 total)
 - [ ] Policy document viewer pages correctly
 - [ ] AI chat loads context successfully
 
@@ -212,12 +212,15 @@ Features:
 ### Fuzzy Search Not Working
 - Confirm search is using `fuzzyMatch` function
 - Check for typos in field names from `original` map
+- Verify collection name is `suppliers_complete`
 
-## Recent Updates (September 2025)
-- Complete rewrite of supplier search with fuzzy matching
-- 60% reduction in database storage through deduplication
+## Recent Updates (October 2025)
+- Unified all suppliers into single `suppliers_complete` collection
+- Database contains ~400 suppliers (131 Business consulting, 100 Training, 52 R&D, 45 Legal, 26 Certification, 26 Patent, 14 Leased workforce, 2 Testing, 1 Facility)
+- Updated UI to reflect simplified database structure
+- Complete fuzzy search with case-insensitive matching
 - Simplified search UI with only 4 search fields
 - Added comprehensive CSV export functionality
 - Implemented paged document viewer for policies
 - Added InteractiveMarkdownTable component for dynamic table rendering
-- Fixed Main Category LOV to use full hierarchical paths from database
+- Models shold  one more time x-ai/grok-4-fast:free, google/gemini-2.5-flash and google/gemini-2.5-pro. Model selection is solution  wide like production promt

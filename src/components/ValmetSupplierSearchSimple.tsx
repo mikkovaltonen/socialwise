@@ -35,7 +35,7 @@ import {
   type SupplierDocument,
   type SupplierSearchFilters
 } from '../lib/valmetSupplierSearch';
-import { searchSuppliersForChat, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
+import { searchSuppliersForChat, MAIN_CATEGORY_LOV, COUNTRY_LOV, TRAINING_NATURE_OF_SERVICE_LOV } from '../lib/supplierSearchFunction';
 
 export const ValmetSupplierSearchSimple: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -45,12 +45,12 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [allCategories, setAllCategories] = useState<string[]>([]);
 
-  // Search filters
+  // Search filters - EXACTLY 5 as requested
   const [mainCategory, setMainCategory] = useState('');
-  const [supplierCategories, setSupplierCategories] = useState('');
-  const [country, setCountry] = useState('');
-  const [city, setCity] = useState('');
+  const [trainingNatureOfService, setTrainingNatureOfService] = useState('');
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [vendorName, setVendorName] = useState('');
+  const [limit, setLimit] = useState(20);
 
   // Load statistics on mount
   useEffect(() => {
@@ -100,11 +100,10 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
       // Use the same function that AI uses
       const result = await searchSuppliersForChat({
         mainCategory: mainCategory || undefined,
-        supplierCategories: supplierCategories || undefined,
-        country: country || undefined,
-        city: city || undefined,
+        trainingNatureOfService: trainingNatureOfService || undefined,
+        country: selectedCountries.length > 0 ? selectedCountries : undefined,
         vendorName: vendorName || undefined,
-        limit: 500
+        limit: limit
       });
 
       console.log('📊 searchSuppliersForChat result:', result);
@@ -122,11 +121,10 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
         // we need to also get the raw data for the table display
         const filters: SupplierSearchFilters = {
           mainCategory: mainCategory || undefined,
-          supplierCategories: supplierCategories || undefined,
-          country: country || undefined,
-          city: city || undefined,
+          trainingNatureOfService: trainingNatureOfService || undefined,
+          country: selectedCountries.length > 0 ? selectedCountries.join('|') : undefined,
           vendorName: vendorName || undefined,
-          maxResults: 500
+          maxResults: limit
         };
         const rawResults = await searchSuppliers(filters);
         setSuppliers(rawResults.suppliers);
@@ -142,10 +140,10 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
 
   const handleReset = () => {
     setMainCategory('');
-    setSupplierCategories('');
-    setCountry('');
-    setCity('');
+    setTrainingNatureOfService('');
+    setSelectedCountries([]);
     setVendorName('');
+    setLimit(20);
     setSuppliers([]);
     setSelectedSupplier(null);
     setError(null);
@@ -225,6 +223,7 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="#"># (data empty or not defined)</SelectItem>
                         <SelectItem value="Indirect procurement iPRO, Professional services, Business consulting">Business consulting (131)</SelectItem>
                         <SelectItem value="Indirect procurement iPRO, Office IT, IT consulting">IT consulting (103)</SelectItem>
                         <SelectItem value="Indirect procurement iPRO, Professional services, Training & people development">Training & people development (100)</SelectItem>
@@ -241,40 +240,85 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
                     <p className="text-xs text-gray-500">Select exact category from list</p>
                   </div>
 
-                  {/* Supplier Categories - Fuzzy text input */}
+                  {/* Training Nature of Service - Dropdown */}
                   <div className="space-y-2">
-                    <Label>Supplier Categories (fuzzy search)</Label>
-                    <Input
-                      placeholder="e.g. Testing, Training, Patent..."
-                      value={supplierCategories}
-                      onChange={(e) => setSupplierCategories(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    />
-                    <p className="text-xs text-gray-500">Search in all categories</p>
+                    <Label>Nature of Training Service</Label>
+                    <Select value={trainingNatureOfService || "all"} onValueChange={(value) => setTrainingNatureOfService(value === "all" ? "" : value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select training nature..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Training Types</SelectItem>
+                        <SelectItem value="#"># (data empty or not defined)</SelectItem>
+                        <SelectItem value="General Training">General Training (8)</SelectItem>
+                        <SelectItem value="Product, Service & Technology Training">Product, Service & Technology Training (7)</SelectItem>
+                        <SelectItem value="Business Culture & Language Training">Business Culture & Language Training (6)</SelectItem>
+                        <SelectItem value="Various/Other Skills">Various/Other Skills (6)</SelectItem>
+                        <SelectItem value="Leadership, Management & Team Development">Leadership, Management & Team Development (5)</SelectItem>
+                        <SelectItem value="Coaching & Work Counselling">Coaching & Work Counselling (5)</SelectItem>
+                        <SelectItem value="HSE, Quality & Work Wellbeing">HSE, Quality & Work Wellbeing (4)</SelectItem>
+                        <SelectItem value="E-learning & Digital Learning Solutions">E-learning & Digital Learning Solutions (3)</SelectItem>
+                        <SelectItem value="Global Training Programs">Global Training Programs (3)</SelectItem>
+                        <SelectItem value="Communication Skills Training">Communication Skills Training (2)</SelectItem>
+                        <SelectItem value="Combined Leadership Programs">Combined Leadership Programs (2)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">Filter by training type (optional)</p>
                   </div>
 
-                  {/* Country - Fuzzy text input */}
+                  {/* Country - Multiple selection dropdown */}
                   <div className="space-y-2">
-                    <Label>Country/Region (fuzzy search)</Label>
-                    <Input
-                      placeholder="e.g. Finland, Germany, United..."
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    />
-                    <p className="text-xs text-gray-500">Partial match supported</p>
-                  </div>
-
-                  {/* City - Fuzzy text input */}
-                  <div className="space-y-2">
-                    <Label>City (fuzzy search)</Label>
-                    <Input
-                      placeholder="e.g. Helsinki, Espoo, Stockholm..."
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    />
-                    <p className="text-xs text-gray-500">Case-insensitive search</p>
+                    <Label>Country/Region (multiple selection)</Label>
+                    <div className="relative">
+                      <Select
+                        value={selectedCountries.length === 1 ? selectedCountries[0] : ''}
+                        onValueChange={(value) => {
+                          if (value && !selectedCountries.includes(value)) {
+                            setSelectedCountries([...selectedCountries, value]);
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select countries...">
+                            {selectedCountries.length === 0
+                              ? "Select countries..."
+                              : selectedCountries.length === 1
+                              ? selectedCountries[0]
+                              : `${selectedCountries.length} countries selected`}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          <SelectItem value="#" disabled={selectedCountries.includes('#')}>
+                            # (data empty or not defined)
+                          </SelectItem>
+                          {COUNTRY_LOV.filter(c => c.value !== '#').map((country) => (
+                            <SelectItem
+                              key={country.value}
+                              value={country.value}
+                              disabled={selectedCountries.includes(country.value)}
+                            >
+                              {country.label} ({country.count})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {/* Display selected countries as badges */}
+                    {selectedCountries.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {selectedCountries.map(country => (
+                          <Badge
+                            key={country}
+                            variant="secondary"
+                            className="cursor-pointer hover:bg-red-100"
+                            onClick={() => setSelectedCountries(selectedCountries.filter(c => c !== country))}
+                          >
+                            {country} ×
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500">Click badge to remove, select multiple countries</p>
                   </div>
 
                   {/* Vendor Name - Fuzzy text input */}
@@ -287,6 +331,20 @@ export const ValmetSupplierSearchSimple: React.FC = () => {
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                     />
                     <p className="text-xs text-gray-500">Search in Company, Branch, Corporation</p>
+                  </div>
+
+                  {/* Max Results Limit */}
+                  <div className="space-y-2">
+                    <Label>Max Results</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="500"
+                      value={limit}
+                      onChange={(e) => setLimit(parseInt(e.target.value) || 20)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    />
+                    <p className="text-xs text-gray-500">Maximum number of results (1-500)</p>
                   </div>
                 </div>
 

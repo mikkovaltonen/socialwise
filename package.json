@@ -12,7 +12,12 @@
     "test": "node tests/chatbot_roles_test.cjs",
     "migrate:excel": "python3 convert_excel_to_json.py",
     "migrate:firestore": "node migrate_to_firestore.mjs",
-    "migrate:all": "python3 convert_excel_to_json.py && node migrate_to_firestore.mjs"
+    "migrate:all": "python3 convert_excel_to_json.py && node migrate_to_firestore.mjs",
+    "export:suppliers": "node scripts/export-ext-labour-suppliers.js",
+    "clean:suppliers": "node scripts/clean-ext-labour-suppliers.js",
+    "clean:training": "node scripts/clean-training-suppliers.js",
+    "merge:suppliers": "node scripts/merge-suppliers-training-data.js",
+    "merge:complete": "node scripts/merge-suppliers-training-complete.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
@@ -29,6 +34,7 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.8",
+    "@radix-ui/react-tooltip": "^1.1.6",
     "@tanstack/react-query": "^5.74.3",
     "@types/papaparse": "^5.3.15",
     "@vercel/node": "^5.1.16",
@@ -78,6 +84,7 @@
     "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "node-fetch": "^3.3.2",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",

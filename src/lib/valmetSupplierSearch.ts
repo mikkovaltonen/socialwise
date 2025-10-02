@@ -1,8 +1,8 @@
 /**
- * External Labour Suppliers Search Functions
+ * Unified Suppliers Search Functions
  *
- * Search and filter functions for the ext_labour_suppliers collection
- * Contains 410+ external labour suppliers (excluding IT categories)
+ * Search and filter functions for the suppliers_complete collection
+ * Contains all supplier data in a unified structure
  */
 
 import { 
@@ -20,19 +20,22 @@ import {
 import { db } from './firebase';
 
 export interface SupplierSearchFilters {
-  // Category filters (fuzzy search)
+  // Filter 1: Main Category (exact match from LOV)
   mainCategory?: string;
-  supplierCategories?: string;
 
-  // Location filters (fuzzy search)
+  // Filter 2: Training Nature of Service (fuzzy search)
+  trainingNatureOfService?: string;
+
+  // Filter 3: Country - supports multiple countries (pipe-separated)
   country?: string;
-  city?: string;
 
-  // Vendor name filter (fuzzy search in Company, Branch, Corporation)
+  // Filter 4: Vendor name (fuzzy search in Company, Branch, Corporation)
   vendorName?: string;
 
-  // Limit
+  // Filter 5: Max results limit
   maxResults?: number;
+
+  // EXACTLY 5 filters - no other parameters allowed
 }
 
 export interface SupplierDocument {
@@ -40,6 +43,30 @@ export interface SupplierDocument {
   importIndex?: number;
   importedAt?: string;
   sourceFile?: string;
+  // New flattened fields (from suppliers_complete)
+  id?: string;
+  company?: string;
+  companyId?: string;
+  mainCategory?: string;
+  categories?: string;
+  country?: string;
+  city?: string;
+  preferredSupplier?: boolean | string;
+  natureOfService?: string;
+  trainingNatureOfService?: string;
+  mainContact?: string;
+  mainContactEmail?: string;
+  paymentTerms?: string;
+  hasInvoices?: boolean;
+  hasPurchaseOrders?: boolean;
+  isTrainingSupplier?: boolean;
+  sustainabilityPolicySigned?: boolean;
+  _uploadedBy?: string;
+  _lastUpdated?: string;
+  _migratedAt?: string;
+  // Allow any additional fields
+  [key: string]: any;
+  // Original nested structure (for backward compatibility)
   original?: {
     'Branch'?: string;
     'Company'?: string;
@@ -96,7 +123,7 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
   console.log('🔍 Searching suppliers with filters:', filters);
 
   try {
-    const supplierRef = collection(db, 'ext_labour_suppliers');
+    const supplierRef = collection(db, 'suppliers_complete');
 
     // Get all documents (we'll filter in memory for fuzzy matching)
     const querySnapshot = await getDocs(supplierRef);
@@ -110,7 +137,10 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
     // Debug: Count documents per main category
     const categoryCount: { [key: string]: number } = {};
     querySnapshot.forEach((doc) => {
-      const category = doc.data().original?.['Supplier Main Category'];
+      const data = doc.data();
+      // New data structure: fields are at root level
+      const category = data.mainCategory || data.original?.['Supplier Main Category'];
+
       if (category) {
         // Trim the category to ensure consistent counting
         const trimmedCategory = category.trim();
@@ -148,14 +178,14 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
     querySnapshot.forEach((doc) => {
       const data = doc.data() as SupplierDocument;
       const original = data.original || {};
-      
+
       // Apply filters
       let matches = true;
 
       // Main Category filter - EXACT match for LOV field
       if (filters.mainCategory && filters.mainCategory !== 'all' && filters.mainCategory !== '') {
-        // Exact match for main category (it's a LOV field)
-        const rawCategory = original['Supplier Main Category'];
+        // Check both new and old data structure
+        const rawCategory = data.mainCategory || original['Supplier Main Category'];
         const supplierCategory = rawCategory?.trim();
         const searchCategory = filters.mainCategory.trim();
 
@@ -180,29 +210,28 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
         }
       }
       
-      // Supplier Categories filter (fuzzy) - only filter if field exists
-      if (filters.supplierCategories && filters.supplierCategories !== '') {
-        const supplierCats = original['Supplier Categories'];
-        // Only exclude if field exists and doesn't match
-        if (supplierCats && supplierCats.trim() !== '') {
-          matches = matches && fuzzyMatch(supplierCats, filters.supplierCategories);
-        }
-        // If field doesn't exist or is empty, don't exclude the supplier
-      }
-      
-      // Country filter (fuzzy)
+      // Removed supplierCategories filter - not in the 5 allowed filters
+
+      // Country filter - supports multiple countries separated by pipe
       if (filters.country && filters.country !== 'all' && filters.country !== '') {
-        matches = matches && fuzzyMatch(original['Country/Region (Street Address)'], filters.country);
+        const country = data.country || original['Country/Region (Street Address)'] || '';
+
+        // Check if we have multiple countries (pipe-separated)
+        if (filters.country.includes('|')) {
+          const countries = filters.country.split('|');
+          const countryMatches = countries.some(c => fuzzyMatch(country, c.trim()));
+          matches = matches && countryMatches;
+        } else {
+          matches = matches && fuzzyMatch(country, filters.country);
+        }
       }
-      
-      // City filter (fuzzy)
-      if (filters.city && filters.city !== '') {
-        matches = matches && fuzzyMatch(original['City (Street Address)'], filters.city);
-      }
+
+      // City filter removed - using country filter instead
 
       // Vendor name filter (fuzzy search in Company, Branch, Corporation)
       if (filters.vendorName && filters.vendorName !== '') {
         const vendorNameMatch =
+          fuzzyMatch(data.company, filters.vendorName) ||
           fuzzyMatch(original['Company'], filters.vendorName) ||
           fuzzyMatch(original['Branch'], filters.vendorName) ||
           fuzzyMatch(original['Corporation'], filters.vendorName);
@@ -210,22 +239,36 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
         matches = matches && vendorNameMatch;
       }
 
+      // Training Nature of Service filter (fuzzy search)
+      if (filters.trainingNatureOfService && filters.trainingNatureOfService !== '') {
+        const natureOfService = data.natureOfService || data.trainingNatureOfService || original['Nature of Service'] || original['Training Nature of Service'] || '';
+
+        // Handle # for empty/undefined data
+        if (filters.trainingNatureOfService === '#') {
+          matches = matches && (!natureOfService || natureOfService === '');
+        } else {
+          matches = matches && fuzzyMatch(natureOfService, filters.trainingNatureOfService);
+        }
+      }
+
+      // Removed preferredSupplier filter - not in the 5 allowed filters
+
       if (matches) {
-        // Include full document with all original fields
+        // Include full document with all fields
+        // Spread all data fields and ensure documentId is the doc.id
         suppliers.push({
-          documentId: doc.id,
-          importIndex: data.importIndex,
-          importedAt: data.importedAt,
-          sourceFile: data.sourceFile,
-          original: original
+          ...data,
+          documentId: doc.id
         });
         
         // Collect unique categories and countries
-        if (original['Supplier Main Category']) {
-          categoriesSet.add(original['Supplier Main Category']);
+        const mainCat = data.mainCategory || original['Supplier Main Category'];
+        if (mainCat) {
+          categoriesSet.add(mainCat);
         }
-        if (original['Country/Region (Street Address)']) {
-          countriesSet.add(original['Country/Region (Street Address)']);
+        const country = data.country || original['Country/Region (Street Address)'];
+        if (country) {
+          countriesSet.add(country);
         }
       }
     });
@@ -249,7 +292,9 @@ export async function searchSuppliers(filters: SupplierSearchFilters = {}): Prom
     if (filters.mainCategory && suppliers.length > 0) {
       console.log('🔎 Sample matches:');
       suppliers.slice(0, 3).forEach((s, i) => {
-        console.log(`  ${i + 1}. ${s.original['Company']} - Category: "${s.original['Supplier Main Category']}"`);
+        const company = s.company || s.original?.['Company'] || 'Unknown';
+        const category = s.mainCategory || s.original?.['Supplier Main Category'] || 'N/A';
+        console.log(`  ${i + 1}. ${company} - Category: "${category}"`);
       });
     } else if (filters.mainCategory && suppliers.length === 0) {
       console.log(`❌ No suppliers found for Main Category: "${filters.mainCategory}"`);
@@ -285,7 +330,7 @@ export async function getSupplierDetails(supplierId: string): Promise<SupplierDo
   console.log('📋 Getting supplier details for:', supplierId);
   
   try {
-    const docRef = doc(db, 'ext_labour_suppliers', supplierId);
+    const docRef = doc(db, 'suppliers_complete', supplierId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -312,14 +357,14 @@ export async function getAllCategories(): Promise<string[]> {
   console.log('📂 Getting all categories...');
   
   try {
-    const supplierRef = collection(db, 'ext_labour_suppliers');
+    const supplierRef = collection(db, 'suppliers_complete');
     const querySnapshot = await getDocs(supplierRef);
     
     const categoriesSet = new Set<string>();
     
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      const mainCategory = data.original?.['Supplier Main Category'];
+      const mainCategory = data.mainCategory || data.original?.['Supplier Main Category'];
       if (mainCategory) {
         categoriesSet.add(mainCategory);
       }
@@ -342,7 +387,7 @@ export async function getAllCountries(): Promise<string[]> {
   console.log('🌍 Getting all countries...');
   
   try {
-    const supplierRef = collection(db, 'ext_labour_suppliers');
+    const supplierRef = collection(db, 'suppliers_complete');
     const querySnapshot = await getDocs(supplierRef);
     
     const countriesSet = new Set<string>();
@@ -380,7 +425,7 @@ export async function getSupplierStats(): Promise<{
   console.log('📊 Getting supplier statistics...');
   
   try {
-    const supplierRef = collection(db, 'ext_labour_suppliers');
+    const supplierRef = collection(db, 'suppliers_complete');
     const querySnapshot = await getDocs(supplierRef);
     
     let totalSuppliers = 0;

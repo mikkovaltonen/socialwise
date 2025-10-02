@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { FileText, Book, CreditCard, CheckCircle, Loader2, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ShoppingCart, Users, Briefcase, FileImage, ExternalLink, Download } from "lucide-react";
+import { FileText, Book, CreditCard, CheckCircle, Loader2, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ShoppingCart, Users, Briefcase, FileImage, ExternalLink, Download, Settings as SettingsIcon, Info, RotateCcw, Save, Upload, FileDown } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
@@ -9,20 +9,42 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PDFViewer } from './PDFViewer';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { toast } from 'sonner';
+import {
+  ChatInitDocument,
+  loadChatInitConfig,
+  saveChatInitConfig,
+  getActiveChatInitDocuments,
+  updateDocumentActiveState,
+  resetToDefaultConfig,
+  estimateContextSize,
+  exportConfig,
+  importConfig
+} from '@/lib/chatInitConfig';
 
-interface PolicyDocument {
-  id: string;
-  title: string;
-  description: string;
+interface PolicyDocument extends ChatInitDocument {
   icon: React.ReactNode;
-  path: string;
-  pdfPath?: string;
   content?: string;
-  type?: 'markdown' | 'pdf' | 'both';
 }
 
 const ChatInitViewer: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('procurement');
+  const [showSettings, setShowSettings] = useState(false);
+  const [contextSize, setContextSize] = useState<{ totalSize: number; documents: Array<{ id: string; title: string; size: number }> } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentPages, setCurrentPages] = useState<{ [key: string]: number }>({
     procurement: 1,
     payment: 1,
@@ -33,57 +55,35 @@ const ChatInitViewer: React.FC = () => {
   });
   const LINES_PER_PAGE = 50; // Approximate lines per page
   const [documents, setDocuments] = useState<PolicyDocument[]>([
-    {
-      id: 'procurement',
-      title: 'Valmet Global Procurement Policy',
-      description: 'Purchasing and payment processes, supplier management, buying channels, and compliance requirements',
-      icon: <FileText className="h-5 w-5" />,
-      path: '/chat_init_contect/valmet-procurement-policy.md'
-    },
-    {
-      id: 'payment',
-      title: 'Valmet Global Payment Policy',
-      description: 'Payment channels, frequency, authorization requirements, and exception handling',
-      icon: <CreditCard className="h-5 w-5" />,
-      path: '/chat_init_contect/valmet-payment-policy.md'
-    },
-    {
-      id: 'approval',
-      title: 'Valmet Approval Limits Policy',
-      description: 'Purchase invoice approval limits, rights management, and compliance framework',
-      icon: <CheckCircle className="h-5 w-5" />,
-      path: '/chat_init_contect/valmet-approval-limits-policy.md'
-    },
-    {
-      id: 'basware-shop',
-      title: 'Basware Shop Instructions',
-      description: 'Guided freetext order instructions for Basware Shop procurement system (includes visual guides)',
-      icon: <ShoppingCart className="h-5 w-5" />,
-      path: '/chat_init_contect/basware-shop-instructions.md',
-      pdfPath: '/chat_init_contect/Guided freetext order instructions for Basware Shop.pdf',
-      type: 'both'
-    },
-    {
-      id: 'leased-workers',
-      title: 'Leased Workers Process',
-      description: 'Process instructions for managing leased workers in Workday system',
-      icon: <Users className="h-5 w-5" />,
-      path: '/chat_init_contect/leased-workers-process.md'
-    },
-    {
-      id: 'external-workforce',
-      title: 'External Workforce Policy',
-      description: 'Policy guidelines for external workforce management and compliance',
-      icon: <Briefcase className="h-5 w-5" />,
-      path: '/chat_init_contect/external-workforce-policy.md'
-    }
   ]);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Load configuration on mount
   useEffect(() => {
     console.log('[ChatInitViewer] Component mounted, loading documents');
-    loadDocuments();
+    const config = loadChatInitConfig();
+    const docsWithIcons = config.map(doc => ({
+      ...doc,
+      icon: getDocumentIcon(doc.id),
+      content: undefined
+    }));
+    setDocuments(docsWithIcons);
+    loadDocuments(docsWithIcons);
+    updateContextSize();
   }, []);
+
+  // Helper function to get icon for document
+  const getDocumentIcon = (id: string): React.ReactNode => {
+    switch (id) {
+      case 'procurement': return <FileText className="h-5 w-5" />;
+      case 'payment': return <CreditCard className="h-5 w-5" />;
+      case 'approval': return <CheckCircle className="h-5 w-5" />;
+      case 'basware-shop': return <ShoppingCart className="h-5 w-5" />;
+      case 'leased-workers': return <Users className="h-5 w-5" />;
+      case 'external-workforce': return <Briefcase className="h-5 w-5" />;
+      default: return <FileText className="h-5 w-5" />;
+    }
+  };
 
   useEffect(() => {
     console.log(`[ChatInitViewer] Active tab changed to: ${activeTab}`);
@@ -93,10 +93,11 @@ const ChatInitViewer: React.FC = () => {
     }
   }, [activeTab]);
 
-  const loadDocuments = async () => {
+  const loadDocuments = async (docsToLoad?: PolicyDocument[]) => {
     setLoading(true);
+    const docs = docsToLoad || documents;
     const updatedDocs = await Promise.all(
-      documents.map(async (doc) => {
+      docs.map(async (doc) => {
         try {
           const response = await fetch(doc.path);
           if (response.ok) {
@@ -113,7 +114,79 @@ const ChatInitViewer: React.FC = () => {
     setLoading(false);
   };
 
+  const updateContextSize = async () => {
+    const size = await estimateContextSize();
+    setContextSize(size);
+  };
+
+  const handleToggleDocument = (docId: string, active: boolean) => {
+    updateDocumentActiveState(docId, active);
+    setDocuments(prev => prev.map(doc =>
+      doc.id === docId ? { ...doc, active } : doc
+    ));
+    updateContextSize();
+    toast.success(`${active ? 'Enabled' : 'Disabled'} document in chat context`);
+  };
+
+  const handleResetToDefaults = () => {
+    resetToDefaultConfig();
+    const config = loadChatInitConfig();
+    const docsWithIcons = config.map(doc => ({
+      ...doc,
+      icon: getDocumentIcon(doc.id),
+      content: documents.find(d => d.id === doc.id)?.content
+    }));
+    setDocuments(docsWithIcons);
+    updateContextSize();
+    toast.success('Configuration reset to defaults');
+  };
+
+  const handleExportConfig = () => {
+    const configJson = exportConfig();
+    const blob = new Blob([configJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'chat-init-config.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Configuration exported');
+  };
+
+  const handleImportConfig = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (importConfig(content)) {
+        const config = loadChatInitConfig();
+        const docsWithIcons = config.map(doc => ({
+          ...doc,
+          icon: getDocumentIcon(doc.id),
+          content: documents.find(d => d.id === doc.id)?.content
+        }));
+        setDocuments(docsWithIcons);
+        updateContextSize();
+        toast.success('Configuration imported successfully');
+      } else {
+        toast.error('Failed to import configuration');
+      }
+    };
+    reader.readAsText(file);
+
+    // Clear the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const activeDocument = documents.find(doc => doc.id === activeTab);
+  const activeDocuments = documents.filter(doc => doc.active);
+  const inactiveDocuments = documents.filter(doc => !doc.active);
 
   // Paging functions
   const getPageContent = (content: string, pageNumber: number) => {
@@ -152,14 +225,26 @@ const ChatInitViewer: React.FC = () => {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="px-6 py-4 border-b bg-gradient-to-r from-green-50 to-green-100">
-        <div className="flex items-center gap-3">
-          <Book className="h-6 w-6 text-green-700" />
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800">Chat Initialization Context</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              These Valmet policies are automatically loaded as context for the AI assistant
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Book className="h-6 w-6 text-green-700" />
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800">Chat Initialization Context</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {activeDocuments.length} of {documents.length} documents active •
+                {contextSize ? ` ~${Math.round(contextSize.totalSize / 1000)}k tokens` : ' Loading...'}
+              </p>
+            </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSettings(true)}
+            className="flex items-center gap-2"
+          >
+            <SettingsIcon className="h-4 w-4" />
+            Configure
+          </Button>
         </div>
       </div>
 
@@ -167,7 +252,7 @@ const ChatInitViewer: React.FC = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="px-6 pt-4">
           <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 w-full max-w-6xl">
-            {documents.map((doc) => (
+            {documents.filter(doc => doc.active).map((doc) => (
               <TabsTrigger 
                 key={doc.id} 
                 value={doc.id}
@@ -190,7 +275,7 @@ const ChatInitViewer: React.FC = () => {
 
         {/* Content */}
         <div className="flex-1 px-6 pb-6 overflow-hidden min-h-0">
-          {documents.map((doc) => (
+          {documents.filter(doc => doc.active).map((doc) => (
             <TabsContent 
               key={doc.id} 
               value={doc.id} 
@@ -532,9 +617,123 @@ const ChatInitViewer: React.FC = () => {
       {/* Info Footer */}
       <div className="px-6 py-3 border-t bg-green-50">
         <p className="text-xs text-green-700 text-center">
-          <strong>Note:</strong> These documents are automatically available to the AI assistant for providing accurate, policy-compliant responses.
+          <strong>Note:</strong> Active documents ({activeDocuments.length}) are automatically available to the AI assistant. Configure which documents to include using the settings button.
         </p>
       </div>
+
+      {/* Configuration Dialog */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Configure Chat Context Documents</DialogTitle>
+            <DialogDescription>
+              Select which documents should be included in the AI assistant's context. Active documents are automatically loaded when starting a chat session.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Context Size Info */}
+            {contextSize && (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Total Context Size:</strong> ~{Math.round(contextSize.totalSize / 1000)}k tokens
+                  {contextSize.totalSize > 100000 && (
+                    <span className="text-orange-600"> (Consider reducing for better performance)</span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Separator />
+
+            {/* Document List */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-700">Available Documents</h3>
+              {documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-start space-x-3 p-3 rounded-lg border bg-white hover:bg-gray-50 transition-colors"
+                >
+                  <Switch
+                    id={`doc-${doc.id}`}
+                    checked={doc.active}
+                    onCheckedChange={(checked) => handleToggleDocument(doc.id, checked)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 space-y-1">
+                    <Label
+                      htmlFor={`doc-${doc.id}`}
+                      className="text-sm font-medium cursor-pointer flex items-center gap-2"
+                    >
+                      {doc.icon}
+                      {doc.title}
+                      {doc.active && (
+                        <Badge variant="default" className="text-xs">Active</Badge>
+                      )}
+                    </Label>
+                    <p className="text-xs text-gray-600">{doc.description}</p>
+                    {doc.category && (
+                      <Badge variant="outline" className="text-xs">
+                        {doc.category}
+                      </Badge>
+                    )}
+                    {contextSize?.documents.find(d => d.id === doc.id) && (
+                      <span className="text-xs text-gray-500">
+                        ~{Math.round(contextSize.documents.find(d => d.id === doc.id)!.size / 1000)}k tokens
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Separator />
+
+            {/* Configuration Actions */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetToDefaults}
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset to Defaults
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportConfig}
+                className="flex items-center gap-2"
+              >
+                <FileDown className="h-4 w-4" />
+                Export Config
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Import Config
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImportConfig}
+                className="hidden"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setShowSettings(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

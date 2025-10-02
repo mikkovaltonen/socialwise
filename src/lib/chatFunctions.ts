@@ -226,8 +226,15 @@ export async function search_ipro_contracts(params: ContractSearchParams): Promi
 export async function search_training_suppliers(params: TrainingSupplierSearchParams): Promise<{
   success: boolean;
   totalFound: number;
-  suppliers: string[];
-  summary?: string;
+  companies: string[];
+  countries: string[];
+  services: string[];
+  areas: string[];
+  classifications: string[];
+  preferred: boolean[];
+  pricings: string[];
+  contacts: string[];
+  basware: boolean[];
   error?: string;
 }> {
   try {
@@ -239,45 +246,64 @@ export async function search_training_suppliers(params: TrainingSupplierSearchPa
       return {
         success: false,
         totalFound: 0,
-        suppliers: [],
+        companies: [],
+        countries: [],
+        services: [],
+        areas: [],
+        classifications: [],
+        preferred: [],
+        pricings: [],
+        contacts: [],
+        basware: [],
         error: result.error
       };
     }
 
-    // Format records for chat display
-    const formattedSuppliers = result.records.map(formatTrainingSupplierForChat);
+    // Create flat arrays for each field
+    const companies = result.records.map(s => s.company_name || 'Unknown');
+    const countries = result.records.map(s => s.delivery_country || s.country || 'N/A');
+    const services = result.records.map(s => s.nature_of_service || 'General Training');
+    const areas = result.records.map(s => s.training_area || 'Various');
+    const classifications = result.records.map(s => s.classification || 'N/A');
+    const preferred = result.records.map(s => s.preferred_supplier || false);
+    const pricings = result.records.map(s =>
+      s.pricing_per_day_eur ?
+        `€${s.pricing_per_day_eur}/day` :
+        s.pricing_per_day_eur_text || 'Contact for pricing'
+    );
+    const contacts = result.records.map(s => s.valmet_contact_person || 'N/A');
+    const basware = result.records.map(s => s.catalog_in_basware || false);
 
-    // Count by classification
-    const classA = result.records.filter(s => s.classification === 'A').length;
-    const classB = result.records.filter(s => s.classification === 'B').length;
-    const classC = result.records.filter(s => s.classification === 'C').length;
-    const preferred = result.records.filter(s => s.preferred_supplier).length;
-
-    const classBreakdown = [];
-    if (classA > 0) classBreakdown.push(`A: ${classA}`);
-    if (classB > 0) classBreakdown.push(`B: ${classB}`);
-    if (classC > 0) classBreakdown.push(`C: ${classC}`);
-
-    const summary = result.records.length > 0 ?
-      `Found ${result.totalFound} supplier(s). Showing ${result.records.length}. ` +
-      (classBreakdown.length > 0 ? `Classification: ${classBreakdown.join(', ')}. ` : '') +
-      (preferred > 0 ? `Preferred: ${preferred}` : '') :
-      'No training suppliers found matching the criteria';
 
     console.log(`✅ Training supplier search complete: ${result.totalFound} found`);
 
     return {
       success: true,
       totalFound: result.totalFound,
-      suppliers: formattedSuppliers,
-      summary
+      companies,
+      countries,
+      services,
+      areas,
+      classifications,
+      preferred,
+      pricings,
+      contacts,
+      basware
     };
   } catch (error) {
     console.error('Error in search_training_suppliers:', error);
     return {
       success: false,
       totalFound: 0,
-      suppliers: [],
+      companies: [],
+      countries: [],
+      services: [],
+      areas: [],
+      classifications: [],
+      preferred: [],
+      pricings: [],
+      contacts: [],
+      basware: [],
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }

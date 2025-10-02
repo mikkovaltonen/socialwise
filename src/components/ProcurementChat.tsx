@@ -163,7 +163,7 @@ const ProcurementChat: React.FC<ProcurementChatProps> = ({
 You can search Valmet's supplier database with ${MAIN_CATEGORY_LOV.reduce((sum, cat) => sum + cat.count, 0)} verified suppliers across these main categories:
 ${getMainCategoriesForChat()}
 
-Use the searchSuppliersForChat function to find suppliers by main category, supplier categories, country, or city.
+Use the searchSuppliersForChat function to find suppliers by main category, supplier categories, country (from LOV), or vendor name.
 
 Please provide an initial analysis overview of these documents and suggest what insights you can provide.`
       });

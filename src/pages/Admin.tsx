@@ -167,12 +167,12 @@ const Admin = () => {
             <CardHeader className="bg-blue-700 text-white rounded-t-lg">
               <CardTitle className="flex items-center">
                 <Database className="mr-3 h-6 w-6" />
-                Procurement Data Search & Testing
+                Supplier Database Search
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <p className="text-gray-600 mb-4">
-                Search all procurement data: External Labour Suppliers (520+), Training Invoices, iPRO Contracts, and Training Suppliers.
+                Search the unified supplier database with ~400 verified suppliers across all categories.
               </p>
               <Dialog open={showFirestoreTester} onOpenChange={setShowFirestoreTester}>
                 <DialogTrigger asChild>
@@ -187,9 +187,9 @@ const Admin = () => {
                   <DialogHeader className="px-6 pt-6 pb-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <DialogTitle>Procurement Data Search & Testing</DialogTitle>
+                        <DialogTitle>Supplier Database Search</DialogTitle>
                         <DialogDescription>
-                          Search and test all procurement data: External Labour Suppliers (520+), Training Invoices, iPRO Contracts, and Training Suppliers.
+                          Search the unified supplier database with ~400 verified suppliers, plus additional procurement data sources.
                         </DialogDescription>
                       </div>
                     </div>
