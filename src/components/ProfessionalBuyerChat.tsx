@@ -1582,7 +1582,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                       return (
                         <div key={partIndex}>
                           {textWithoutJson && (
-                            <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none`}>
+                            <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none markdown-content`}>
                               <ReactMarkdown>
                                 {(() => {
                                   const { originalText, formattedSources } = processTextWithCitations(
@@ -1750,7 +1750,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                               return (
                                 <div key={partIndex}>
                                   {textWithoutJson && (
-                                    <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none`}>
+                                    <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none markdown-content`}>
                                       <ReactMarkdown>
                                         {(() => {
                                           const { originalText, formattedSources } = processTextWithCitations(textWithoutJson, message.citationMetadata?.citationSources);

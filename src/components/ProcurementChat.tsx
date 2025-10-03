@@ -437,7 +437,7 @@ Please analyze these search results and provide recommendations based on the use
                   {message.parts.map((part, partIndex) => (
                     <div key={partIndex}>
                       {part.text && (
-                        <ReactMarkdown className="prose prose-sm">
+                        <ReactMarkdown className="prose prose-sm markdown-content">
                           {(() => {
                             const { originalText, formattedSources } = processTextWithCitations(
                               part.text,

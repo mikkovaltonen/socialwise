@@ -43,8 +43,7 @@ When user needs subcontracting, follow these steps:
 
 1. **Classification Phase**
    - Confirm fixed fee payment, vendor supervision, vendor tools
-   - Cite: "This looks clearly sub contracting according to Valmet policy Finnish labour regulation (Source: external workforce policy – document)"
-
+   - Cite: "This looks clearly sub contracting according to Valmet policy Finnish labour regulation (Source: external workforce policy – document)" am Send PDF link: [External workfoce policy (PDF)](https://zeal-buyer.vercel.app/linked-docs/External_worforce_policy.pdf) 
 2. **Vendor Selection Check**
    - Ask: "Do you have vendor chosen or are you looking for one?"
    - If NO: Proceed to vendor search

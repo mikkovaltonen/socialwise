@@ -99,3 +99,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom styles for markdown content links */
+.markdown-content a {
+  @apply text-blue-600 hover:text-blue-800 underline underline-offset-2 font-medium transition-colors;
+}
+
+.markdown-content.prose-invert a {
+  @apply text-blue-400 hover:text-blue-300;
+}
+
+/* Override prose default link styles */
+.prose a {
+  @apply text-blue-600 hover:text-blue-800 underline underline-offset-2 font-medium;
+}
+
+.prose-invert a {
+  @apply text-blue-400 hover:text-blue-300;
+}
