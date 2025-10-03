@@ -32,8 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, Copy, RefreshCw, AlertCircle, Check, FileText, FlaskConical, User, Bot, History } from 'lucide-react';
+import { Save, Copy, RefreshCw, AlertCircle, Check, FileText, FlaskConical, User, Bot, History, Maximize2 } from 'lucide-react';
 import { PromptHistoryDialog } from './PromptHistoryDialog';
+import { FullscreenPromptEditor } from './FullscreenPromptEditor';
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,8 @@ export default function SystemPromptManager() {
   const [showVersionCommentDialog, setShowVersionCommentDialog] = useState(false);
   const [versionComment, setVersionComment] = useState('');
   const [pendingSaveVersion, setPendingSaveVersion] = useState<PromptVersion | null>(null);
+  const [showFullscreenEditor, setShowFullscreenEditor] = useState(false);
+  const [fullscreenEditVersion, setFullscreenEditVersion] = useState<PromptVersion>('production');
 
   useEffect(() => {
     if (user) {
@@ -321,16 +324,34 @@ export default function SystemPromptManager() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label>Production Prompt (Stable)</Label>
-                  <span className="text-sm text-gray-500">
-                    Last updated: {formatLastUpdated(productionPrompt?.lastUpdated)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">
+                      Last updated: {formatLastUpdated(productionPrompt?.lastUpdated)}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setFullscreenEditVersion('production');
+                        setShowFullscreenEditor(true);
+                      }}
+                      title="Open fullscreen editor"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <Textarea
-                  value={productionContent}
-                  onChange={(e) => setProductionContent(e.target.value)}
-                  placeholder="Enter production system prompt..."
-                  className="min-h-[400px] font-mono text-sm"
-                />
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-500">
+                    {productionContent.split('\n').length} rows • {productionContent.length} characters
+                  </div>
+                  <Textarea
+                    value={productionContent}
+                    onChange={(e) => setProductionContent(e.target.value)}
+                    placeholder="Enter production system prompt..."
+                    className="min-h-[400px] font-mono text-sm"
+                  />
+                </div>
                 <div className="flex gap-2">
                   <Button
                     onClick={() => handleSavePrompt('production')}
@@ -362,9 +383,22 @@ export default function SystemPromptManager() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label>Testing Prompt (Read-Only - Uses /public/system_prompt.md)</Label>
-                  <span className="text-sm text-gray-500">
-                    Always uses current system_prompt.md file
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">
+                      Always uses current system_prompt.md file
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setFullscreenEditVersion('testing');
+                        setShowFullscreenEditor(true);
+                      }}
+                      title="View in fullscreen (read-only)"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
                   <p className="text-sm text-yellow-800">
@@ -425,6 +459,23 @@ export default function SystemPromptManager() {
         onOpenChange={setShowHistoryDialog}
         version="production"
         onRevert={loadPrompts}
+      />
+
+      {/* Fullscreen Editor */}
+      <FullscreenPromptEditor
+        open={showFullscreenEditor}
+        onOpenChange={setShowFullscreenEditor}
+        content={fullscreenEditVersion === 'production' ? productionContent : testingContent}
+        onChange={(content) => {
+          if (fullscreenEditVersion === 'production') {
+            setProductionContent(content);
+          } else {
+            setTestingContent(content);
+          }
+        }}
+        onSave={() => handleSavePrompt(fullscreenEditVersion)}
+        title={`${fullscreenEditVersion === 'production' ? 'Production' : 'Testing'} System Prompt`}
+        saving={saving}
       />
 
       {/* Version Comment Dialog */}

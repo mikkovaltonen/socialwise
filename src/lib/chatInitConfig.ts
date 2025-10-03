@@ -1,7 +1,19 @@
 /**
  * Chat Initialization Configuration
  * Manages which policy documents are loaded as context for the AI assistant
+ * NOW USES FIRESTORE FOR SYSTEM-WIDE CONFIGURATION
  */
+
+import {
+  loadChatContextConfig,
+  saveChatContextConfig,
+  getActiveChatContextDocuments,
+  updateDocumentActiveState as updateActiveState,
+  resetToDefaultConfig as resetConfig,
+  estimateChatContextSize,
+  initializeChatContextConfig,
+  ChatContextDocument
+} from './chatContextConfigService';
 
 export interface ChatInitDocument {
   id: string;
@@ -232,4 +244,100 @@ export function importConfig(jsonString: string): boolean {
     console.error('Failed to import config:', error);
     return false;
   }
+}
+
+// ============================================
+// ASYNC FIRESTORE WRAPPERS FOR NEW IMPLEMENTATION
+// ============================================
+
+let configCache: ChatInitDocument[] | null = null;
+
+/**
+ * Initialize configuration in Firestore and migrate from localStorage if needed
+ */
+export async function initializeChatConfig(userId: string): Promise<void> {
+  await initializeChatContextConfig(userId);
+
+  // Migrate from localStorage if exists
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const config = JSON.parse(stored) as ChatInitDocument[];
+      await saveChatContextConfig(config, userId);
+      localStorage.removeItem(STORAGE_KEY);
+      console.log('✅ Migrated chat config from localStorage to Firestore');
+    }
+  } catch (error) {
+    console.error('Failed to migrate config:', error);
+  }
+
+  // Load config into cache
+  configCache = await loadChatContextConfig();
+}
+
+/**
+ * Load configuration from Firestore (async version)
+ */
+export async function loadChatInitConfigAsync(): Promise<ChatInitDocument[]> {
+  const config = await loadChatContextConfig();
+  configCache = config;
+  return config;
+}
+
+/**
+ * Save configuration to Firestore (async version)
+ */
+export async function saveChatInitConfigAsync(
+  config: ChatInitDocument[],
+  userId: string
+): Promise<boolean> {
+  const result = await saveChatContextConfig(config, userId);
+  if (result) {
+    configCache = config;
+  }
+  return result;
+}
+
+/**
+ * Get active documents from Firestore (async version)
+ */
+export async function getActiveChatInitDocumentsAsync(): Promise<ChatInitDocument[]> {
+  return getActiveChatContextDocuments();
+}
+
+/**
+ * Update document active state in Firestore (async version)
+ */
+export async function updateDocumentActiveStateAsync(
+  documentId: string,
+  active: boolean,
+  userId: string
+): Promise<boolean> {
+  const result = await updateActiveState(documentId, active, userId);
+  if (result) {
+    // Update cache
+    configCache = await loadChatContextConfig();
+  }
+  return result;
+}
+
+/**
+ * Reset to defaults in Firestore (async version)
+ */
+export async function resetToDefaultConfigAsync(userId: string): Promise<boolean> {
+  const result = await resetConfig(userId);
+  if (result) {
+    configCache = await loadChatContextConfig();
+  }
+  return result;
+}
+
+/**
+ * Estimate context size from Firestore config (async version)
+ */
+export async function estimateContextSizeAsync(): Promise<{
+  totalSize: number;
+  documents: Array<{ id: string; title: string; size: number }>;
+}> {
+  return estimateChatContextSize();
 }

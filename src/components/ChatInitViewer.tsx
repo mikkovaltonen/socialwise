@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 import {
   ChatInitDocument,
   loadChatInitConfig,
@@ -32,7 +33,14 @@ import {
   resetToDefaultConfig,
   estimateContextSize,
   exportConfig,
-  importConfig
+  importConfig,
+  // Async Firestore versions
+  initializeChatConfig,
+  loadChatInitConfigAsync,
+  saveChatInitConfigAsync,
+  updateDocumentActiveStateAsync,
+  resetToDefaultConfigAsync,
+  estimateContextSizeAsync
 } from '@/lib/chatInitConfig';
 
 interface PolicyDocument extends ChatInitDocument {
@@ -41,6 +49,7 @@ interface PolicyDocument extends ChatInitDocument {
 }
 
 const ChatInitViewer: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('procurement');
   const [showSettings, setShowSettings] = useState(false);
   const [contextSize, setContextSize] = useState<{ totalSize: number; documents: Array<{ id: string; title: string; size: number }> } | null>(null);
