@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import MarkdownEditor from './MarkdownEditor';
 import { X, Save } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
@@ -93,13 +93,14 @@ export function FullscreenPromptEditor({
           {/* Content Area */}
           <div className="flex-1 overflow-hidden">
             <div className="h-full p-6">
-              <Textarea
+              <MarkdownEditor
                 value={localContent}
-                onChange={(e) => handleChange(e.target.value)}
+                onChange={handleChange}
                 onKeyDown={handleKeyDown}
-                className="w-full h-full font-mono text-sm resize-none border-0 focus:ring-0"
                 placeholder="Enter your prompt here..."
-                style={{ minHeight: 'calc(100% - 2rem)' }}
+                label=""
+                minHeight="calc(100% - 2rem)"
+                className="h-full"
               />
             </div>
           </div>

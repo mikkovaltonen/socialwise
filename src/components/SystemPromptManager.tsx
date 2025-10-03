@@ -20,6 +20,7 @@ import {
 } from '@/lib/systemPromptService';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import MarkdownEditor from './MarkdownEditor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -210,7 +211,7 @@ export default function SystemPromptManager() {
 
       if (success) {
         setSelectedModel(model);
-        setMessage(`Your LLM model preference updated to ${model.includes('grok') ? 'Grok-4-Fast (Free)' : model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' : 'Gemini 2.5 Pro'}`);
+        setMessage(`Your LLM model preference updated to ${model.includes('grok') ? 'Grok-4-Fast' : model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' : 'Gemini 2.5 Pro'}`);
       } else {
         setError('Failed to update model preference');
       }
@@ -280,14 +281,14 @@ export default function SystemPromptManager() {
                 <SelectTrigger className="w-48">
                   <SelectValue>
                     {selectedModel.includes('grok')
-                      ? 'Grok-4-Fast (Free)'
+                      ? 'Grok-4-Fast'
                       : selectedModel === 'google/gemini-2.5-flash'
                         ? 'Gemini 2.5 Flash'
                         : 'Gemini 2.5 Pro'}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="x-ai/grok-4-fast:free">Grok-4-Fast (Free)</SelectItem>
+                  <SelectItem value="x-ai/grok-4-fast:free">Grok-4-Fast</SelectItem>
                   <SelectItem value="google/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
                   <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
                 </SelectContent>
@@ -345,11 +346,12 @@ export default function SystemPromptManager() {
                   <div className="text-xs text-gray-500">
                     {productionContent.split('\n').length} rows • {productionContent.length} characters
                   </div>
-                  <Textarea
+                  <MarkdownEditor
                     value={productionContent}
-                    onChange={(e) => setProductionContent(e.target.value)}
+                    onChange={setProductionContent}
                     placeholder="Enter production system prompt..."
-                    className="min-h-[400px] font-mono text-sm"
+                    label=""
+                    minHeight="400px"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -408,12 +410,14 @@ export default function SystemPromptManager() {
                     To modify the testing prompt, edit the file directly in your code editor.
                   </p>
                 </div>
-                <Textarea
+                <MarkdownEditor
                   value={testingContent}
+                  onChange={() => {}}
                   readOnly
-                  disabled
                   placeholder="Content loaded from /public/system_prompt.md"
-                  className="min-h-[400px] font-mono text-sm bg-gray-50 cursor-not-allowed"
+                  label=""
+                  minHeight="400px"
+                  className="bg-gray-50"
                 />
                 <div className="flex gap-2">
                   <Button
