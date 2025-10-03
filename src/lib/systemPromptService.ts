@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { User } from 'firebase/auth';
+import { savePromptToHistory } from './promptHistoryService';
 
 export type PromptVersion = 'production' | 'testing';
 export type LLMModel = 'x-ai/grok-4-fast:free' | 'google/gemini-2.5-flash' | 'google/gemini-2.5-pro';
@@ -102,13 +103,15 @@ export async function getSystemPrompt(version: PromptVersion): Promise<SystemPro
 }
 
 /**
- * Save production prompt (testing cannot be saved)
+ * Save production prompt with history tracking
  */
 export async function saveSystemPrompt(
   version: PromptVersion,
   content: string,
   userId: string,
-  description?: string
+  description?: string,
+  versionComment?: string,
+  userEmail?: string
 ): Promise<boolean> {
   try {
     // Only production can be saved
@@ -120,6 +123,17 @@ export async function saveSystemPrompt(
     const docRef = doc(db, PRODUCTION_PROMPT_DOC);
     // Get existing model to preserve it
     const existing = await getSystemPrompt('production');
+
+    // Save to history if version comment is provided
+    if (versionComment && userEmail) {
+      await savePromptToHistory(
+        content,
+        'production',
+        userId,
+        userEmail,
+        versionComment
+      );
+    }
 
     await setDoc(docRef, {
       content,

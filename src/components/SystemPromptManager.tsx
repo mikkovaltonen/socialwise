@@ -32,7 +32,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, Copy, RefreshCw, AlertCircle, Check, FileText, FlaskConical, User, Bot } from 'lucide-react';
+import { Save, Copy, RefreshCw, AlertCircle, Check, FileText, FlaskConical, User, Bot, History } from 'lucide-react';
+import { PromptHistoryDialog } from './PromptHistoryDialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 export default function SystemPromptManager() {
   const { user } = useAuth();
@@ -46,6 +55,10 @@ export default function SystemPromptManager() {
   const [selectedModel, setSelectedModel] = useState<LLMModel>('x-ai/grok-4-fast:free');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showVersionCommentDialog, setShowVersionCommentDialog] = useState(false);
+  const [versionComment, setVersionComment] = useState('');
+  const [pendingSaveVersion, setPendingSaveVersion] = useState<PromptVersion | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -98,24 +111,42 @@ export default function SystemPromptManager() {
   const handleSavePrompt = async (version: PromptVersion) => {
     if (!user) return;
 
+    // Show version comment dialog
+    setPendingSaveVersion(version);
+    setShowVersionCommentDialog(true);
+  };
+
+  const performSave = async () => {
+    if (!user || !pendingSaveVersion) return;
+
     setSaving(true);
     setMessage('');
     setError('');
+    setShowVersionCommentDialog(false);
 
     try {
-      const content = version === 'production' ? productionContent : testingContent;
-      const success = await saveSystemPrompt(version, content, user.uid);
+      const content = pendingSaveVersion === 'production' ? productionContent : testingContent;
+      const success = await saveSystemPrompt(
+        pendingSaveVersion,
+        content,
+        user.uid,
+        undefined,
+        versionComment,
+        user.email || ''
+      );
 
       if (success) {
-        setMessage(`${version} prompt saved successfully`);
+        setMessage(`${pendingSaveVersion} prompt saved successfully`);
+        setVersionComment('');
+        setPendingSaveVersion(null);
         // Reload prompts to get updated timestamps
         await loadPrompts();
       } else {
-        setError(`Failed to save ${version} prompt`);
+        setError(`Failed to save ${pendingSaveVersion} prompt`);
       }
     } catch (error) {
       console.error('Error saving prompt:', error);
-      setError(`Error saving ${version} prompt`);
+      setError(`Error saving ${pendingSaveVersion} prompt`);
     } finally {
       setSaving(false);
     }
@@ -206,97 +237,62 @@ export default function SystemPromptManager() {
   return (
     <div className="space-y-6">
       {/* Configuration Card - Prompt Version & LLM Model */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            AI Assistant Configuration
-          </CardTitle>
-          <CardDescription>
-            Configure your AI assistant's prompt version and language model
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Prompt Version Selector */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">System Prompt Version</Label>
-            <div className="flex items-center space-x-4">
+      <Card className="p-4">
+        <div className="flex items-start justify-between gap-6">
+          {/* Left: Prompt Version */}
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-4 h-4 text-gray-600" />
+              <Label className="text-sm font-medium">Prompt Version</Label>
+            </div>
+            <div className="flex items-center gap-3">
               <Select value={userVersion} onValueChange={(v) => handleVersionChange(v as PromptVersion)}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="production">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Production
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="testing">
-                    <div className="flex items-center gap-2">
-                      <FlaskConical className="w-4 h-4" />
-                      Testing
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="production">Production</SelectItem>
+                  <SelectItem value="testing">Testing</SelectItem>
                 </SelectContent>
               </Select>
-              <div className={`px-3 py-1 rounded-full text-sm ${
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                 userVersion === 'production'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-yellow-100 text-yellow-800'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-yellow-100 text-yellow-700'
               }`}>
-                Active: {userVersion}
-              </div>
+                Active
+              </span>
             </div>
           </div>
 
-          {/* LLM Model Selector */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Your Language Model Preference (OpenRouter BYOK)</Label>
-            <div className="flex items-center space-x-4">
+          {/* Right: LLM Model */}
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Bot className="w-4 h-4 text-gray-600" />
+              <Label className="text-sm font-medium">Language Model</Label>
+              <span className="text-xs text-gray-500">(OpenRouter BYOK)</span>
+            </div>
+            <div className="flex items-center gap-3">
               <Select value={selectedModel} onValueChange={(v) => handleModelChange(v as LLMModel)}>
-                <SelectTrigger className="w-64">
-                  <SelectValue />
+                <SelectTrigger className="w-48">
+                  <SelectValue>
+                    {selectedModel.includes('grok')
+                      ? 'Grok-4-Fast (Free)'
+                      : selectedModel === 'google/gemini-2.5-flash'
+                        ? 'Gemini 2.5 Flash'
+                        : 'Gemini 2.5 Pro'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="x-ai/grok-4-fast:free">
-                    <div className="flex items-center gap-2">
-                      <Bot className="w-4 h-4" />
-                      <div>
-                        <div className="font-medium">Grok-4-Fast</div>
-                        <div className="text-xs text-gray-500">Free tier, fast responses</div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="google/gemini-2.5-flash">
-                    <div className="flex items-center gap-2">
-                      <Bot className="w-4 h-4" />
-                      <div>
-                        <div className="font-medium">Gemini 2.5 Flash</div>
-                        <div className="text-xs text-gray-500">Fast, efficient model (default)</div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="google/gemini-2.5-pro">
-                    <div className="flex items-center gap-2">
-                      <Bot className="w-4 h-4" />
-                      <div>
-                        <div className="font-medium">Gemini 2.5 Pro</div>
-                        <div className="text-xs text-gray-500">Most capable model</div>
-                      </div>
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="x-ai/grok-4-fast:free">Grok-4-Fast (Free)</SelectItem>
+                  <SelectItem value="google/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                  <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                Temperature: 0
-              </div>
+              <span className="text-xs text-gray-500">Temp: 0</span>
             </div>
-            <p className="text-xs text-gray-500">
-              Your personal model preference. Default for all users is Gemini 2.5 Flash.
-            </p>
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       {/* Prompt Editor Tabs */}
@@ -342,6 +338,13 @@ export default function SystemPromptManager() {
                   >
                     <Save className="w-4 h-4 mr-2" />
                     Save Production
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowHistoryDialog(true)}
+                  >
+                    <History className="w-4 h-4 mr-2" />
+                    View History
                   </Button>
                   <Button
                     variant="outline"
@@ -416,47 +419,51 @@ export default function SystemPromptManager() {
         </CardContent>
       </Card>
 
-      {/* Info Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>About Configuration</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm text-gray-600">
-          <div>
-            <p className="font-medium mb-1">Prompt Versions:</p>
-            <p>
-              <strong>Production:</strong> The stable version stored in database. Can be edited and saved.
-              Changes here affect all users who haven't selected a specific version.
-            </p>
-            <p className="mt-1">
-              <strong>Testing:</strong> Read-only version that always uses <code className="bg-gray-100 px-1">/public/system_prompt.md</code>.
-              Perfect for testing code changes. Edit the file directly in your code editor.
-            </p>
-          </div>
+      {/* History Dialog */}
+      <PromptHistoryDialog
+        open={showHistoryDialog}
+        onOpenChange={setShowHistoryDialog}
+        version="production"
+        onRevert={loadPrompts}
+      />
 
-          <div>
-            <p className="font-medium mb-1">System Language Model (via OpenRouter):</p>
-            <p>
-              <strong>Grok-4-Fast:</strong> Default model. Fast responses, free tier.
-            </p>
-            <p className="mt-1">
-              <strong>Gemini 2.5 Flash:</strong> Google's fast and efficient model for most tasks.
-            </p>
-            <p className="mt-1">
-              <strong>Gemini 2.5 Pro:</strong> Google's most capable model for complex reasoning.
-            </p>
-            <p className="mt-2 text-xs">
-              Each user can select their preferred model. The default for all users is Gemini 2.5 Flash. All models use BYOK (Bring Your Own Key) configuration with temperature set to 0 for consistent responses.
-            </p>
+      {/* Version Comment Dialog */}
+      <Dialog open={showVersionCommentDialog} onOpenChange={setShowVersionCommentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Version Comment</DialogTitle>
+            <DialogDescription>
+              Describe the changes you made in this version. This helps track the history of modifications.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={versionComment}
+              onChange={(e) => setVersionComment(e.target.value)}
+              placeholder="e.g., Updated supplier categories, Added new compliance requirements, Fixed formatting issues..."
+              className="min-h-[100px]"
+            />
           </div>
-
-          <div>
-            <p className="font-medium">Configuration Scope:</p>
-            <p><strong>System Prompt Version:</strong> User preference - choose between production or testing prompt.</p>
-            <p><strong>Language Model:</strong> User preference - each user can select their preferred model.</p>
-          </div>
-        </CardContent>
-      </Card>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowVersionCommentDialog(false);
+                setVersionComment('');
+                setPendingSaveVersion(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={performSave}
+              disabled={!versionComment.trim()}
+            >
+              Save with Comment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
