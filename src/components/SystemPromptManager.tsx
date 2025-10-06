@@ -54,7 +54,7 @@ export default function SystemPromptManager() {
   const [productionContent, setProductionContent] = useState('');
   const [testingContent, setTestingContent] = useState('');
   const [userVersion, setUserVersion] = useState<PromptVersion>('production');
-  const [selectedModel, setSelectedModel] = useState<LLMModel>('x-ai/grok-4-fast:free');
+  const [selectedModel, setSelectedModel] = useState<LLMModel>('x-ai/grok-4-fast');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
@@ -288,7 +288,7 @@ export default function SystemPromptManager() {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="x-ai/grok-4-fast:free">Grok-4-Fast</SelectItem>
+                  <SelectItem value="x-ai/grok-4-fast">Grok-4-Fast</SelectItem>
                   <SelectItem value="google/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
                   <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
                 </SelectContent>

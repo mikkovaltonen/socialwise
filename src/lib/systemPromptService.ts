@@ -20,7 +20,7 @@ import { User } from 'firebase/auth';
 import { savePromptToHistory } from './promptHistoryService';
 
 export type PromptVersion = 'production' | 'testing';
-export type LLMModel = 'x-ai/grok-4-fast:free' | 'google/gemini-2.5-flash' | 'google/gemini-2.5-pro';
+export type LLMModel = 'x-ai/grok-4-fast' | 'google/gemini-2.5-flash' | 'google/gemini-2.5-pro';
 
 export interface SystemPromptData {
   content: string;
@@ -138,7 +138,7 @@ export async function saveSystemPrompt(
     await setDoc(docRef, {
       content,
       version: 'production',
-      selectedModel: existing?.selectedModel || 'x-ai/grok-4-fast:free',
+      selectedModel: existing?.selectedModel || 'x-ai/grok-4-fast',
       lastUpdated: serverTimestamp(),
       updatedBy: userId,
       description: description || 'Production system prompt'

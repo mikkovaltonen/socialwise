@@ -5,20 +5,21 @@
  * and saves data to Firestore's purchase_requisitions collection
  */
 
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
   orderBy,
   Timestamp,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { CategorizedError, ErrorType, ErrorSeverity } from './errorHandling';
 
 // Purchase Requisition Status Enum (Basware-style workflow)
 export enum RequisitionStatus {
@@ -153,7 +154,46 @@ export class PurchaseRequisitionService {
       return docRef.id;
     } catch (error) {
       console.error('❌ Error creating purchase requisition:', error);
-      throw new Error('Failed to create purchase requisition');
+
+      // Provide detailed error information
+      if (error instanceof Error) {
+        if (error.message.includes('permission')) {
+          throw new CategorizedError(
+            ErrorType.PERMISSION,
+            'Insufficient permissions to create purchase requisition',
+            { originalError: error.message, userId },
+            ErrorSeverity.HIGH,
+            false
+          );
+        }
+        if (error.message.includes('network') || error.message.includes('failed to fetch')) {
+          throw new CategorizedError(
+            ErrorType.NETWORK,
+            'Network error while creating requisition',
+            { originalError: error.message },
+            ErrorSeverity.LOW,
+            true
+          );
+        }
+        if (error.message.includes('invalid') || error.message.includes('required')) {
+          throw new CategorizedError(
+            ErrorType.VALIDATION,
+            error.message,
+            { requisitionData: requisition },
+            ErrorSeverity.MEDIUM,
+            false
+          );
+        }
+      }
+
+      // Default categorized error
+      throw new CategorizedError(
+        ErrorType.DATABASE,
+        `Failed to create purchase requisition: ${error instanceof Error ? error.message : 'Unknown database error'}`,
+        { originalError: error, requisitionData: requisition },
+        ErrorSeverity.MEDIUM,
+        true
+      );
     }
   }
   

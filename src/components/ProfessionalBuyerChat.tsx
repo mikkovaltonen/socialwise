@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 // Using OpenRouter API instead of Google Generative AI
 type Part = { text: string };
-import { Loader2, Send, RotateCcw, Paperclip, Bot, LogOut, Settings, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Loader2, Send, RotateCcw, Paperclip, Bot, LogOut, Settings, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,15 @@ import { search_suppliers, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFuncti
 import { purchaseRequisitionService, RequisitionStatus } from '../lib/purchaseRequisitionService';
 import { InteractiveJsonTable } from './InteractiveJsonTable';
 import FunctionUsageIndicator from './FunctionUsageIndicator';
+import {
+  CategorizedError,
+  ErrorType,
+  ErrorSeverity,
+  retryWithBackoff,
+  categorizeError,
+  createErrorLog,
+  DEFAULT_RETRY_CONFIG
+} from '../lib/errorHandling';
 
 interface ProfessionalBuyerChatProps {
   onLogout?: () => void;
@@ -197,7 +206,7 @@ console.log('🔧 ProfessionalBuyerChat v3.8-fixed-aiRequestId - Fixed undefined
 // Debug: Log OpenRouter API config
 console.log('OpenRouter API config:', {
   apiKey: openRouterApiKey ? `${openRouterApiKey.substring(0, 10)}...` : 'undefined',
-  model: 'x-ai/grok-4-fast:free (default)',  // Will be dynamically selected based on user preference
+  model: 'x-ai/grok-4-fast (default)',  // Will be dynamically selected based on user preference
   temperature: 0,  // Deterministic mode for procurement use case
   timestamp: new Date().toISOString(),
   toolSupport: true
@@ -742,8 +751,35 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                     });
                   }
 
-                  // Execute supplier search
-                  const searchResult = await search_suppliers(functionArgs);
+                  // Show retry indicator in UI
+                  let retryCount = 0;
+                  const showRetryMessage = (attempt: number, error: CategorizedError, delay: number) => {
+                    retryCount = attempt;
+                    setMessages(prev => {
+                      const filtered = prev.filter(msg => !(msg as any).isRetryMessage);
+                      return [...filtered, {
+                        role: 'model',
+                        parts: [{
+                          text: `🔄 Retrying supplier search (Attempt ${attempt + 1}/5)\n\n**Error Type:** ${error.type}\n**Reason:** ${error.userMessage}\n\nRetrying in ${delay / 1000} seconds...`
+                        }],
+                        isRetryMessage: true,
+                        functionsUsed: { searchSupplier: true }
+                      } as any];
+                    });
+                  };
+
+                  // Execute supplier search with retry logic
+                  const searchResult = await retryWithBackoff(
+                    () => search_suppliers(functionArgs),
+                    DEFAULT_RETRY_CONFIG,
+                    showRetryMessage,
+                    'Supplier Search'
+                  );
+
+                  // Remove retry message if successful
+                  if (retryCount > 0) {
+                    setMessages(prev => prev.filter(msg => !(msg as any).isRetryMessage));
+                  }
                   
                   // Log consolidated AI + Supplier search results
                   console.log('🔗 AI-SUPPLIER SEARCH RESULT [' + aiRequestId + ']:', {
@@ -852,100 +888,202 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                     ai_request_id: aiRequestId
                   });
 
-                  // Log function call error
+                  // Categorize the error
+                  const categorizedError = categorizeError(functionError);
+
+                  // Log detailed error with categorization
+                  const errorLog = createErrorLog(categorizedError, {
+                    functionName: functionName,
+                    functionArgs: functionArgs,
+                    userAction: textToSend,
+                    aiRequestId: aiRequestId,
+                    attemptNumber: (functionError as any).retryCount || 5,
+                    maxAttempts: DEFAULT_RETRY_CONFIG.maxAttempts
+                  });
+
+                  console.error('❌ AI FUNCTION CALL ERROR [' + aiRequestId + ']:', errorLog);
+
+                  // Log function call error with full details
                   if (continuousImprovementSessionId) {
                     await addTechnicalLog(continuousImprovementSessionId, {
                       event: 'function_call_error',
                       functionName: functionName,
                       functionInputs: functionArgs,
-                      errorMessage: functionError instanceof Error ? functionError.message : 'Unknown error',
+                      errorMessage: categorizedError.technicalMessage,
+                      errorType: categorizedError.type,
+                      errorSeverity: categorizedError.severity,
+                      errorDetails: categorizedError.details,
+                      retryCount: (functionError as any).retryCount || 5,
+                      maxRetries: DEFAULT_RETRY_CONFIG.maxAttempts,
                       aiRequestId: aiRequestId
-                    });
+                    } as any);
                   }
-                  
-                  console.error('Function execution failed:', functionError);
+
+                  // Remove retry message if exists
+                  setMessages(prev => prev.filter(msg => !(msg as any).isRetryMessage));
+
+                  // Display categorized error in UI with details
                   setMessages(prev => [...prev, {
                     role: 'model',
-                    parts: [{ text: `I tried to search for suppliers but encountered an error: ${functionError instanceof Error ? functionError.message : 'Unknown error'}. Please try again with different search criteria.` }],
+                    parts: [{
+                      text: `### ⚠️ Supplier Search Failed\n\n**Error Type:** ${categorizedError.type.replace('_', ' ').toUpperCase()}\n**Severity:** ${categorizedError.severity}\n\n**What happened:**\n${categorizedError.userMessage}\n\n**Technical Details:**\n- Function: ${functionName}\n- Attempts Made: ${(functionError as any).retryCount || 5}/${DEFAULT_RETRY_CONFIG.maxAttempts}\n- Error Code: ${aiRequestId}\n\n**What you can do:**\n${categorizedError.retryable
+                        ? '• Try your search again with different parameters\n• Simplify your search criteria\n• Contact support if the issue persists'
+                        : '• Check your input parameters\n• Verify you have the necessary permissions\n• Contact your administrator if needed'}\n\n**Debug Information:**\n\`\`\`\n${categorizedError.technicalMessage}\n\`\`\``
+                    }],
                     functionsUsed: {
                       searchSupplier: true
-                    }
-                  }]);
+                    },
+                    errorDetails: categorizedError
+                  } as any]);
                   return;
                 }
               }
               if (functionName === 'create_purchase_requisition') {
+                const aiRequestId = Math.random().toString(36).substring(2, 8);
+                let retryCount = 0;
+
                 try {
-                  const aiRequestId = Math.random().toString(36).substring(2, 8);
                   const args = functionArgs as any;
 
-                  if (!user) throw new Error('Not authenticated');
-
-                  // Extract header and lines from Basware-style structure
-                  const header = args.header || {};
-                  const lines = args.lines || [];
-
-                  // Prepare line items with proper structure for our Firestore
-                  const lineItems = lines.map((item: any, index: number) => ({
-                    lineNumber: parseInt(item.lineId) || (index + 1),
-                    itemDescription: item.description,
-                    quantity: item.quantity,
-                    unitOfMeasure: item.unitOfMeasure,
-                    unitPrice: item.unitPrice || 0,
-                    totalAmount: item.quantity * (item.unitPrice || 0),
-                    supplierName: item.vendorNoOrName || header.supplierId || '',
-                    categoryCode: item.glAccount || '',
-                    requestedDate: item.deliveryDate
-                  }));
-
-                  // Create requisition using our service with Basware header data
-                  const requisitionData = {
-                    externalCode: header.requisitionId || `AI-${Date.now()}`,
-                    requesterId: user.uid, // Always use the authenticated user's ID
-                    requesterName: header.requester || user.email || 'Unknown',
-                    requesterEmail: user.email || '',
-                    department: header.companyCode || 'General',
-                    requestedDeliveryDate: lines[0]?.deliveryDate || new Date().toISOString().split('T')[0],
-                    status: header.status === 'Submitted' ? RequisitionStatus.SUBMITTED : RequisitionStatus.DRAFT,
-                    currency: lines[0]?.currency || 'EUR',
-                    preferredSupplier: header.supplierId || '',
-                    deliveryAddress: {
-                      locationCode: header.costCenter || 'FI-HEL-01',
-                      locationName: lines[0]?.deliveryAddress || 'Valmet Helsinki Office',
-                      country: ['Finland'],
-                      country: 'Finland'
-                    },
-                    lineItems: lineItems,
-                    businessJustification: header.justification || '',
-                    urgencyLevel: 'medium',
-                    contractId: header.contractId,
-                    attachments: args.attachments,
-                    customFields: args.customFields
-                  };
-
-                  const requisitionId = await purchaseRequisitionService.createRequisition(
-                    user.uid,
-                    requisitionData,
-                    user.email || undefined
+                  if (!user) throw new CategorizedError(
+                    ErrorType.PERMISSION,
+                    'User not authenticated',
+                    { requiresAuth: true },
+                    ErrorSeverity.HIGH,
+                    false
                   );
 
+                  // Log function call triggered
+                  if (continuousImprovementSessionId) {
+                    await addTechnicalLog(continuousImprovementSessionId, {
+                      event: 'function_call_triggered',
+                      userMessage: textToSend,
+                      functionName: functionName,
+                      functionInputs: functionArgs,
+                      aiRequestId: aiRequestId
+                    });
+                  }
+
+                  // Show retry indicator in UI
+                  const showRetryMessage = (attempt: number, error: CategorizedError, delay: number) => {
+                    retryCount = attempt;
+                    setMessages(prev => {
+                      const filtered = prev.filter(msg => !(msg as any).isRetryMessage);
+                      return [...filtered, {
+                        role: 'model',
+                        parts: [{
+                          text: `🔄 Retrying requisition creation (Attempt ${attempt + 1}/5)\n\n**Error Type:** ${error.type}\n**Reason:** ${error.userMessage}\n\nRetrying in ${delay / 1000} seconds...`
+                        }],
+                        isRetryMessage: true,
+                        functionsUsed: { createPurchaseRequisition: true }
+                      } as any];
+                    });
+                  };
+
+                  // Wrap the requisition creation in retry logic
+                  const requisitionId = await retryWithBackoff(
+                    async () => {
+                      // Extract header and lines from Basware-style structure
+                      const header = args.header || {};
+                      const lines = args.lines || [];
+
+                      // Validate required fields
+                      if (!lines || lines.length === 0) {
+                        throw new CategorizedError(
+                          ErrorType.VALIDATION,
+                          'At least one line item is required',
+                          { providedData: args },
+                          ErrorSeverity.HIGH,
+                          false
+                        );
+                      }
+
+                      // Prepare line items with proper structure for our Firestore
+                      const lineItems = lines.map((item: any, index: number) => ({
+                        lineNumber: parseInt(item.lineId) || (index + 1),
+                        itemDescription: item.description,
+                        quantity: item.quantity,
+                        unitOfMeasure: item.unitOfMeasure,
+                        unitPrice: item.unitPrice || 0,
+                        totalAmount: item.quantity * (item.unitPrice || 0),
+                        supplierName: item.vendorNoOrName || header.supplierId || '',
+                        categoryCode: item.glAccount || '',
+                        requestedDate: item.deliveryDate
+                      }));
+
+                      // Create requisition using our service with Basware header data
+                      const requisitionData = {
+                        externalCode: header.requisitionId || `AI-${Date.now()}`,
+                        requesterId: user.uid, // Always use the authenticated user's ID
+                        requesterName: header.requester || user.email || 'Unknown',
+                        requesterEmail: user.email || '',
+                        department: header.companyCode || 'General',
+                        requestedDeliveryDate: lines[0]?.deliveryDate || new Date().toISOString().split('T')[0],
+                        status: header.status === 'Submitted' ? RequisitionStatus.SUBMITTED : RequisitionStatus.DRAFT,
+                        currency: lines[0]?.currency || 'EUR',
+                        preferredSupplier: header.supplierId || '',
+                        deliveryAddress: {
+                          locationCode: header.costCenter || 'FI-HEL-01',
+                          locationName: lines[0]?.deliveryAddress || 'Valmet Helsinki Office',
+                          country: 'Finland'
+                        },
+                        lineItems: lineItems,
+                        businessJustification: header.justification || '',
+                        urgencyLevel: 'medium',
+                        contractId: header.contractId,
+                        attachments: args.attachments,
+                        customFields: args.customFields
+                      };
+
+                      return await purchaseRequisitionService.createRequisition(
+                        user.uid,
+                        requisitionData,
+                        user.email || undefined
+                      );
+                    },
+                    DEFAULT_RETRY_CONFIG,
+                    showRetryMessage,
+                    'Purchase Requisition Creation'
+                  );
+
+                  // Remove retry message if successful
+                  if (retryCount > 0) {
+                    setMessages(prev => prev.filter(msg => !(msg as any).isRetryMessage));
+                  }
+
                   // Log success
+                  if (continuousImprovementSessionId) {
+                    await addTechnicalLog(continuousImprovementSessionId, {
+                      event: 'function_call_success',
+                      functionName: functionName,
+                      functionInputs: functionArgs,
+                      functionOutputs: { requisitionId: requisitionId },
+                      retryCount: retryCount,
+                      aiRequestId: aiRequestId
+                    } as any);
+                  }
+
                   console.log('✅ Purchase requisition created via AI (Basware format):', requisitionId);
 
                   // Calculate total
-                  const total = lineItems.reduce((sum: number, item: any) => sum + item.totalAmount, 0);
+                  const header = (functionArgs as any).header || {};
+                  const lines = (functionArgs as any).lines || [];
+                  const total = lines.reduce((sum: number, item: any) => {
+                    return sum + (item.quantity * (item.unitPrice || 0));
+                  }, 0);
 
                   setMessages(prev => [...prev, {
                     role: 'model',
                     parts: [{
                       text: `✅ Purchase requisition created successfully!\n\n` +
                             `**Requisition ID:** ${requisitionId}\n` +
-                            `**External Reference:** ${requisitionData.externalCode}\n` +
+                            `**External Reference:** ${header.requisitionId || `AI-${Date.now()}`}\n` +
                             `**Company Code:** ${header.companyCode || 'General'}\n` +
                             `**Cost Center:** ${header.costCenter || 'Default'}\n` +
                             `**Total Amount:** €${total.toFixed(2)}\n` +
                             `**Status:** ${header.status || 'Draft'}\n` +
-                            `**Items:** ${lineItems.length} line item(s)\n\n` +
+                            `**Items:** ${lines.length} line item(s)\n` +
+                            `${retryCount > 0 ? `**Note:** Successfully created after ${retryCount + 1} attempts\n` : ''}\n` +
                             `The requisition has been created. You can view, edit, and submit it for approval in the Purchase Requisition Verification panel.`
                     }],
                     functionsUsed: {
@@ -955,16 +1093,57 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
 
                   return;
                 } catch (err) {
-                  console.error('Failed to create requisition:', err);
+                  // Categorize the error
+                  const categorizedError = categorizeError(err);
+
+                  // Log detailed error
+                  const errorLog = createErrorLog(categorizedError, {
+                    functionName: functionName,
+                    functionArgs: functionArgs,
+                    userAction: textToSend,
+                    aiRequestId: aiRequestId,
+                    attemptNumber: retryCount + 1,
+                    maxAttempts: DEFAULT_RETRY_CONFIG.maxAttempts
+                  });
+
+                  console.error('❌ Purchase Requisition Error [' + aiRequestId + ']:', errorLog);
+
+                  // Log to technical logs
+                  if (continuousImprovementSessionId) {
+                    await addTechnicalLog(continuousImprovementSessionId, {
+                      event: 'function_call_error',
+                      functionName: functionName,
+                      functionInputs: functionArgs,
+                      errorMessage: categorizedError.technicalMessage,
+                      errorType: categorizedError.type,
+                      errorSeverity: categorizedError.severity,
+                      errorDetails: categorizedError.details,
+                      retryCount: retryCount,
+                      maxRetries: DEFAULT_RETRY_CONFIG.maxAttempts,
+                      aiRequestId: aiRequestId
+                    } as any);
+                  }
+
+                  // Remove retry message if exists
+                  setMessages(prev => prev.filter(msg => !(msg as any).isRetryMessage));
+
+                  // Display categorized error in UI
                   setMessages(prev => [...prev, {
                     role: 'model',
                     parts: [{
-                      text: `❌ Failed to create purchase requisition: ${err instanceof Error ? err.message : 'Unknown error'}`
+                      text: `### ⚠️ Purchase Requisition Creation Failed\n\n**Error Type:** ${categorizedError.type.replace('_', ' ').toUpperCase()}\n**Severity:** ${categorizedError.severity}\n\n**What happened:**\n${categorizedError.userMessage}\n\n**Technical Details:**\n- Function: ${functionName}\n- Attempts Made: ${retryCount + 1}/${DEFAULT_RETRY_CONFIG.maxAttempts}\n- Error Code: ${aiRequestId}\n\n**What you can do:**\n${categorizedError.type === ErrorType.VALIDATION
+                        ? '• Check all required fields are filled\n• Verify supplier ID is valid\n• Ensure dates are in correct format (YYYY-MM-DD)\n• Check cost center and company codes'
+                        : categorizedError.type === ErrorType.PERMISSION
+                        ? '• Verify you have requisition creation rights\n• Check with your procurement administrator\n• Ensure you\'re logged in with the correct account'
+                        : categorizedError.retryable
+                        ? '• Try creating the requisition again\n• Simplify the requisition details\n• Contact IT support if the issue persists'
+                        : '• Contact your system administrator\n• Report the error code to IT support'}\n\n**Debug Information:**\n\`\`\`\n${categorizedError.technicalMessage}\n\`\`\``
                     }],
                     functionsUsed: {
                       createPurchaseRequisition: true
-                    }
-                  }]);
+                    },
+                    errorDetails: categorizedError
+                  } as any]);
                   return;
                 }
               } else if (functionName === 'create_purchase_requisition') {
