@@ -137,8 +137,16 @@ export class PurchaseRequisitionService {
       );
 
       // Prepare document with creator email
+      // Remove undefined fields to avoid Firestore errors
+      const cleanRequisition = Object.entries(requisition).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+
       const docData = {
-        ...requisition,
+        ...cleanRequisition,
         requisitionNumber,
         creatorEmail: userEmail || requisition.requesterEmail,
         totalAmount,

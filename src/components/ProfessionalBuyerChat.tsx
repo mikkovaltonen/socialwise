@@ -1012,7 +1012,8 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                       }));
 
                       // Create requisition using our service with Basware header data
-                      const requisitionData = {
+                      // Remove undefined fields to avoid Firestore errors
+                      const requisitionData: any = {
                         externalCode: header.requisitionId || `AI-${Date.now()}`,
                         requesterId: user.uid, // Always use the authenticated user's ID
                         requesterName: header.requester || user.email || 'Unknown',
@@ -1029,11 +1030,19 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                         },
                         lineItems: lineItems,
                         businessJustification: header.justification || '',
-                        urgencyLevel: 'medium',
-                        contractId: header.contractId,
-                        attachments: args.attachments,
-                        customFields: args.customFields
+                        urgencyLevel: 'medium'
                       };
+
+                      // Add optional fields only if they have values (not undefined)
+                      if (header.contractId !== undefined && header.contractId !== null) {
+                        requisitionData.contractId = header.contractId;
+                      }
+                      if (args.attachments !== undefined && args.attachments !== null) {
+                        requisitionData.attachments = args.attachments;
+                      }
+                      if (args.customFields !== undefined && args.customFields !== null) {
+                        requisitionData.customFields = args.customFields;
+                      }
 
                       return await purchaseRequisitionService.createRequisition(
                         user.uid,
