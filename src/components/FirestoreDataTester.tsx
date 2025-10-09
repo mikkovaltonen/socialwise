@@ -44,7 +44,6 @@ export const FirestoreDataTester: React.FC = () => {
     country: [] as string[],
     trainingNatureOfService: '',
     company: '',
-    preferredSupplier: '',
     limit: '20'
   });
 
@@ -58,7 +57,6 @@ export const FirestoreDataTester: React.FC = () => {
         country: supplierParams.country.length > 0 ? supplierParams.country : undefined,
         trainingNatureOfService: supplierParams.trainingNatureOfService || undefined,
         vendorName: supplierParams.company || undefined,
-        preferredSupplier: supplierParams.preferredSupplier || undefined,
         limit: Number(supplierParams.limit)
       };
 
@@ -195,23 +193,6 @@ export const FirestoreDataTester: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Preferred Supplier</Label>
-                <Select
-                  value={supplierParams.preferredSupplier || "all"}
-                  onValueChange={(value) => setSupplierParams({...supplierParams, preferredSupplier: value === "all" ? "" : value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="All suppliers" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Suppliers</SelectItem>
-                    <SelectItem value="true">Preferred Only</SelectItem>
-                    <SelectItem value="false">Non-Preferred Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
                 <Label>Max Number of Results</Label>
                 <Input
                   type="number"
@@ -252,13 +233,12 @@ export const FirestoreDataTester: React.FC = () => {
                       country: [],
                       trainingNatureOfService: '',
                       company: '',
-                      preferredSupplier: 'true',
                       limit: '10'
                     });
                     setTimeout(searchSuppliers, 100);
                   }}
                 >
-                  Test: Preferred Business Consulting
+                  Test: Business Consulting
                 </Button>
                 <Button
                   size="sm"
@@ -269,7 +249,6 @@ export const FirestoreDataTester: React.FC = () => {
                       country: ['Finland'],
                       trainingNatureOfService: '',
                       company: '',
-                      preferredSupplier: '',
                       limit: '10'
                     });
                     setTimeout(searchSuppliers, 100);
@@ -286,7 +265,6 @@ export const FirestoreDataTester: React.FC = () => {
                       country: [],
                       trainingNatureOfService: 'Leadership, Management & Team Development',
                       company: '',
-                      preferredSupplier: '',
                       limit: '10'
                     });
                     setTimeout(searchSuppliers, 100);
@@ -303,13 +281,12 @@ export const FirestoreDataTester: React.FC = () => {
                       country: [],
                       trainingNatureOfService: 'HSE, Quality & Work Wellbeing',
                       company: '',
-                      preferredSupplier: 'true',
                       limit: '5'
                     });
                     setTimeout(searchSuppliers, 100);
                   }}
                 >
-                  Test: Preferred HSE Training
+                  Test: HSE Training
                 </Button>
               </div>
             </div>
