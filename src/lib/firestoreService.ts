@@ -22,6 +22,8 @@ export interface ContinuousImprovementSession {
   userFeedback?: 'thumbs_up' | 'thumbs_down' | null;
   userComment?: string; // Optional comment from user
   issueStatus?: 'fixed' | 'not_fixed'; // Status for negative feedback issues
+  solution?: string; // Solution description when issue is marked as fixed
+  solutionDate?: Date; // When the solution was provided
   technicalLogs: TechnicalLog[];
   createdDate: Date;
   lastUpdated: Date;
@@ -515,7 +517,8 @@ export const getNegativeFeedbackSessions = async (
 // Update issue status for negative feedback
 export const updateIssueStatus = async (
   sessionId: string,
-  status: 'fixed' | 'not_fixed'
+  status: 'fixed' | 'not_fixed',
+  solution?: string
 ): Promise<void> => {
   try {
     if (!db) {
@@ -524,10 +527,24 @@ export const updateIssueStatus = async (
     }
 
     const sessionRef = doc(db, 'continuous_improvement', sessionId);
-    await setDoc(sessionRef, {
+    const updateData: Record<string, unknown> = {
       issueStatus: status,
       lastUpdated: serverTimestamp()
-    }, { merge: true });
+    };
+
+    // If marking as fixed and solution provided, add it
+    if (status === 'fixed' && solution) {
+      updateData.solution = solution;
+      updateData.solutionDate = serverTimestamp();
+    }
+
+    // If marking as not fixed, clear the solution
+    if (status === 'not_fixed') {
+      updateData.solution = null;
+      updateData.solutionDate = null;
+    }
+
+    await setDoc(sessionRef, updateData, { merge: true });
 
     console.log(`[ContinuousImprovement] Updated issue status for session ${sessionId}: ${status}`);
   } catch (error) {

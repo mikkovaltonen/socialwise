@@ -226,11 +226,11 @@ export async function getUserLLMModel(userId: string): Promise<LLMModel> {
     }
 
     // Fallback to default
-    console.log(`📝 Using default model for ${userId}: gemini-2.5-flash`);
-    return 'google/gemini-2.5-flash';
+    console.log(`📝 Using default model for ${userId}: gemini-2.5-pro`);
+    return 'google/gemini-2.5-pro';
   } catch (error) {
     console.error('Error getting user LLM model:', error);
-    return 'google/gemini-2.5-flash';
+    return 'google/gemini-2.5-pro';
   }
 }
 

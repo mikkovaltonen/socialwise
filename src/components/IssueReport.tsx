@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -17,6 +17,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Loader2, AlertTriangle, CheckCircle, Clock, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -34,6 +44,9 @@ const IssueReport: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'fixed' | 'not_fixed'>('all');
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<ContinuousImprovementSession | null>(null);
+  const [solutionDialogOpen, setSolutionDialogOpen] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{ sessionId: string; newStatus: 'fixed' | 'not_fixed' } | null>(null);
+  const [solutionText, setSolutionText] = useState('');
 
   useEffect(() => {
     loadIssues();
@@ -63,17 +76,56 @@ const IssueReport: React.FC = () => {
   };
 
   const handleStatusChange = async (sessionId: string, newStatus: 'fixed' | 'not_fixed') => {
+    // If changing to fixed, show solution dialog first
+    if (newStatus === 'fixed') {
+      setPendingStatusChange({ sessionId, newStatus });
+      setSolutionDialogOpen(true);
+      setSolutionText('');
+    } else {
+      // If changing to not fixed, update directly
+      try {
+        await updateIssueStatus(sessionId, newStatus);
+
+        // Update local state
+        setIssues(prev => prev.map(issue =>
+          issue.id === sessionId
+            ? { ...issue, issueStatus: newStatus, solution: undefined, solutionDate: undefined }
+            : issue
+        ));
+
+        toast.success('Issue marked as not fixed');
+      } catch (error) {
+        console.error('Error updating issue status:', error);
+        toast.error('Failed to update issue status');
+      }
+    }
+  };
+
+  const handleSolutionSubmit = async () => {
+    if (!pendingStatusChange || !solutionText.trim()) {
+      toast.error('Please provide a solution description');
+      return;
+    }
+
     try {
-      await updateIssueStatus(sessionId, newStatus);
-      
+      await updateIssueStatus(pendingStatusChange.sessionId, pendingStatusChange.newStatus, solutionText);
+
       // Update local state
-      setIssues(prev => prev.map(issue => 
-        issue.id === sessionId 
-          ? { ...issue, issueStatus: newStatus }
+      setIssues(prev => prev.map(issue =>
+        issue.id === pendingStatusChange.sessionId
+          ? {
+              ...issue,
+              issueStatus: pendingStatusChange.newStatus,
+              solution: solutionText,
+              solutionDate: new Date()
+            }
           : issue
       ));
-      
-      toast.success(`Issue marked as ${newStatus === 'fixed' ? 'fixed' : 'not fixed'}`);
+
+      toast.success('Issue marked as fixed with solution');
+      setSolutionDialogOpen(false);
+      setPendingStatusChange(null);
+      setSolutionText('');
     } catch (error) {
       console.error('Error updating issue status:', error);
       toast.error('Failed to update issue status');
@@ -313,6 +365,48 @@ const IssueReport: React.FC = () => {
         onOpenChange={setChatDialogOpen}
         session={selectedSession}
       />
+
+      {/* Solution Dialog */}
+      <Dialog open={solutionDialogOpen} onOpenChange={setSolutionDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>Provide Solution</DialogTitle>
+            <DialogDescription>
+              Please describe the solution implemented to fix this issue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="solution">Solution Description</Label>
+              <Textarea
+                id="solution"
+                placeholder="Describe what was done to resolve this issue..."
+                className="min-h-[120px]"
+                value={solutionText}
+                onChange={(e) => setSolutionText(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSolutionDialogOpen(false);
+                setPendingStatusChange(null);
+                setSolutionText('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSolutionSubmit}
+              disabled={!solutionText.trim()}
+            >
+              Mark as Fixed
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -452,7 +452,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
     // OpenRouter API helper function with retry logic
     const callOpenRouterAPI = async (messages: any[], systemPrompt: string, tools?: any[], retryCount: number = 0) => {
       // Get user's selected model
-      const selectedModel = user ? await getUserLLMModel(user.uid) : 'google/gemini-2.5-flash';
+      const selectedModel = user ? await getUserLLMModel(user.uid) : 'google/gemini-2.5-pro';
 
       // DEBUG: Log what's being sent to OpenRouter
       console.log('🚀 OPENROUTER API CALL DEBUG:', {

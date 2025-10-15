@@ -95,7 +95,7 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-[95vw] w-full h-[95vh] max-h-[95vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
@@ -103,15 +103,15 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="overview" className="w-full h-[calc(95vh-120px)] flex flex-col">
+          <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="timeline">Chat Timeline</TabsTrigger>
             <TabsTrigger value="technical">Technical Logs</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <TabsContent value="overview" className="space-y-4 flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Session Info</CardTitle>
@@ -159,6 +159,19 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
                       </p>
                     </div>
                   )}
+                  {session.solution && (
+                    <div className="pt-2">
+                      <span className="text-sm text-gray-600">Solution:</span>
+                      <p className="text-sm mt-1 p-2 bg-green-50 rounded border border-green-200">
+                        {session.solution}
+                      </p>
+                      {session.solutionDate && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Fixed on: {formatDate(session.solutionDate)}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -204,8 +217,8 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
             </Card>
           </TabsContent>
 
-          <TabsContent value="timeline" className="space-y-4">
-            <div className="h-[500px] w-full overflow-y-auto">
+          <TabsContent value="timeline" className="flex-1 overflow-hidden">
+            <div className="h-full w-full overflow-y-auto px-2">
               {sortedLogs.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <p>No chat logs available for this session.</p>
@@ -225,7 +238,7 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
                       {log.userMessage && (
                         <div className="mb-2">
                           <p className="text-sm font-medium text-green-800">User Message:</p>
-                          <p className="text-sm text-gray-700 bg-green-50 p-2 rounded">
+                          <p className="text-sm text-gray-700 bg-green-50 p-2 rounded whitespace-pre-wrap break-words">
                             {log.userMessage}
                           </p>
                         </div>
@@ -234,11 +247,8 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
                       {log.aiResponse && (
                         <div className="mb-2">
                           <p className="text-sm font-medium text-purple-800">AI Response:</p>
-                          <p className="text-sm text-gray-700 bg-purple-50 p-2 rounded">
-                            {log.aiResponse.length > 200 
-                              ? log.aiResponse.substring(0, 200) + '...' 
-                              : log.aiResponse
-                            }
+                          <p className="text-sm text-gray-700 bg-purple-50 p-2 rounded whitespace-pre-wrap break-words">
+                            {log.aiResponse}
                           </p>
                         </div>
                       )}
@@ -273,7 +283,7 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
                       {log.errorMessage && (
                         <div className="mb-2">
                           <p className="text-sm font-medium text-red-800">Error:</p>
-                          <p className="text-sm text-gray-700 bg-red-50 p-2 rounded">
+                          <p className="text-sm text-gray-700 bg-red-50 p-2 rounded whitespace-pre-wrap break-words">
                             {log.errorMessage}
                           </p>
                         </div>
@@ -292,8 +302,8 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="technical" className="space-y-4">
-            <div className="h-[500px] w-full overflow-y-auto">
+          <TabsContent value="technical" className="flex-1 overflow-hidden">
+            <div className="h-full w-full overflow-y-auto px-2">
               {sortedLogs.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <p>No technical logs available for this session.</p>
@@ -315,8 +325,8 @@ const ChatHistoryDialog: React.FC<ChatHistoryDialogProps> = ({
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
-                      <div className="bg-gray-50 p-3 rounded font-mono text-xs overflow-x-auto">
-                        <pre>{JSON.stringify(log, null, 2)}</pre>
+                      <div className="bg-gray-50 p-3 rounded font-mono text-xs overflow-x-auto max-w-full">
+                        <pre className="whitespace-pre-wrap break-words">{JSON.stringify(log, null, 2)}</pre>
                       </div>
                     </CardContent>
                   </Card>
