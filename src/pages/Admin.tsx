@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle, Book, Info } from "lucide-react";
+import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle, Book, Info, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import DocumentAnalysis from "@/components/DocumentAnalysis";
 import ChatInitViewer from "@/components/ChatInitViewer";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import PromptEditor from "../components/PromptEditor";
 import SystemPromptManager from "../components/SystemPromptManager";
+import UserRegistration from "@/components/UserRegistration";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showChatInit, setShowChatInit] = useState(false);
   const [showFirestoreTester, setShowFirestoreTester] = useState(false);
+  const [showUserRegistration, setShowUserRegistration] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -121,9 +123,48 @@ const Admin = () => {
           </Card>
         </div>
 
+        {/* User Management Section */}
+        <div className="mb-8">
+          <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader className="bg-blue-800 text-white rounded-t-lg p-8">
+              <CardTitle className="flex items-center text-2xl">
+                <UserPlus className="mr-4 h-8 w-8" />
+                User Management
+              </CardTitle>
+              <p className="text-gray-300 mt-2 text-lg">
+                Register new users and manage account access
+              </p>
+            </CardHeader>
+            <CardContent className="p-8">
+              <p className="text-gray-600 mb-6 text-lg">
+                Create new user accounts with email authentication and assign roles. Users will receive login credentials to access the Valmet Procurement AI Assistant.
+              </p>
+              <Dialog open={showUserRegistration} onOpenChange={setShowUserRegistration}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-blue-800 hover:bg-blue-700 py-4 text-lg text-white"
+                  >
+                    <UserPlus className="mr-2 h-5 w-5" />
+                    Manage Users
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl">
+                  <DialogHeader className="sr-only">
+                    <DialogTitle>User Management</DialogTitle>
+                    <DialogDescription>
+                      Create new users and manage existing user accounts
+                    </DialogDescription>
+                  </DialogHeader>
+                  <UserRegistration />
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Secondary Tools */}
         <div className="grid md:grid-cols-3 gap-6">
-          
+
           {/* AI Prompt Management - Moved to featured section above */}
 
           {/* Internal Knowledge & Chat Initialization */}
