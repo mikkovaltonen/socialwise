@@ -1,7 +1,9 @@
 {
-  "name": "procurement-ai-evaluator",
+  "name": "professional-demand-manager",
   "private": true,
   "version": "1.0.0",
+  "description": "AI-Powered Procurement Automation - Professional Demand Manager by Zeal Sourcing",
+  "author": "Zeal Sourcing",
   "type": "module",
   "scripts": {
     "dev": "vite",
