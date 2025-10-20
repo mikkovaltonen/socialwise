@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://demand-manager.vercel.app/sitemap.xml
