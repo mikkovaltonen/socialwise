@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, FileText, Brain, Upload, Shield, Zap, BarChart3, Users, ArrowRight, Check, Cloud, Server, Database, Code, Sparkles, TrendingUp, Building2, FileSearch, Bot, MessageSquare, Search, Globe, FileSpreadsheet, History } from "lucide-react";
+import { DollarSign, FileText, Brain, Upload, Shield, Zap, BarChart3, Users, ArrowRight, Check, Cloud, Server, Database, Code, Sparkles, TrendingUp, Building2, FileSearch, Bot, MessageSquare, Search, Globe, FileSpreadsheet, History, AlertCircle, TrendingDown, Package, Clock, Cpu, GitBranch, RefreshCw, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
@@ -9,12 +9,12 @@ const Index = () => {
       {/* Navigation */}
       <nav className="flex justify-between items-center px-8 py-6 bg-white/80 backdrop-blur-md shadow-sm fixed w-full top-0 z-50">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-xl flex items-center justify-center">
-            <Brain className="h-6 w-6 text-white" />
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+            <Cpu className="h-6 w-6 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-semibold tracking-tight text-gray-900">Valmet</span>
-            <span className="text-xs text-gray-500">Purchaser AI Assistant</span>
+            <span className="text-xl font-semibold tracking-tight text-gray-900">Professional Demand Manager</span>
+            <span className="text-xs text-gray-500">AI-Powered Procurement Automation</span>
           </div>
         </Link>
         <div className="flex gap-4">
@@ -30,32 +30,32 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-8 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-valmet-green/10 via-transparent to-valmet-teal/10"></div>
-        <div className="absolute top-20 right-0 w-96 h-96 bg-valmet-teal rounded-full filter blur-3xl opacity-20 animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-valmet-green rounded-full filter blur-3xl opacity-20 animate-pulse"></div>
-        
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-transparent to-purple-50"></div>
+        <div className="absolute top-20 right-0 w-96 h-96 bg-purple-600 rounded-full filter blur-3xl opacity-10 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600 rounded-full filter blur-3xl opacity-10 animate-pulse"></div>
+
         <div className="container mx-auto relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 bg-green-100 text-valmet-green px-4 py-2 rounded-full text-sm font-medium">
+              <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-medium">
                 <Sparkles className="h-4 w-4" />
-                AI-Powered Procurement Guidance
+                Software 3.0 - Agentic Process Automation
               </div>
-              
+
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-                Valmet
-                <span className="bg-gradient-to-r from-valmet-green to-valmet-teal bg-clip-text text-transparent"> Purchaser AI Assistant</span>
+                Professional
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Demand Manager</span>
               </h1>
-              
+
               <p className="text-xl text-gray-600 leading-relaxed">
-                Scope of Purchaser AI Assistant is optimized for specific categories including IT consulting, Leased workforce, Training & people development, Business consulting, Certification, standardization & audits, Legal services, Patent services, and R&D services & materials. The tool processes purchase requisitions directly into Basware.
+                Do you have a solid ERP setup and relatively good data quality—yet your working capital still feels bloated, and delivery reliability and lead times could be better? Professional Demand Manager automates monitoring and decision support on top of your CERM-ERP database using Generative AI.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-valmet-green to-valmet-teal hover:from-valmet-darkgreen hover:to-valmet-darkteal text-white font-medium shadow-lg shadow-valmet-green/25 group"
-                  onClick={() => window.location.href = 'mailto:mikko@zealsourcing.fi?subject=Book%20Free%20Demo%20with%20Our%20Data&body=Hi%20Mikko,%0A%0AWe%20would%20like%20to%20book%20a%20free%20demo%20of%20ProcureAI%20using%20our%20own%20procurement%20data.%0A%0ACompany:%20%0AName:%20%0ARole:%20%0APreferred%20demo%20time:%20%0AType%20of%20procurement%20data%20we%20want%20to%20test:%20%0A%0ABest%20regards'}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium shadow-lg shadow-blue-600/25 group"
+                  onClick={() => window.location.href = 'mailto:mikko@zealsourcing.fi?subject=Book%20Free%20Demo%20with%20Our%20Data&body=Hi%20Mikko,%0A%0AWe%20would%20like%20to%20book%20a%20free%20demo%20of%20Professional%20Demand%20Manager%20using%20our%20own%20data.%0A%0ACompany:%20%0AName:%20%0ARole:%20%0APreferred%20demo%20time:%20%0AType%20of%20data%20we%20want%20to%20test:%20%0A%0ABest%20regards'}
                 >
                   Book Free Demo with Your Data
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -64,32 +64,24 @@ const Index = () => {
               
               <div className="flex items-center gap-8 pt-4">
                 <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-valmet-green" />
-                  <span className="text-sm text-gray-600">No credit card required</span>
+                  <Check className="h-5 w-5 text-blue-600" />
+                  <span className="text-sm text-gray-600">Test with your own data</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-valmet-green" />
-                  <span className="text-sm text-gray-600">14-day free trial</span>
+                  <Check className="h-5 w-5 text-blue-600" />
+                  <span className="text-sm text-gray-600">Free consultation</span>
                 </div>
               </div>
             </div>
             
             <div className="relative">
-              <div className="relative bg-gradient-to-br from-valmet-green to-valmet-teal rounded-2xl p-1">
-                <div className="bg-white rounded-xl p-8">
-                  <div className="aspect-video bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
-                    <div className="text-center space-y-4">
-                      <div className="w-20 h-20 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-2xl flex items-center justify-center mx-auto">
-                        <Bot className="h-10 w-10 text-white" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-gray-900">AI Procurement Agent</h3>
-                      <p className="text-gray-600">Intelligent document analysis & automation</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="absolute -top-4 -right-4 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-semibold transform rotate-12">
-                New
+              <img
+                src="/solution_overview.png"
+                alt="Agentic Process Automation"
+                className="rounded-2xl shadow-2xl w-full h-auto"
+              />
+              <div className="absolute -top-4 -right-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full text-sm font-semibold transform rotate-12 shadow-lg">
+                Software 3.0
               </div>
             </div>
           </div>
@@ -120,208 +112,312 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Problem Section */}
+      {/* Pain Points Section */}
       <section className="py-20 px-8">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">The Procurement Challenge</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Current Procurement Challenges</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Creating one PO costs €30-100 on average. High P2P setup costs leave business units without professional buyer support.
+              Even with good ERP systems, buyers face daily challenges that AI can help solve
             </p>
           </div>
-          
-          {/* Problem Visualization */}
-          <div className="bg-white rounded-3xl shadow-2xl p-8 mb-16">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h3 className="text-2xl font-semibold text-gray-900 mb-6">The Cost-Frequency Paradox</h3>
-                <div className="space-y-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
-                    <p className="text-gray-700">
-                      <span className="font-semibold">High-frequency purchases:</span> Professional procurement with POs
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-2"></div>
-                    <p className="text-gray-700">
-                      <span className="font-semibold">Mid-frequency purchases:</span> P2P break-even point limits coverage
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
-                    <p className="text-gray-700">
-                      <span className="font-semibold">Low-frequency purchases:</span> Outside central support, low-quality PO process
-                    </p>
-                  </div>
-                </div>
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                  <p className="text-green-900 font-medium">
-                    Potential to improve EBIT by 1% through AI-powered procurement
-                  </p>
-                </div>
-              </div>
-              <div className="relative">
-                <img 
-                  src="/problem.png" 
-                  alt="Procurement Cost Problem Analysis" 
-                  className="rounded-2xl shadow-lg w-full h-auto"
-                />
-                <div className="absolute -bottom-4 -right-4 bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
-                  P2P Market: ~€7B (+10% yearly)
-                </div>
-              </div>
-            </div>
+
+          {/* Pain Points Visualization */}
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-16">
+            <img
+              src="/painpoints.png"
+              alt="Procurement Pain Points Assessment"
+              className="w-full h-auto"
+            />
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 group">
+          {/* Pain Points Details */}
+          <div className="grid lg:grid-cols-2 gap-8 mb-16">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-green-50 to-green-100 hover:shadow-2xl transition-all duration-300">
               <CardContent className="p-8">
-                <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <TrendingUp className="h-7 w-7 text-red-600" />
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Check className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">What AI Can Solve</h3>
+                    <p className="text-gray-600">Automated analysis and intelligent recommendations</p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">€30-100 Per PO</h3>
-                <p className="text-gray-600">
-                  Manual processes make each purchase order expensive, limiting professional procurement coverage.
-                </p>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">Forecast conversion from multiple sources</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">Source determination optimization</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">Production plan coordination</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">Stock policy optimization</span>
+                  </li>
+                </ul>
               </CardContent>
             </Card>
-            
-            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 group">
+
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-yellow-50 to-orange-50 hover:shadow-2xl transition-all duration-300">
               <CardContent className="p-8">
-                <div className="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Users className="h-7 w-7 text-orange-600" />
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-12 h-12 bg-yellow-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <AlertCircle className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Manual Pain Points</h3>
+                    <p className="text-gray-600">Time-consuming tasks buyers face daily</p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Limited P2P Coverage</h3>
-                <p className="text-gray-600">
-                  High setup costs prevent P2P solutions from covering all business units and use cases.
-                </p>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-yellow-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">SKU conversion between systems</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-yellow-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">Material requirements planning</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-orange-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">Non-moving stock alerts</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">Why don't you trust your MRP purchase list?</span>
+                  </li>
+                </ul>
               </CardContent>
             </Card>
-            
-            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 group">
-              <CardContent className="p-8">
-                <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FileSearch className="h-7 w-7 text-purple-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">1% EBIT Opportunity</h3>
-                <p className="text-gray-600">
-                  Organizations miss significant profit improvement potential due to procurement inefficiencies.
-                </p>
-              </CardContent>
-            </Card>
+          </div>
+
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 text-center">
+            <p className="text-lg text-gray-700 mb-4">
+              <span className="font-semibold">The Reality:</span> Buyers jump between multiple ERP modules daily
+            </p>
+            <p className="text-gray-600">
+              Professional Demand Manager brings all these capabilities into one AI-powered interface
+            </p>
           </div>
         </div>
       </section>
 
       {/* Solution Overview Section */}
-      <section className="py-20 px-8 bg-gradient-to-br from-green-50 to-green-100">
+      <section className="py-20 px-8 bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">AI-Powered Solution</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Agentic Process Automation</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Evaluate if a thinking chatbot could transform your procurement processes
+              Software 3.0 approach - AI Agent autonomously plans and executes procurement tasks
             </p>
           </div>
-          
-          {/* Solution Flow Visualization */}
+
+          {/* Main Solution Diagram */}
           <div className="bg-white rounded-3xl shadow-2xl p-8 mb-16">
-            <div className="grid lg:grid-cols-2 gap-12">
-              <div>
-                <img 
-                  src="/solution_overview.png" 
-                  alt="AI Procurement Solution Overview" 
-                  className="rounded-2xl shadow-lg w-full h-auto"
-                />
+            <h3 className="text-2xl font-semibold text-gray-900 mb-8 text-center">How Professional Demand Manager Works</h3>
+            <img
+              src="/solution_overview.png"
+              alt="Agentic Process Automation Architecture"
+              className="w-full h-auto rounded-2xl"
+            />
+            <div className="mt-8 grid md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
+                <h4 className="font-semibold text-gray-900 mb-2">User Interface</h4>
+                <p className="text-sm text-gray-600">Natural language queries like "How much and what to purchase today?"</p>
               </div>
-              <div className="space-y-6">
-                <h3 className="text-2xl font-semibold text-gray-900">How It Works</h3>
-                
-                <div className="space-y-4">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <MessageSquare className="h-5 w-5 text-valmet-green" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Natural Language Interface</h4>
-                      <p className="text-gray-600 text-sm">Users describe their procurement needs in plain language</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Brain className="h-5 w-5 text-valmet-green" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">AI Task Planning</h4>
-                      <p className="text-gray-600 text-sm">Intelligent chatbot breaks down requests and plans optimal procurement actions</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Search className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Multi-Source Intelligence</h4>
-                      <p className="text-gray-600 text-sm">WebSearch for vendors, internal knowledge search, and purchase history analysis</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <FileSpreadsheet className="h-5 w-5 text-valmet-green" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">ERP/P2P Integration</h4>
-                      <p className="text-gray-600 text-sm">Seamless connection with existing systems via APIs and data imports</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-blue-200">
-                  <p className="text-sm font-medium text-green-900">
-                    Test with your own data: Upload Excel files to simulate ERP/P2P integration
-                  </p>
-                </div>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
+                <h4 className="font-semibold text-gray-900 mb-2">AI Agent Processing</h4>
+                <p className="text-sm text-gray-600">Autonomous planning, execution, and self-evaluation of tasks</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
+                <h4 className="font-semibold text-gray-900 mb-2">CERM-ERP Integration</h4>
+                <p className="text-sm text-gray-600">Real-time data from stock, reservations, materials, and forecasts</p>
               </div>
             </div>
+          </div>
+
+          {/* DevOps Cycle */}
+          <div className="grid lg:grid-cols-2 gap-8 mb-16">
+            <Card className="border-0 shadow-xl bg-white">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <RefreshCw className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900">Continuous AI Improvement</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-600">1</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">AI Generation</p>
+                      <p className="text-sm text-gray-600">Agent creates procurement recommendations</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-600">2</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">Human Verification</p>
+                      <p className="text-sm text-gray-600">Review and approve AI suggestions</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-600">3</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">Continuous Improvement</p>
+                      <p className="text-sm text-gray-600">Learn from outcomes and optimize</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-xl bg-white">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <GitBranch className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900">DevOps Excellence</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-900">Automated Testing</p>
+                      <p className="text-sm text-gray-600">Continuous validation of AI outputs</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-900">Version Control</p>
+                      <p className="text-sm text-gray-600">Track all changes and improvements</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-900">Continuous Deployment</p>
+                      <p className="text-sm text-gray-600">Seamless updates without disruption</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* AI Agent Features Section */}
       <section className="py-20 px-8">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Powerful Evaluation Capabilities</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">AI Assistant Features</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Test and validate AI-powered procurement solutions with your own data and documents.
+              Balancing user experience, development efficiency, and AI capabilities
             </p>
           </div>
-          
+
+          {/* Radar Chart and Features */}
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-16">
+            <div className="grid lg:grid-cols-2">
+              <div className="p-8 lg:p-12">
+                <h3 className="text-2xl font-semibold text-gray-900 mb-8">Performance Metrics</h3>
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-gray-700 font-medium">AI Agent Reliability</span>
+                      <span className="text-purple-600 font-semibold">0-6 sigma</span>
+                    </div>
+                    <div className="bg-gray-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full" style={{width: '85%'}}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-gray-700 font-medium">Response Time</span>
+                      <span className="text-blue-600 font-semibold">1-100 seconds</span>
+                    </div>
+                    <div className="bg-gray-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full" style={{width: '70%'}}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-gray-700 font-medium">Feature Scope</span>
+                      <span className="text-green-600 font-semibold">1-n features</span>
+                    </div>
+                    <div className="bg-gray-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full" style={{width: '90%'}}></div>
+                    </div>
+                  </div>
+                  <div className="pt-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">User experience and graphics design</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">AI leveraging collaboration and role design</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">Change management friction reduction</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">Dev/ops friction minimization</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-8">
+                <img
+                  src="/ai_agent_features.png"
+                  alt="AI Agent Features Radar Chart"
+                  className="w-full h-auto max-w-md"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Core Capabilities */}
           <div className="grid lg:grid-cols-3 gap-8">
             <Card className="border-0 shadow-xl bg-white hover:shadow-2xl transition-all duration-300 group hover:-translate-y-2">
               <CardContent className="p-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <DollarSign className="h-8 w-8 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <Package className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-semibold text-gray-900 mb-4">Cost Optimization</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Source Determination</h3>
                 <p className="text-gray-600 mb-6">
-                  AI automatically aligns purchases with negotiated contracts and identifies savings opportunities.
+                  AI identifies the most appropriate source for each order - supplier or intercompany
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Contract compliance monitoring</span>
+                    <Check className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Automated vendor selection</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Automated spend analysis</span>
+                    <Check className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Cost optimization</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Supplier optimization</span>
+                    <Check className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Lead time analysis</span>
                   </li>
                 </ul>
               </CardContent>
@@ -329,25 +425,25 @@ const Index = () => {
 
             <Card className="border-0 shadow-xl bg-white hover:shadow-2xl transition-all duration-300 group hover:-translate-y-2">
               <CardContent className="p-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Upload className="h-8 w-8 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <BarChart3 className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-semibold text-gray-900 mb-4">Document Intelligence</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Stock Policy AI</h3>
                 <p className="text-gray-600 mb-6">
-                  Extract and analyze data from any procurement document format with advanced AI.
+                  Intelligent recommendations for minimum stock levels and reorder points
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
-                    <span className="text-sm text-gray-600">PDF, Excel, Word support</span>
+                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Dynamic min/max levels</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Automated data extraction</span>
+                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Non-moving stock alerts</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Smart categorization</span>
+                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Material optimization</span>
                   </li>
                 </ul>
               </CardContent>
@@ -355,25 +451,25 @@ const Index = () => {
 
             <Card className="border-0 shadow-xl bg-white hover:shadow-2xl transition-all duration-300 group hover:-translate-y-2">
               <CardContent className="p-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Brain className="h-8 w-8 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-semibold text-gray-900 mb-4">AI Buyer Assistant</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Forecast Conversion</h3>
                 <p className="text-gray-600 mb-6">
-                  Transform every employee into a procurement expert with intelligent guidance.
+                  Transform customer forecasts into actionable material requirements
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Natural language queries</span>
+                    <Check className="h-5 w-5 text-orange-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Multi-source integration</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Real-time recommendations</span>
+                    <Check className="h-5 w-5 text-orange-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Batch size optimization</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-valmet-green flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Policy compliance checks</span>
+                    <Check className="h-5 w-5 text-orange-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Production planning</span>
                   </li>
                 </ul>
               </CardContent>
@@ -382,93 +478,322 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Tech Stack Section */}
-      <section className="py-20 px-8">
+      {/* Tech Stack Section - Software 1.0, 2.0, 3.0 */}
+      <section className="py-20 px-8 bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Enterprise-Grade Technology Stack</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Software Evolution with Low TCO</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Built on modern cloud infrastructure with seamless ERP/P2P integration capabilities.
+              Combining traditional programming, AI models, and autonomous agents for optimal results
             </p>
           </div>
-          
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-12 shadow-2xl">
-            <div className="grid lg:grid-cols-2 gap-12">
-              <div>
-                <h3 className="text-2xl font-semibold text-white mb-8">Cloud-Native Architecture</h3>
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-green-600/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Cloud className="h-6 w-6 text-green-400" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-white mb-2">Serverless Infrastructure</h4>
-                      <p className="text-gray-400">Deployed on Vercel with auto-scaling capabilities and global CDN distribution.</p>
-                    </div>
+
+          {/* Main Tech Stack Visualization */}
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-16">
+            <img
+              src="/tech_stack.png"
+              alt="Software 1.0, 2.0, and 3.0 Technology Stack"
+              className="w-full h-auto"
+            />
+          </div>
+
+          {/* Software Versions Breakdown */}
+          <div className="grid lg:grid-cols-3 gap-8 mb-16">
+            <Card className="border-2 border-gray-200 hover:border-blue-500 transition-all duration-300">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                    <Code className="h-6 w-6 text-gray-600" />
                   </div>
-                  
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-green-600/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Brain className="h-6 w-6 text-green-400" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-white mb-2">Google Gemini 2.5</h4>
-                      <p className="text-gray-400">Latest AI model for advanced document understanding and natural language processing.</p>
-                    </div>
+                  <h3 className="text-xl font-semibold text-gray-900">Software 1.0</h3>
+                </div>
+                <p className="text-gray-600 mb-4">Traditional Programming</p>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5"></div>
+                    <span>JavaScript/TypeScript foundation</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5"></div>
+                    <span>Vercel serverless deployment</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5"></div>
+                    <span>RESTful API integration</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-gray-200 hover:border-purple-500 transition-all duration-300">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <Brain className="h-6 w-6 text-purple-600" />
                   </div>
-                  
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-orange-600/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Database className="h-6 w-6 text-orange-400" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-white mb-2">Cloud Firestore</h4>
-                      <p className="text-gray-400">Real-time database for instant synchronization and offline capabilities.</p>
-                    </div>
+                  <h3 className="text-xl font-semibold text-gray-900">Software 2.0</h3>
+                </div>
+                <p className="text-gray-600 mb-4">AI Model Integration</p>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5"></div>
+                    <span>Grok 4 Fast for rapid analysis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5"></div>
+                    <span>Gemini 2.5 for deep understanding</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5"></div>
+                    <span>Multi-model orchestration</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-gray-200 hover:border-green-500 transition-all duration-300">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <Cpu className="h-6 w-6 text-green-600" />
                   </div>
+                  <h3 className="text-xl font-semibold text-gray-900">Software 3.0</h3>
+                </div>
+                <p className="text-gray-600 mb-4">Autonomous AI Agents</p>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5"></div>
+                    <span>Self-planning agents</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5"></div>
+                    <span>Cloud Firestore integration</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5"></div>
+                    <span>Unstructured data processing</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Key Features */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-8 text-white">
+            <div className="grid lg:grid-cols-4 gap-8">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Server className="h-8 w-8 text-white" />
+                </div>
+                <h4 className="font-semibold mb-2">Serverless</h4>
+                <p className="text-sm text-white/80">Auto-scaling infrastructure</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Shield className="h-8 w-8 text-white" />
+                </div>
+                <h4 className="font-semibold mb-2">Secure API</h4>
+                <p className="text-sm text-white/80">Safe separation & integration</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <GitBranch className="h-8 w-8 text-white" />
+                </div>
+                <h4 className="font-semibold mb-2">DevOps Excellence</h4>
+                <p className="text-sm text-white/80">Continuous improvement</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Database className="h-8 w-8 text-white" />
+                </div>
+                <h4 className="font-semibold mb-2">SAAS Ready</h4>
+                <p className="text-sm text-white/80">REST API integration</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Specific AI Agent Capabilities */}
+      <section className="py-20 px-8 bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">AI Agent Capabilities in Action</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              See how our AI agents solve real procurement challenges autonomously
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Source Determination */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <div className="aspect-video bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center p-4">
+                <img
+                  src="/source_determination_ai_agent.png"
+                  alt="Source Determination AI Agent"
+                  className="w-full h-full object-contain rounded"
+                />
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Source Determination</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  AI automatically identifies the best source - supplier vs intercompany - based on cost, lead time, and availability
+                </p>
+                <div className="flex items-center gap-2 text-xs text-blue-600">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Saves 2-3 hours per PO</span>
                 </div>
               </div>
-              
+            </div>
+
+            {/* Stock Policy */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <div className="aspect-video bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center p-4">
+                <img
+                  src="/stock_policy_AI_Agent.png"
+                  alt="Stock Policy AI Agent"
+                  className="w-full h-full object-contain rounded"
+                />
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Stock Policy Optimization</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Dynamic adjustments to min/max levels based on consumption patterns and lead times
+                </p>
+                <div className="flex items-center gap-2 text-xs text-green-600">
+                  <TrendingDown className="h-4 w-4" />
+                  <span>30% reduction in stock value</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Forecast Conversion */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <div className="aspect-video bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center p-4">
+                <img
+                  src="/Forecast_converion_AI_Agent.png"
+                  alt="Forecast Conversion AI Agent"
+                  className="w-full h-full object-contain rounded"
+                />
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Forecast Conversion</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Transform customer forecasts into material requirements with batch optimization
+                </p>
+                <div className="flex items-center gap-2 text-xs text-orange-600">
+                  <Clock className="h-4 w-4" />
+                  <span>95% faster than manual</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 bg-white rounded-2xl p-8 shadow-xl">
+            <div className="grid lg:grid-cols-2 gap-8 items-center">
               <div>
-                <h3 className="text-2xl font-semibold text-white mb-8">ERP/P2P Integration</h3>
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-green-600/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Server className="h-6 w-6 text-green-400" />
+                <h3 className="text-2xl font-semibold text-gray-900 mb-4">Additional AI Capabilities</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check className="h-4 w-4 text-purple-600" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold text-white mb-2">RESTful API Gateway</h4>
-                      <p className="text-gray-400">Secure API integration with existing ERP and P2P systems via REST endpoints.</p>
+                      <p className="font-medium text-gray-900">Material Width Optimization</p>
+                      <p className="text-sm text-gray-600">Check widths and propose internal slitting before ordering</p>
                     </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">Non-Moving Stock Alerts</p>
+                      <p className="text-sm text-gray-600">Flag materials at risk of becoming obsolete</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">Production Batch Planning</p>
+                      <p className="text-sm text-gray-600">Optimize batch sizes based on costs and annual volumes</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white">
+                <h4 className="text-xl font-semibold mb-4">AI Impact</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-3xl font-bold">78%</p>
+                    <p className="text-sm text-white/80">Cost reduction</p>
                   </div>
-                  
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-purple-600/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Shield className="h-6 w-6 text-purple-400" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-white mb-2">Enterprise Security</h4>
-                      <p className="text-gray-400">OAuth 2.0 authentication with role-based access control and data encryption.</p>
-                    </div>
+                  <div>
+                    <p className="text-3xl font-bold">10x</p>
+                    <p className="text-sm text-white/80">Faster processing</p>
                   </div>
-                  
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-yellow-600/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Zap className="h-6 w-6 text-yellow-400" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-white mb-2">Real-time Processing</h4>
-                      <p className="text-gray-400">Stream processing for instant document analysis and procurement insights.</p>
-                    </div>
+                  <div>
+                    <p className="text-3xl font-bold">99.9%</p>
+                    <p className="text-sm text-white/80">Accuracy</p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-bold">24/7</p>
+                    <p className="text-sm text-white/80">Availability</p>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <div className="mt-12 p-6 bg-green-600/10 rounded-xl border border-green-600/20">
-              <p className="text-center text-gray-300">
-                <span className="font-semibold text-white">Seamless Integration:</span> Connect with SAP, Oracle, Coupa, and other major ERP/P2P platforms through our unified API layer.
-              </p>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Development Method Section */}
+      <section className="py-20 px-8">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Right Balance Development Approach</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Forward Deployment Engineers combine Software 1.0, 2.0, and 3.0 for optimal results
+            </p>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div className="grid lg:grid-cols-2">
+              <div className="p-8 lg:p-12">
+                <img
+                  src="/ai_development_method.png"
+                  alt="AI Development Method with Forward Deployment Engineers"
+                  className="w-full h-auto rounded-2xl"
+                />
+              </div>
+              <div className="p-8 lg:p-12 bg-gradient-to-br from-blue-50 to-purple-50">
+                <h3 className="text-2xl font-semibold text-gray-900 mb-6">Forward Deployment Engineering</h3>
+
+                <div className="space-y-6 mb-8">
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <h4 className="font-semibold text-gray-900 mb-2">Build Phase</h4>
+                    <p className="text-sm text-gray-600">Make predictions about AI potential, build scaffolding with Software 1.0, leverage UX/UI best practices</p>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <h4 className="font-semibold text-gray-900 mb-2">Deploy Phase</h4>
+                    <p className="text-sm text-gray-600">Write prompts, fine-tune AI models, collaborate on role design, ensure data quality</p>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <h4 className="font-semibold text-gray-900 mb-2">Test Phase</h4>
+                    <p className="text-sm text-gray-600">Continuous improvement, collect feedback, optimize AI performance, manual input reduction</p>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-4 text-white">
+                  <p className="text-sm font-medium">
+                    The right balance ensures accurate AI predictions while minimizing dev/ops friction and manual work
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -577,10 +902,13 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-valmet-green to-valmet-teal rounded-xl flex items-center justify-center">
-                  <Brain className="h-6 w-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+                  <Cpu className="h-6 w-6 text-white" />
                 </div>
-                <span className="text-xl font-semibold text-white">Valmet AI</span>
+                <div className="flex flex-col">
+                  <span className="text-xl font-semibold text-white">Professional Demand Manager</span>
+                  <span className="text-xs text-gray-400">AI-Powered Procurement Automation</span>
+                </div>
               </div>
               <p className="text-gray-400">
                 AI-powered procurement intelligence for modern businesses.
@@ -590,20 +918,20 @@ const Index = () => {
             <div>
               <h3 className="font-semibold text-white mb-4">Product</h3>
               <ul className="space-y-3">
-                <li><a href="#features" className="text-gray-400 hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#integrations" className="text-gray-400 hover:text-white transition-colors">Integrations</a></li>
-                <li><a href="#security" className="text-gray-400 hover:text-white transition-colors">Security</a></li>
+                <li><Link to="/under-construction" className="text-gray-400 hover:text-white transition-colors">Features</Link></li>
+                <li><Link to="/under-construction" className="text-gray-400 hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link to="/under-construction" className="text-gray-400 hover:text-white transition-colors">Integrations</Link></li>
+                <li><Link to="/under-construction" className="text-gray-400 hover:text-white transition-colors">Security</Link></li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-semibold text-white mb-4">Resources</h3>
               <ul className="space-y-3">
-                <li><a href="https://www.zealsourcing.fi/insights" className="text-gray-400 hover:text-white transition-colors">Blog</a></li>
-                <li><a href="https://github.com/mikkovaltonen/professional_buyer" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">Documentation</a></li>
-                <li><a href="https://vercel.com/docs/functions/serverless-functions" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">API Reference</a></li>
-                <li><a href="mailto:mikko@zealsourcing.fi?subject=Support%20Request" className="text-gray-400 hover:text-white transition-colors">Support</a></li>
+                <li><Link to="/under-construction" className="text-gray-400 hover:text-white transition-colors">Blog</Link></li>
+                <li><Link to="/under-construction" className="text-gray-400 hover:text-white transition-colors">Documentation</Link></li>
+                <li><Link to="/under-construction" className="text-gray-400 hover:text-white transition-colors">API Reference</Link></li>
+                <li><Link to="/under-construction" className="text-gray-400 hover:text-white transition-colors">Support</Link></li>
               </ul>
             </div>
             
@@ -624,7 +952,7 @@ const Index = () => {
                 © 2024 Zeal Sourcing. All rights reserved.
               </p>
               <p className="text-gray-500 text-sm">
-                Developed by Mikko Valtonen for open source use
+                Professional Demand Manager by Zeal Sourcing
               </p>
             </div>
           </div>

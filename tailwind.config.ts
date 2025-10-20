@@ -18,16 +18,44 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+				heading: ['Poppins', 'Inter', 'system-ui', 'sans-serif'],
+				mono: ['Fira Code', 'Monaco', 'Consolas', 'Courier New', 'monospace'],
+			},
 			colors: {
-				// Valmet brand colors
+				// Gravic Group inspired professional colors
+				gravic: {
+					primary: '#1e3a5f',      // Deep professional blue
+					secondary: '#4a5f7a',    // Secondary blue-gray
+					accent: '#0066cc',       // Bright blue accent
+					orange: '#ff6b35',       // Vibrant orange accent
+					teal: '#00a896',         // Fresh teal accent
+					dark: '#0f1419',         // Very dark blue-black
+					light: '#ffffff',        // Pure white
+					bg: '#fafafa',           // Off-white background
+					gray: {
+						50: '#fafafa',
+						100: '#f5f5f5',
+						200: '#e5e5e5',
+						300: '#d4d4d4',
+						400: '#a3a3a3',
+						500: '#737373',
+						600: '#525252',
+						700: '#404040',
+						800: '#262626',
+						900: '#171717',
+					}
+				},
+				// Keep Valmet colors as secondary option
 				valmet: {
-					green: '#00843D',      // Primary Valmet green
-					darkgreen: '#005F2E',  // Darker green
-					lightgreen: '#4BA85C', // Light green
-					teal: '#009B8F',       // Valmet teal
-					darkteal: '#007268',   // Dark teal
-					gray: '#54565A',       // Valmet gray
-					lightgray: '#F5F5F5',  // Light gray background
+					green: '#00843D',
+					darkgreen: '#005F2E',
+					lightgreen: '#4BA85C',
+					teal: '#009B8F',
+					darkteal: '#007268',
+					gray: '#54565A',
+					lightgray: '#F5F5F5',
 				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

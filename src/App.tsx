@@ -4,6 +4,7 @@ import Workbench from "./pages/Workbench";
 import Admin from "./pages/Admin";
 import IssueReportPage from "./pages/IssueReport";
 import PurchaseRequisitionsPage from "./pages/PurchaseRequisitions";
+import UnderConstruction from "./pages/UnderConstruction";
 import LoginForm from "./components/LoginForm";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -36,14 +37,15 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route 
-        path="/issues" 
+      <Route
+        path="/issues"
         element={
           <ProtectedRoute>
             <IssueReportPage />
           </ProtectedRoute>
         }
       />
+      <Route path="/under-construction" element={<UnderConstruction />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
