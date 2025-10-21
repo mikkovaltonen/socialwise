@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Cpu, ArrowRight } from "lucide-react";
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -25,8 +26,8 @@ const LoginForm = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-green-100 font-sans flex items-center justify-center">
+        <div className="text-lg text-gray-600">Loading...</div>
       </div>
     );
   }
@@ -55,58 +56,70 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md border-green-200 shadow-xl">
-        <CardHeader className="space-y-2 text-center bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-lg">
-          <Link to="/" className="flex flex-col items-center mb-6">
-            <span className="text-3xl font-bold tracking-wider text-white">VALMET</span>
-            <span className="text-green-100 text-sm font-medium">Purchaser AI Assistant</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-green-100 font-sans flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-0 shadow-2xl bg-white">
+        <CardHeader className="space-y-4 text-center p-8 bg-white rounded-t-lg">
+          <Link to="/" className="flex flex-col items-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
+              <Cpu className="h-10 w-10 text-white" />
+            </div>
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Professional Demand Manager</h1>
+              <p className="text-sm text-gray-500">AI-Powered Procurement Automation</p>
+            </div>
           </Link>
-          <CardTitle className="text-2xl font-bold text-white">Login</CardTitle>
-          <p className="text-green-100">Enter your credentials to continue</p>
+          <div className="space-y-2 pt-4">
+            <CardTitle className="text-3xl font-bold text-gray-900">Welcome Back</CardTitle>
+            <p className="text-gray-600">Enter your credentials to access your dashboard</p>
+          </div>
         </CardHeader>
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="p-8 pt-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder=""
+                placeholder="name@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full border-green-200 focus:ring-green-500 focus:border-green-500"
+                className="w-full h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-700">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder=""
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full border-green-200 focus:ring-green-500 focus:border-green-500"
+                className="w-full h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
-            <Button 
-              type="submit" 
-              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white h-11 shadow-lg hover:shadow-xl transition-all"
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-12 font-medium shadow-lg shadow-blue-600/25 transition-all group"
               disabled={isLoading}
             >
-              {isLoading ? 'Processing...' : 'Login'}
+              {isLoading ? 'Signing in...' : (
+                <>
+                  Sign In
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </Button>
-            <div className="text-center mt-4">
-              <Link 
-                to="/" 
-                className="text-sm text-green-600 hover:text-green-800"
+            <div className="text-center pt-4 border-t border-gray-100">
+              <Link
+                to="/"
+                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
               >
                 ← Back to homepage
               </Link>
