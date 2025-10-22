@@ -1,6 +1,6 @@
-# Valmet Procurement AI Assistant
+# Professional Demand Manager
 
-A specialized AI-powered procurement assistant for Valmet, focused on supplier search, vendor selection, and procurement intelligence.
+AI-powered procurement automation platform with agentic process optimization for enterprise demand management and supplier orchestration.
 
 ## 🏗️ Architecture
 
@@ -71,21 +71,21 @@ A specialized AI-powered procurement assistant for Valmet, focused on supplier s
 
 ## 🎯 Purpose
 
-This application serves as Valmet's intelligent procurement assistant, helping users:
-- Search and analyze 410+ verified external labour suppliers (IT categories excluded)
-- Find vendors for professional services (IT consulting, business consulting, training, R&D, legal services)
-- Access procurement policies and guidelines
+This application serves as an intelligent procurement automation platform, helping organizations:
+- Search and analyze 400+ verified suppliers across multiple categories
+- Find vendors for professional services (consulting, training, R&D, legal services)
+- Automate procurement workflows and decision-making
 - Make data-driven vendor selection decisions
 
 ## Features
 
-- **External Labour Supplier Search**: Fuzzy, case-insensitive search across 410+ suppliers
-- **AI-Powered Chat**: Google Gemini AI for intelligent procurement assistance
+- **Supplier Search**: Fuzzy, case-insensitive search across 400+ suppliers
+- **AI-Powered Assistant**: Multiple LLM options (Gemini, Grok) for intelligent procurement assistance
 - **Document Analysis**: Process and analyze procurement documents (PDF, Excel, Word, CSV)
-- **Policy Context Viewer**: Browse Valmet procurement policies with paged navigation
-- **Supplier Statistics**: Real-time analytics on supplier distribution and compliance
+- **System Prompt Management**: Production and testing versions with version control
+- **Supplier Statistics**: Real-time analytics on supplier distribution
 - **Export Capabilities**: Download supplier data and search results as CSV
-- **Multi-language Support**: Finnish and English interfaces
+- **Multi-language Support**: Multiple language interfaces
 
 ## Technologies
 
@@ -100,8 +100,8 @@ This application serves as Valmet's intelligent procurement assistant, helping u
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
-cd procurement-ai-evaluator
+git clone https://github.com/mikkovaltonen/demand-manager
+cd demand-manager
 ```
 
 2. **Install dependencies**
@@ -114,17 +114,16 @@ npm install
 Create a `.env` file in the project root and define the following variables:
 
 ```env
-VITE_GEMINI_API_KEY=your_gemini_api_key_here
-VITE_GEMINI_MODEL=gemini-2.5-flash-preview-04-17
+# OpenRouter API for LLM
+VITE_OPEN_ROUTER_API_KEY=your_openrouter_api_key
 
-# Firebase Configuration (required for system prompt versioning)
+# Firebase Configuration
 VITE_FIREBASE_API_KEY=your_firebase_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
 VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
 VITE_FIREBASE_APP_ID=your_firebase_app_id
-VITE_FIREBASE_MEASUREMENT_ID=your_firebase_measurement_id
 `
 
 
@@ -135,13 +134,12 @@ VITE_FIREBASE_MEASUREMENT_ID=your_firebase_measurement_id
 npm run dev
 ```
 
-The application will start at `http://localhost:5173`
+The application will start at `http://localhost:8080`
 
 ## Usage
 
-### Login Credentials
-- Username: `evaluator`
-- Password: `go_nogo_decision`
+### Authentication
+The application uses Firebase Authentication. Contact your administrator for account credentials.
 
 ### Core Functionality
 

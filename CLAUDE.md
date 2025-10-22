@@ -1,11 +1,11 @@
 # Claude Code Instructions
 
 ## Project Overview
-This is the Valmet Procurement AI Assistant application built with React, TypeScript, and Vite. It provides intelligent supplier search, vendor selection assistance, and AI-powered procurement support specifically tailored for Valmet's needs.
+This is the Professional Demand Manager application built with React, TypeScript, and Vite. It provides intelligent supplier search, vendor selection assistance, and AI-powered procurement automation for enterprise demand management.
 
 ## Core Features
 
-### 1. Valmet Supplier Search
+### 1. Supplier Search
 - **Database**: ~400 verified suppliers in Firestore `suppliers_complete` collection
 - **Search Capabilities**: Fuzzy, case-insensitive matching
 - **Search Fields**:
@@ -17,8 +17,8 @@ This is the Valmet Procurement AI Assistant application built with React, TypeSc
 - **Export**: Full CSV export with all supplier fields
 
 ### 2. AI Chat Assistant
-- **Model**: Google Gemini (gemini-2.5-flash-preview-04-17)
-- **Context**: Automatically loads Valmet procurement policies
+- **Model**: Multiple LLM options via OpenRouter (Grok, Gemini)
+- **Context**: System prompts only (no document context)
 - **Purpose**: Help find best matching vendors for specific needs
 - **Languages**: Finnish and English support
 
@@ -60,6 +60,7 @@ npm run preview
 - **AI Integration**: Google Gemini API
 - **Database**: Firebase Firestore
 - **Authentication**: Firebase Auth
+- **LLM Integration**: OpenRouter API
 - **State Management**: React Hooks
 - **File Processing**: Support for PDF, Excel, CSV, Word documents
 - **Data Visualization**: Interactive Markdown table parser with sorting, filtering, and export
@@ -145,11 +146,11 @@ VITE_GEMINI_API_KEY=your-gemini-key
 VITE_GEMINI_MODEL=gemini-2.5-flash-preview-04-17
 ```
 
-## Database Structure (October 2025)
-- Unified all suppliers into single `suppliers_complete` collection
-- Contains ~400 verified suppliers across all categories
-- Removed duplicate data and optimized storage
-- System prompt updated with current category counts
+## Simplified Architecture (October 2025)
+- Single `suppliers_complete` collection with ~400 suppliers
+- No document context loading (removed internal knowledge and policy documents)
+- System prompts only (Production/Testing versions)
+- Streamlined session initialization
 
 ## Component Usage
 

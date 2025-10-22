@@ -37,7 +37,7 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <div className="bg-black text-white p-6">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
         <div className="container mx-auto">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-6">
@@ -85,7 +85,7 @@ const Admin = () => {
         {/* AI Prompt Management - Featured */}
         <div className="mb-8">
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="bg-gray-800 text-white rounded-t-lg p-8">
+            <CardHeader className="bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-t-lg p-8">
               <CardTitle className="flex items-center text-2xl">
                 <Settings className="mr-4 h-8 w-8" />
                 AI Prompt Version Management
@@ -100,8 +100,8 @@ const Admin = () => {
               </p>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button 
-                    className="w-full bg-black hover:bg-gray-800 py-4 text-lg text-white"
+                  <Button
+                    className="w-full bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-800 hover:to-gray-900 py-4 text-lg text-white"
                   >
                     <Settings className="mr-2 h-5 w-5" />
                     Open Prompt Manager
@@ -124,7 +124,7 @@ const Admin = () => {
         {/* User Management Section */}
         <div className="mb-8">
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="bg-blue-800 text-white rounded-t-lg p-8">
+            <CardHeader className="bg-gradient-to-r from-blue-700 to-blue-800 text-white rounded-t-lg p-8">
               <CardTitle className="flex items-center text-2xl">
                 <UserPlus className="mr-4 h-8 w-8" />
                 User Management
@@ -140,7 +140,7 @@ const Admin = () => {
               <Dialog open={showUserRegistration} onOpenChange={setShowUserRegistration}>
                 <DialogTrigger asChild>
                   <Button
-                    className="w-full bg-blue-800 hover:bg-blue-700 py-4 text-lg text-white"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 py-4 text-lg text-white"
                   >
                     <UserPlus className="mr-2 h-5 w-5" />
                     Manage Users
@@ -168,7 +168,7 @@ const Admin = () => {
 
           {/* Consolidated Data Search & Testing */}
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="bg-blue-700 text-white rounded-t-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
               <CardTitle className="flex items-center">
                 <Database className="mr-3 h-6 w-6" />
                 Supplier Database Search
@@ -181,7 +181,7 @@ const Admin = () => {
               <Dialog open={showFirestoreTester} onOpenChange={setShowFirestoreTester}>
                 <DialogTrigger asChild>
                   <Button
-                    className="w-full bg-blue-700 hover:bg-blue-600 text-white"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
                   >
                     <Database className="mr-2 h-4 w-4" />
                     Search Procurement Data
@@ -210,7 +210,7 @@ const Admin = () => {
 
           {/* Issue Report */}
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="bg-red-600 text-white rounded-t-lg">
+            <CardHeader className="bg-gradient-to-r from-red-500 to-red-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center">
                 <AlertTriangle className="mr-3 h-6 w-6" />
                 Issue Report
@@ -222,7 +222,7 @@ const Admin = () => {
               </p>
               <Link to="/issues">
                 <Button 
-                  className="w-full bg-red-600 hover:bg-red-700 text-white"
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
                 >
                   <AlertTriangle className="mr-2 h-4 w-4" />
                   View Issues
