@@ -48,7 +48,7 @@ const Index = () => {
               </h1>
 
               <p className="text-xl text-gray-600 leading-relaxed">
-                Do you have a solid ERP setup and relatively good data quality—yet your working capital still feels bloated, and delivery reliability and lead times could be better? Professional Demand Manager automates monitoring and decision support on top of your CERM-ERP database using Generative AI.
+                Do you have a solid ERP setup and relatively good data quality—yet your working capital still feels bloated, and delivery reliability and lead times could be better? Professional Demand Manager automates monitoring and decision support on top of your ERP database using Generative AI.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
