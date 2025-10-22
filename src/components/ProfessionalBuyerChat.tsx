@@ -48,7 +48,7 @@ const openRouterApiKey = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
 // Unified Suppliers Search Function (Collection: suppliers_complete)
 const searchSuppliersFunction = {
   name: "search_suppliers",
-  description: "Search for verified suppliers in Valmet's unified supplier database. IMPORTANT: mainCategory must be EXACTLY one of the valid LOV values. For 'vuokratyövoima' or 'henkilöstövuokraus', use 'Leased workforce'. For 'IT-konsultointi', use 'IT consulting'. Always use the exact English LOV values.",
+  description: "Search for verified suppliers in the unified supplier database. IMPORTANT: mainCategory must be EXACTLY one of the valid LOV values. For 'vuokratyövoima' or 'henkilöstövuokraus', use 'Leased workforce'. For 'IT-konsultointi', use 'IT consulting'. Always use the exact English LOV values.",
   parameters: {
     type: "object",
     properties: {
@@ -365,7 +365,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
             const welcomeMessage: Message = {
               role: 'model',
               parts: [{
-                text: `How can I help you with external labour purchasing today?`
+                text: `How can I help you optimize your procurement and demand management today?`
               }]
             };
             setMessages([welcomeMessage]);
@@ -388,7 +388,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           const welcomeMessage: Message = {
             role: 'model',
             parts: [{
-              text: "Hei! 👋 Olen Valmet-hankinta-avustajasi.\n\nAutan sinua löytämään parhaat toimittajat ulkopuoliselle työvoimalle Suomessa. Minulla on pääsy 410 vahvistettuun toimittajaan (IT-palvelut eivät kuulu laajuuteen).\n\n**Miten voin auttaa tänään?**\nVoit esimerkiksi sanoa:\n• \"Etsi liikkeenjohdon konsultteja\"\n• \"Näytä koulutuspalvelut\"\n• \"Tarvitsen vuokratyövoimaa\"\n• \"Etsi insinööripalveluita\"\n\nKerro vain tarpeesi, niin etsitään sinulle sopivat toimittajat! 🎯"
+              text: "Hello! 👋 I'm your Professional Demand Manager AI Assistant.\n\nI help you optimize procurement processes, manage supplier relationships, and make data-driven decisions using advanced AI technology.\n\n**How can I assist you today?**\nYou can ask me about:\n• Supplier search and evaluation\n• Purchase requisition creation\n• Demand forecasting\n• Cost optimization strategies\n• Process automation\n\nTell me what you need, and let's optimize your procurement! 🎯"
             }]
           };
           setMessages([welcomeMessage]);
@@ -471,7 +471,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
             'Authorization': `Bearer ${openRouterApiKey}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': window.location.origin || 'https://valmet-buyer.firebaseapp.com',
-            'X-Title': 'Valmet Procurement Assistant'
+            'X-Title': 'Professional Demand Manager'
           },
           body: JSON.stringify((() => {
             const requestBody = {
@@ -1025,7 +1025,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                         preferredSupplier: header.supplierId || '',
                         deliveryAddress: {
                           locationCode: header.costCenter || 'FI-HEL-01',
-                          locationName: lines[0]?.deliveryAddress || 'Valmet Helsinki Office',
+                          locationName: lines[0]?.deliveryAddress || 'Main Office',
                           country: 'Finland'
                         },
                         lineItems: lineItems,
@@ -1624,9 +1624,9 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
   };
 
   return (
-    <div className="flex flex-col h-screen bg-valmet-lightgray">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-valmet-green to-valmet-teal text-white p-8 text-center relative">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 text-center relative">
         {/* User info top left */}
         {user && (
           <div className="absolute top-4 left-4 text-sm text-gray-300">
@@ -1660,10 +1660,10 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
         </div>
         <div className="flex items-center justify-center mb-4">
           <Bot className="h-8 w-8 mr-3" />
-          <h1 className="text-3xl font-bold">Valmet Purchaser AI Assistant</h1>
+          <h1 className="text-3xl font-bold">Professional Demand Manager AI Assistant</h1>
         </div>
         <p className="text-gray-100 text-lg max-w-7xl mx-auto">
-          Get expert procurement advice, use prenegotiated prices from best suppliers, and do professional level procurement with ease
+          AI-powered procurement automation with agentic process optimization - cut costs, increase efficiency, and make data-driven decisions
         </p>
       </div>
       
@@ -1741,7 +1741,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                   <div
                     className={`px-6 py-4 rounded-2xl ${
                       message.role === 'user'
-                        ? 'bg-valmet-green text-white ml-auto max-w-lg'
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white ml-auto max-w-lg'
                         : 'bg-white shadow-sm border'
                     }`}
                   >
@@ -1860,13 +1860,13 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
                       disabled={isLoading}
-                      className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-valmet-green focus:border-transparent"
+                      className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                     />
                   </div>
                   <Button
                     onClick={() => handleSendMessage()}
                     disabled={!input.trim() || isLoading}
-                    className="h-12 px-6 bg-valmet-green hover:bg-valmet-darkgreen text-white rounded-xl"
+                    className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl"
                   >
                     <Send className="h-5 w-5" />
                   </Button>
@@ -1912,7 +1912,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                           </div>
                         )}
                         <div className="flex flex-col space-y-2 flex-1">
-                          <div className={`px-6 py-4 rounded-2xl ${message.role === 'user' ? 'bg-valmet-green text-white ml-auto max-w-lg' : 'bg-white shadow-sm border'}`}>
+                          <div className={`px-6 py-4 rounded-2xl ${message.role === 'user' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white ml-auto max-w-lg' : 'bg-white shadow-sm border'}`}>
                             {message.parts.map((part, partIndex) => {
                               // Try to detect JSON supplier comparison table
                               let jsonTable = null;
@@ -2001,9 +2001,9 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                 <div className="max-w-full mx-auto">
                   <div className="flex space-x-4 items-end">
                     <div className="flex-1">
-                      <Input ref={inputRef} type="text" placeholder="Ask about procurement strategies, cost optimization, supplier management..." value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !initStatus.hasPrompt} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-valmet-green focus:border-transparent" />
+                      <Input ref={inputRef} type="text" placeholder="Ask about procurement strategies, cost optimization, supplier management..." value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !initStatus.hasPrompt} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent" />
                     </div>
-                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !initStatus.hasPrompt} className="h-12 px-6 bg-valmet-green hover:bg-valmet-darkgreen text-white rounded-xl">
+                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !initStatus.hasPrompt} className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl">
                       <Send className="h-5 w-5" />
                     </Button>
                   </div>
