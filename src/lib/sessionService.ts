@@ -1,18 +1,13 @@
 import { db } from './firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { KnowledgeDocument } from './storageService';
 import { getSystemPromptForUser } from './systemPromptService';
-import { loadChatContext, getActiveDocumentIds, createChatContextHeader } from './chatContextService';
 
 export interface ChatSession {
   sessionId: string;
   systemPrompt: string;
-  policyContext: string;
   fullContext: string;
-  documentsUsed: KnowledgeDocument[];
   aiModel: string;
   createdAt: Date;
-  activePolicyDocuments?: string[]; // IDs of active policy documents during this session
 }
 
 export interface SystemPromptVersion {
@@ -61,21 +56,6 @@ export class SessionService {
   }
 
 
-  /**
-   * Load Valmet policy documents from chat_init_context based on configuration
-   */
-  private async loadValmetPolicyDocuments(): Promise<string> {
-    // Use the configurable chat context service
-    const policyContext = await loadChatContext();
-
-    if (policyContext) {
-      // Log which documents are active
-      const activeIds = getActiveDocumentIds();
-      console.log(`📚 Loaded ${activeIds.length} active policy documents:`, activeIds);
-    }
-
-    return policyContext;
-  }
 
   /**
    * Initialize a new chat session with full context
@@ -101,39 +81,20 @@ export class SessionService {
         }
       }
 
-      // No internal knowledge documents - simplified solution
-      const documents: KnowledgeDocument[] = [];
-      const knowledgeContext = '';
-      
-      // Load Valmet policy documents (based on configuration)
-      const policyContext = await this.loadValmetPolicyDocuments();
-
-      // Add context header for clarity
-      const contextHeader = await createChatContextHeader();
-
-      // Only use policy context (no internal knowledge)
-      const fullKnowledgeContext = contextHeader + '\n' + policyContext;
-
-      // Combine system prompt with knowledge context
-      const fullContext = this.combineContexts(systemPrompt, fullKnowledgeContext);
+      // Simplified solution - no documents or policy context
+      // Just use the system prompt directly
+      const fullContext = systemPrompt;
 
       // Generate unique session ID
       const sessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       console.log(`🆕 NEW CHAT SESSION CREATED: ${sessionId}`);
 
-      // Store which policy documents were active during this session
-      const activePolicyDocuments = getActiveDocumentIds();
-      console.log(`📄 Session ${sessionId} created with ${activePolicyDocuments.length} active policy documents`);
-
       return {
         sessionId,
         systemPrompt,
-        policyContext: fullKnowledgeContext,
         fullContext,
-        documentsUsed: documents,
         aiModel,
-        createdAt: new Date(),
-        activePolicyDocuments
+        createdAt: new Date()
       } as ChatSession;
     } catch (error) {
       console.error('Failed to initialize chat session:', error);
@@ -141,18 +102,6 @@ export class SessionService {
     }
   }
 
-  /**
-   * Combine system prompt with context
-   */
-  private combineContexts(systemPrompt: string, knowledgeContext: string): string {
-    if (!knowledgeContext.trim()) {
-      return systemPrompt;
-    }
-
-    return `${systemPrompt}
-
-${knowledgeContext}`;
-  }
 
 
   /**

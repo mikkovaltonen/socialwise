@@ -342,23 +342,16 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           console.log('🆕 Chat session initialized:', {
             sessionId: session.sessionId,
             createdAt: session.createdAt,
-            documentsUsed: session.documentsUsed.length,
-            documentsNames: session.documentsUsed.map(d => d.fileName || d.name || 'unknown'),
             promptLength: session.systemPrompt.length,
-            policyContextLength: session.policyContext?.length,
             contextLength: session.fullContext.length
           });
 
           // LOG ALL INITIALIZATION DATA
           console.log('🔴🔴🔴 COMPLETE SESSION INITIALIZATION DATA:');
           console.log('1. SYSTEM PROMPT:', session.systemPrompt);
-          console.log('2. POLICY CONTEXT:', session.policyContext);
-          console.log('3. FULL CONTEXT:', session.fullContext);
-          console.log('4. DOCUMENTS USED:', session.documentsUsed);
+          console.log('2. FULL CONTEXT:', session.fullContext);
           console.log('🔴🔴🔴 END OF INITIALIZATION DATA');
 
-          // Check if this is a new user (no documents loaded)
-          const isLikelyNewUser = session.documentsUsed.length === 0;
 
           // Only set welcome message if no messages exist yet
           if (mounted && messages.length === 0) {
@@ -372,14 +365,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           }
 
           setSessionActive(true);
-
-          if (isLikelyNewUser) {
-            toast.success("🎉 Welcome! Your AI assistant is ready. Visit the Admin panel to load sample data and explore capabilities.", {
-              duration: 6000
-            });
-          } else {
-            toast.success(`Session initialized with ${session.documentsUsed.length} knowledge document(s)`);
-          }
+          toast.success("Session initialized successfully");
         } catch (error) {
           console.error('Failed to initialize session:', error);
           toast.error('Failed to load knowledge base. Using default settings.');
@@ -617,9 +603,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           age: new Date().getTime() - new Date(chatSession.createdAt).getTime(),
           ageInMinutes: Math.floor((new Date().getTime() - new Date(chatSession.createdAt).getTime()) / 60000),
           systemPromptLength: chatSession.systemPrompt?.length,
-          policyContextLength: chatSession.policyContext?.length,
-          fullContextLength: chatSession.fullContext?.length,
-          documentsUsed: chatSession.documentsUsed?.length
+          fullContextLength: chatSession.fullContext?.length
         });
 
         // LOG THE COMPLETE FULL CONTEXT
