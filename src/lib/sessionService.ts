@@ -1,13 +1,13 @@
 import { db } from './firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { storageService, KnowledgeDocument } from './storageService';
+import { KnowledgeDocument } from './storageService';
 import { getSystemPromptForUser } from './systemPromptService';
 import { loadChatContext, getActiveDocumentIds, createChatContextHeader } from './chatContextService';
 
 export interface ChatSession {
   sessionId: string;
   systemPrompt: string;
-  knowledgeContext: string;
+  policyContext: string;
   fullContext: string;
   documentsUsed: KnowledgeDocument[];
   aiModel: string;
@@ -60,56 +60,6 @@ export class SessionService {
     }
   }
 
-  /**
-   * Get all knowledge documents for a user
-   */
-  async getUserKnowledgeDocuments(userId: string): Promise<KnowledgeDocument[]> {
-    try {
-      return await storageService.getUserDocuments(userId);
-    } catch (error) {
-      console.error('Failed to fetch knowledge documents:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Build knowledge context from documents
-   */
-  async buildKnowledgeContext(documents: KnowledgeDocument[]): Promise<string> {
-    if (documents.length === 0) {
-      return '';
-    }
-
-    const contextParts: string[] = [];
-    
-    for (const doc of documents) {
-      try {
-        const content = await storageService.downloadDocument(doc);
-        contextParts.push(`
-## Document: ${doc.name}
-**Format:** ${doc.originalFormat}
-**Size:** ${doc.size} bytes
-**Content:**
-${content}
-
----
-`);
-      } catch (error) {
-        console.error(`Failed to load document ${doc.name}:`, error);
-        // Continue with other documents
-      }
-    }
-
-    return `
-# INTERNAL KNOWLEDGE BASE
-
-The following documents contain internal company knowledge, policies, and procedures that should inform your responses:
-
-${contextParts.join('\n')}
-
-Please use this internal knowledge to provide accurate, company-specific guidance while maintaining the principles outlined in your system prompt.
-`;
-  }
 
   /**
    * Load Valmet policy documents from chat_init_context based on configuration
@@ -151,11 +101,9 @@ Please use this internal knowledge to provide accurate, company-specific guidanc
         }
       }
 
-      // Get knowledge documents
-      const documents = await this.getUserKnowledgeDocuments(userId);
-      
-      // Build knowledge context
-      const knowledgeContext = await this.buildKnowledgeContext(documents);
+      // No internal knowledge documents - simplified solution
+      const documents: KnowledgeDocument[] = [];
+      const knowledgeContext = '';
       
       // Load Valmet policy documents (based on configuration)
       const policyContext = await this.loadValmetPolicyDocuments();
@@ -163,8 +111,8 @@ Please use this internal knowledge to provide accurate, company-specific guidanc
       // Add context header for clarity
       const contextHeader = await createChatContextHeader();
 
-      // Combine all contexts
-      const fullKnowledgeContext = contextHeader + '\n' + policyContext + knowledgeContext;
+      // Only use policy context (no internal knowledge)
+      const fullKnowledgeContext = contextHeader + '\n' + policyContext;
 
       // Combine system prompt with knowledge context
       const fullContext = this.combineContexts(systemPrompt, fullKnowledgeContext);
@@ -180,7 +128,7 @@ Please use this internal knowledge to provide accurate, company-specific guidanc
       return {
         sessionId,
         systemPrompt,
-        knowledgeContext: fullKnowledgeContext,
+        policyContext: fullKnowledgeContext,
         fullContext,
         documentsUsed: documents,
         aiModel,
@@ -194,7 +142,7 @@ Please use this internal knowledge to provide accurate, company-specific guidanc
   }
 
   /**
-   * Combine system prompt with knowledge context
+   * Combine system prompt with context
    */
   private combineContexts(systemPrompt: string, knowledgeContext: string): string {
     if (!knowledgeContext.trim()) {
@@ -203,9 +151,7 @@ Please use this internal knowledge to provide accurate, company-specific guidanc
 
     return `${systemPrompt}
 
-${knowledgeContext}
-
-IMPORTANT: When responding, prioritize information from the internal knowledge base above while maintaining the tone and approach defined in your system prompt.`;
+${knowledgeContext}`;
   }
 
 

@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, FileText, Database, ArrowLeft, Bot, AlertTriangle, Book, Info, UserPlus } from "lucide-react";
+import { LogOut, Settings, Database, ArrowLeft, Bot, AlertTriangle, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import DocumentAnalysis from "@/components/DocumentAnalysis";
-import ChatInitViewer from "@/components/ChatInitViewer";
 import { FirestoreDataTester } from "@/components/FirestoreDataTester";
 import {
   Dialog,
@@ -23,7 +22,6 @@ const Admin = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [showChatInit, setShowChatInit] = useState(false);
   const [showFirestoreTester, setShowFirestoreTester] = useState(false);
   const [showUserRegistration, setShowUserRegistration] = useState(false);
 
@@ -137,7 +135,7 @@ const Admin = () => {
             </CardHeader>
             <CardContent className="p-8">
               <p className="text-gray-600 mb-6 text-lg">
-                Create new user accounts with email authentication and assign roles. Users will receive login credentials to access the Valmet Procurement AI Assistant.
+                Create new user accounts with email authentication and assign roles. Users will receive login credentials to access the Professional Demand Manager AI Assistant.
               </p>
               <Dialog open={showUserRegistration} onOpenChange={setShowUserRegistration}>
                 <DialogTrigger asChild>
@@ -163,45 +161,10 @@ const Admin = () => {
         </div>
 
         {/* Secondary Tools */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 gap-6">
 
           {/* AI Prompt Management - Moved to featured section above */}
 
-          {/* Internal Knowledge & Chat Initialization */}
-          <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="bg-gray-700 text-white rounded-t-lg">
-              <CardTitle className="flex items-center">
-                <FileText className="mr-3 h-6 w-6" />
-                Internal Knowledge
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <p className="text-gray-600 mb-4">
-                View Valmet policies and supplier data that are automatically loaded as context for the AI assistant.
-              </p>
-              
-              {/* Chat Initialization Viewer */}
-              <Dialog open={showChatInit} onOpenChange={setShowChatInit}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="w-full bg-green-700 hover:bg-green-600 text-white mb-3"
-                  >
-                    <Book className="mr-2 h-4 w-4" />
-                    View Chat Initialization Context
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
-                  <DialogHeader className="sr-only">
-                    <DialogTitle>Chat Initialization Context</DialogTitle>
-                    <DialogDescription>
-                      View and manage the policy documents that are automatically loaded as context for the AI assistant.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <ChatInitViewer />
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
 
           {/* Consolidated Data Search & Testing */}
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">

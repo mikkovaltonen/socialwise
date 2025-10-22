@@ -345,14 +345,14 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
             documentsUsed: session.documentsUsed.length,
             documentsNames: session.documentsUsed.map(d => d.fileName || d.name || 'unknown'),
             promptLength: session.systemPrompt.length,
-            knowledgeContextLength: session.knowledgeContext?.length,
+            policyContextLength: session.policyContext?.length,
             contextLength: session.fullContext.length
           });
 
           // LOG ALL INITIALIZATION DATA
           console.log('🔴🔴🔴 COMPLETE SESSION INITIALIZATION DATA:');
           console.log('1. SYSTEM PROMPT:', session.systemPrompt);
-          console.log('2. KNOWLEDGE CONTEXT:', session.knowledgeContext);
+          console.log('2. POLICY CONTEXT:', session.policyContext);
           console.log('3. FULL CONTEXT:', session.fullContext);
           console.log('4. DOCUMENTS USED:', session.documentsUsed);
           console.log('🔴🔴🔴 END OF INITIALIZATION DATA');
@@ -617,7 +617,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           age: new Date().getTime() - new Date(chatSession.createdAt).getTime(),
           ageInMinutes: Math.floor((new Date().getTime() - new Date(chatSession.createdAt).getTime()) / 60000),
           systemPromptLength: chatSession.systemPrompt?.length,
-          knowledgeContextLength: chatSession.knowledgeContext?.length,
+          policyContextLength: chatSession.policyContext?.length,
           fullContextLength: chatSession.fullContext?.length,
           documentsUsed: chatSession.documentsUsed?.length
         });
