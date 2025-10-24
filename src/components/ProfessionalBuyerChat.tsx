@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 // Using OpenRouter API instead of Google Generative AI
 type Part = { text: string };
-import { Loader2, Send, RotateCcw, Paperclip, Bot, LogOut, Settings, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, Send, RotateCcw, Paperclip, Bot, LogOut, Settings, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Upload, FileSpreadsheet } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { loadLatestPrompt, createContinuousImprovementSession, addTechnicalLog, setUserFeedback } from '../lib/firestoreService';
 import { sessionService, ChatSession } from '../lib/sessionService';
+import * as XLSX from 'xlsx';
 import { getSystemPromptForUser, getUserLLMModel } from '../lib/systemPromptService';
 import { erpApiService } from '../lib/erpApiService';
 import { storageService } from '../lib/storageService';
@@ -258,6 +259,9 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
   const [sessionActive, setSessionActive] = useState(false);
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   const [sessionInitializing, setSessionInitializing] = useState(false);
+  const [excelData, setExcelData] = useState<any>(null);
+  const [excelFileName, setExcelFileName] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const sessionIdRef = useRef<string | null>(null);
   const hasReceivedResponseRef = useRef<boolean>(false);
@@ -306,7 +310,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
     checkStatus();
   }, [user]);
 
-  // Initialize chat session with context
+  // Initialize chat session with context - ONLY when Excel is uploaded or user manually starts
   React.useEffect(() => {
     let mounted = true;
     let initializationTimeout: NodeJS.Timeout;
@@ -314,6 +318,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
     console.log('🔄 COMPONENT MOUNTED - Checking session state');
     console.log('Current messages count:', messages.length);
     console.log('Session active:', sessionActive);
+    console.log('Excel data loaded:', !!excelData);
 
     const initializeSession = async () => {
       if (!mounted) return;
@@ -324,64 +329,26 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
         return;
       }
 
-      if (!sessionActive && user && !sessionInitializing) {
-        setSessionInitializing(true)
-        console.log('🆕 Starting fresh session initialization...');
-        try {
-          // Initialize session with system prompt + knowledge documents
-          const session = await sessionService.initializeChatSession(user.uid);
-
-          if (!mounted) {
-            console.log('⚠️ Component unmounted during initialization, aborting');
-            return;
-          }
-
-          // Store the session ID to prevent duplicate initialization
-          sessionIdRef.current = session.sessionId;
-          setChatSession(session);
-          console.log('🆕 Chat session initialized:', {
-            sessionId: session.sessionId,
-            createdAt: session.createdAt,
-            promptLength: session.systemPrompt.length,
-            contextLength: session.fullContext.length
-          });
-
-          // LOG ALL INITIALIZATION DATA
-          console.log('🔴🔴🔴 COMPLETE SESSION INITIALIZATION DATA:');
-          console.log('1. SYSTEM PROMPT:', session.systemPrompt);
-          console.log('2. FULL CONTEXT:', session.fullContext);
-          console.log('🔴🔴🔴 END OF INITIALIZATION DATA');
-
-
-          // Only set welcome message if no messages exist yet
-          if (mounted && messages.length === 0) {
-            const welcomeMessage: Message = {
-              role: 'model',
-              parts: [{
-                text: `How can I help you optimize your procurement and demand management today?`
-              }]
-            };
-            setMessages([welcomeMessage]);
-          }
-
-          setSessionActive(true);
-          toast.success("Session initialized successfully");
-        } catch (error) {
-          console.error('Failed to initialize session:', error);
-          toast.error('Failed to load knowledge base. Using default settings.');
-          
-          // Fallback to basic welcome message
-          const welcomeMessage: Message = {
+      // Don't auto-initialize if no Excel data - wait for user to upload
+      if (!excelData) {
+        console.log('⏸️ Waiting for Excel upload before initializing chat');
+        // Show upload prompt message
+        if (messages.length === 0) {
+          const promptMessage: Message = {
             role: 'model',
             parts: [{
-              text: "Hello! 👋 I'm your Professional Demand Manager AI Assistant.\n\nI help you optimize procurement processes, manage supplier relationships, and make data-driven decisions using advanced AI technology.\n\n**How can I assist you today?**\nYou can ask me about:\n• Supplier search and evaluation\n• Purchase requisition creation\n• Demand forecasting\n• Cost optimization strategies\n• Process automation\n\nTell me what you need, and let's optimize your procurement! 🎯"
+              text: `👋 Welcome to the Stock Management Assistant!\n\n**Please upload an Excel file** containing stock management data (per material card) rows of one substrate family to begin.\n\nOnce you upload the file, I'll help you make correct purchase/transfer wait decision for one substrate family.`
             }]
           };
-          setMessages([welcomeMessage]);
-          setSessionActive(true);
-        } finally {
-          setSessionInitializing(false);
+          setMessages([promptMessage]);
         }
+        return;
+      }
+
+      if (!sessionActive && user && !sessionInitializing && excelData) {
+        // Excel data is already loaded, session will be initialized by initializeChatWithExcelContext
+        console.log('📊 Excel data exists, session should be initialized via initializeChatWithExcelContext');
+        return;
       }
     };
 
@@ -400,7 +367,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
       }
       console.log('🔚 Component unmounting - cleanup performed');
     };
-  }, [sessionActive, user]); // Removed sessionInitializing from deps to avoid loops
+  }, [sessionActive, user, excelData]); // Added excelData to deps
 
   // Reset session when user changes
   React.useEffect(() => {
@@ -410,7 +377,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
   }, [user]);
 
 
-  const handleSendMessage = async (messageText?: string) => {
+  const handleSendMessage = async (messageText?: string, hideFromUI: boolean = false) => {
     const textToSend = messageText || input;
     if (!textToSend.trim() || isLoading) return;
 
@@ -540,8 +507,11 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
       await initializeContinuousImprovement();
     }
 
-    const userMessage: Message = { role: 'user', parts: [{ text: textToSend }] };
-    setMessages(prev => [...prev, userMessage]);
+    // Only add user message to UI if not hidden
+    if (!hideFromUI) {
+      const userMessage: Message = { role: 'user', parts: [{ text: textToSend }] };
+      setMessages(prev => [...prev, userMessage]);
+    }
     if (!messageText) setInput('');
     setIsLoading(true);
 
@@ -1471,7 +1441,128 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
   const handleOpenAdmin = () => {
     navigate('/admin');
   };
-  
+
+  // Handle Excel file upload for stock management
+  const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is Excel format
+    if (!file.name.match(/\.(xlsx|xls)$/)) {
+      toast.error('Please select an Excel file (.xlsx or .xls)');
+      return;
+    }
+
+    setExcelFileName(file.name);
+
+    try {
+      // Read the file
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = e.target?.result;
+          if (!data) throw new Error('Failed to read file');
+
+          // Parse Excel file
+          const workbook = XLSX.read(data, { type: 'array' });
+
+          // Get first sheet
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+
+          // Convert to JSON
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          // Also get it as objects with headers
+          const jsonDataWithHeaders = XLSX.utils.sheet_to_json(worksheet);
+
+          // Store the Excel data
+          const excelContent = {
+            fileName: file.name,
+            sheetName: sheetName,
+            rawData: jsonData,
+            data: jsonDataWithHeaders,
+            headers: jsonData[0] || [],
+            rowCount: jsonData.length,
+            uploadedAt: new Date().toISOString()
+          };
+
+          setExcelData(excelContent);
+
+          console.log('📊 Excel file loaded:', {
+            fileName: file.name,
+            sheetName: sheetName,
+            rows: jsonDataWithHeaders.length,
+            columns: Object.keys(jsonDataWithHeaders[0] || {}).length
+          });
+
+          // Initialize chat with Excel context
+          await initializeChatWithExcelContext(excelContent);
+
+          toast.success(`Excel file "${file.name}" loaded successfully`);
+        } catch (error) {
+          console.error('Error parsing Excel:', error);
+          toast.error('Failed to parse Excel file');
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error('Error loading Excel file:', error);
+      toast.error('Failed to load Excel file');
+    }
+
+    // Clear the file input so the same file can be re-uploaded
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  // Initialize chat with Excel context
+  const initializeChatWithExcelContext = async (excelContent: any) => {
+    if (!user) return;
+
+    setSessionInitializing(true);
+    try {
+      // Get user's name from email (part before @)
+      const userName = user.email?.split('@')[0] || 'User';
+
+      // Create context with user info and JSON data
+      const excelContext = `User: ${userName}\n\n\`\`\`json
+${JSON.stringify(excelContent.data, null, 2)}
+\`\`\``;
+
+      // Initialize session with Excel context
+      const session = await sessionService.initializeChatSession(user.uid);
+
+      // Append Excel context to the session
+      if (session) {
+        session.fullContext = session.fullContext + '\n\n' + excelContext;
+        setChatSession(session);
+
+        console.log('✅ Chat initialized with Excel context');
+
+        // Let the LLM generate a welcome message based on the loaded data
+        setMessages([]);
+        setSessionActive(true);
+
+        // Send an initial prompt to the LLM to generate a welcome message
+        const dataRowCount = excelContent.rowCount - 1; // Exclude header row
+        const initialPrompt = `Excel file "${excelContent.fileName}" with ${dataRowCount} rows of data has been loaded for user ${userName}. Please greet ${userName} by name and explain what you can help with regarding this stock management data for substrate family.`;
+
+        // Trigger the LLM to generate welcome message (hidden from UI)
+        setTimeout(() => {
+          handleSendMessage(initialPrompt, true);  // true = hide from UI
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Failed to initialize chat with Excel context:', error);
+      toast.error('Failed to initialize chat with Excel data');
+    } finally {
+      setSessionInitializing(false);
+    }
+  };
+
   // Initialize continuous improvement session when user starts chatting
   const initializeContinuousImprovement = async () => {
     if (!user || continuousImprovementSessionId) return;
@@ -1643,7 +1734,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
           )}
         </div>
         <div className="flex items-center justify-center mb-4">
-          <Bot className="h-8 w-8 mr-3" />
+          <img src="/Gravic_icon.png" alt="Gravic" className="h-10 w-10 mr-3" />
           <h1 className="text-3xl font-bold">Professional Demand Manager AI Assistant</h1>
         </div>
         <p className="text-gray-100 text-lg max-w-7xl mx-auto">
@@ -1690,7 +1781,62 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
               <div className={"flex flex-col items-stretch"}>
 
 
-            {/* Quick Action Pills removed for simplified interface */}
+            {/* Excel Upload Section */}
+            {!excelData && (
+              <div className="bg-blue-50 border-2 border-blue-200 border-dashed rounded-lg p-6 mb-4 text-center">
+                <FileSpreadsheet className="h-12 w-12 text-blue-600 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Upload Stock Management Data
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Upload an Excel file containing stock management (per material card) rows of one substrate family
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleExcelUpload}
+                  className="hidden"
+                  id="excel-upload"
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Stock management (per material card) rows of one substrate family
+                </Button>
+              </div>
+            )}
+
+            {/* Show uploaded file info */}
+            {excelData && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <FileSpreadsheet className="h-6 w-6 text-green-600" />
+                    <div>
+                      <p className="font-medium text-gray-800">{excelFileName}</p>
+                      <p className="text-sm text-gray-600">
+                        {excelData.rowCount - 1} data rows loaded • {excelData.headers.length} columns
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setExcelData(null);
+                      setExcelFileName('');
+                      handleResetChat();
+                    }}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    Remove & Reset
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Chat Messages */}
             <div className="p-2 space-y-6">
@@ -1839,17 +1985,17 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                     <Input
                       ref={inputRef}
                       type="text"
-                      placeholder="Ask about procurement strategies, cost optimization, supplier management..."
+                      placeholder={excelData ? "Ask about the stock management data..." : "Please upload an Excel file first"}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      disabled={isLoading}
+                      disabled={isLoading || !excelData}
                       className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                     />
                   </div>
                   <Button
                     onClick={() => handleSendMessage()}
-                    disabled={!input.trim() || isLoading}
+                    disabled={!input.trim() || isLoading || !excelData}
                     className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl"
                   >
                     <Send className="h-5 w-5" />
@@ -1871,7 +2017,63 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
             {/* When no left panel, show full-width chat */}
             <div className={"flex flex-col items-stretch"}>
 
-              {/* Quick Action Pills removed for simplified interface */}
+              {/* Excel Upload Section */}
+              {!excelData && (
+                <div className="bg-blue-50 border-2 border-blue-200 border-dashed rounded-lg p-6 mb-4 text-center">
+                  <FileSpreadsheet className="h-12 w-12 text-blue-600 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                    Upload Stock Management Data
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Upload an Excel file containing stock management (per material card) rows of one substrate family
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleExcelUpload}
+                    className="hidden"
+                    id="excel-upload-2"
+                  />
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Stock management (per material card) rows of one substrate family
+                  </Button>
+                </div>
+              )}
+
+              {/* Show uploaded file info */}
+              {excelData && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <FileSpreadsheet className="h-6 w-6 text-green-600" />
+                      <div>
+                        <p className="font-medium text-gray-800">{excelFileName}</p>
+                        <p className="text-sm text-gray-600">
+                          {excelData.rowCount - 1} data rows loaded • {excelData.headers.length} columns
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setExcelData(null);
+                        setExcelFileName('');
+                        handleResetChat();
+                      }}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      Remove & Reset
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="p-2 space-y-6">
                 <div className="max-w-full mx-auto space-y-6">
                   {sessionInitializing && (
@@ -1985,9 +2187,9 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
                 <div className="max-w-full mx-auto">
                   <div className="flex space-x-4 items-end">
                     <div className="flex-1">
-                      <Input ref={inputRef} type="text" placeholder="Ask about procurement strategies, cost optimization, supplier management..." value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !initStatus.hasPrompt} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent" />
+                      <Input ref={inputRef} type="text" placeholder={excelData ? "Ask about the stock management data..." : "Please upload an Excel file first"} value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !excelData} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent" />
                     </div>
-                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !initStatus.hasPrompt} className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl">
+                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !excelData} className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl">
                       <Send className="h-5 w-5" />
                     </Button>
                   </div>

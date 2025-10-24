@@ -50,7 +50,7 @@ const Admin = () => {
                 Back to Chat
               </Button>
               <div className="flex items-center gap-3">
-                <Bot className="h-8 w-8" />
+                <img src="/Gravic_icon.png" alt="Gravic" className="h-10 w-10" />
                 <div>
                   <h1 className="text-2xl font-bold">Admin Panel</h1>
                   <p className="text-gray-300">System Configuration & Management</p>
