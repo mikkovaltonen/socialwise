@@ -1,7 +1,13 @@
 {
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
   "git": {
     "deploymentEnabled": {
-      "master": true
+      "master": true,
+      "main": false,
+      "feature/*": false
     }
   },
   "rewrites": [
