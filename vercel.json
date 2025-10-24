@@ -10,6 +10,10 @@
       "feature/*": false
     }
   },
+  "github": {
+    "enabled": true,
+    "silent": false
+  },
   "rewrites": [
     {
       "source": "/api/:path*",
