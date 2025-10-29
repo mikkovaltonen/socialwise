@@ -24,6 +24,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { search_suppliers, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFunction';
 import { purchaseRequisitionService, RequisitionStatus } from '../lib/purchaseRequisitionService';
 import { InteractiveJsonTable } from './InteractiveJsonTable';
+import { MrpDecisionTable } from './MrpDecisionTable';
 import FunctionUsageIndicator from './FunctionUsageIndicator';
 import { SubstrateFamilySelector } from './SubstrateFamilySelector';
 import {
@@ -234,7 +235,10 @@ interface Message {
 }
 
 const processTextWithCitations = (text: string, citationSources?: CitationSource[]) => {
-  const originalText = text;
+  // Remove time portion from ISO datetime strings (e.g., "2025-12-02T00:00:00" -> "2025-12-02")
+  let processedText = text.replace(/(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}:\d{2}(\.\d+)?/g, '$1');
+
+  const originalText = processedText;
   const formattedSources: string[] = [];
 
   if (citationSources && citationSources.length > 0) {
@@ -377,7 +381,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
   }, [user]);
 
 
-  const handleSendMessage = async (messageText?: string, hideFromUI: boolean = false) => {
+  const handleSendMessage = async (messageText?: string, hideFromUI: boolean = false, customSession?: ChatSession) => {
     const textToSend = messageText || input;
     if (!textToSend.trim() || isLoading) return;
 
@@ -564,22 +568,25 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
     try {
       // Use session context if available, otherwise fallback to loading prompt
       let systemPrompt = '';
-      
-      if (chatSession) {
+
+      // Use custom session if provided (for substrate context initialization), otherwise use state
+      const activeSession = customSession || chatSession;
+
+      if (activeSession) {
         // Use the full context from initialized session (system prompt + knowledge documents)
         console.log('📦 USING CHAT SESSION FULL CONTEXT', {
-          sessionId: chatSession.sessionId,
-          createdAt: chatSession.createdAt,
-          age: new Date().getTime() - new Date(chatSession.createdAt).getTime(),
-          ageInMinutes: Math.floor((new Date().getTime() - new Date(chatSession.createdAt).getTime()) / 60000),
-          systemPromptLength: chatSession.systemPrompt?.length,
-          fullContextLength: chatSession.fullContext?.length
+          sessionId: activeSession.sessionId,
+          createdAt: activeSession.createdAt,
+          age: new Date().getTime() - new Date(activeSession.createdAt).getTime(),
+          ageInMinutes: Math.floor((new Date().getTime() - new Date(activeSession.createdAt).getTime()) / 60000),
+          systemPromptLength: activeSession.systemPrompt?.length,
+          fullContextLength: activeSession.fullContext?.length
         });
 
         // LOG THE COMPLETE FULL CONTEXT
-        console.log('🔍 FULL CONTEXT BEING SENT (COMPLETE):', chatSession.fullContext);
+        console.log('🔍 FULL CONTEXT BEING SENT (COMPLETE):', activeSession.fullContext);
 
-        systemPrompt = chatSession.fullContext;
+        systemPrompt = activeSession.fullContext;
       } else {
         // Try to load versioned prompt for this user
         try {
@@ -1485,10 +1492,17 @@ ${JSON.stringify(substrateContent.data, null, 2)}
 
       // Append substrate context to the session
       if (session) {
+        const originalContextLength = session.fullContext.length;
         session.fullContext = session.fullContext + '\n\n' + substrateContext;
         setChatSession(session);
 
-        console.log('✅ Chat initialized with substrate family context');
+        console.log('✅ Chat initialized with substrate family context', {
+          keyword: substrateContent.keyword,
+          recordCount: substrateContent.recordCount,
+          originalContextLength,
+          newContextLength: session.fullContext.length,
+          addedLength: session.fullContext.length - originalContextLength
+        });
 
         // Let the LLM generate a welcome message based on the loaded data
         setMessages([]);
@@ -1498,8 +1512,9 @@ ${JSON.stringify(substrateContent.data, null, 2)}
         const initialPrompt = `Substrate family "${substrateContent.keyword}" with ${substrateContent.recordCount} material records has been loaded for user ${userName}. Please greet ${userName} by name and explain what you can help with regarding this stock management data for substrate family "${substrateContent.keyword}".`;
 
         // Trigger the LLM to generate welcome message (hidden from UI)
+        // Pass the session directly to ensure substrate context is included
         setTimeout(() => {
-          handleSendMessage(initialPrompt, true);  // true = hide from UI
+          handleSendMessage(initialPrompt, true, session);  // Pass session with substrate context
         }, 100);
       }
     } catch (error) {
@@ -1682,7 +1697,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
         </div>
         <div className="flex items-center justify-center mb-4">
           <img src="/Gravic_icon.png" alt="Gravic" className="h-10 w-10 mr-3" />
-          <h1 className="text-3xl font-bold">Professional Demand Manager AI Assistant</h1>
+          <h1 className="text-3xl font-bold">Professional Demand Manager</h1>
         </div>
         <p className="text-gray-100 text-lg max-w-7xl mx-auto">
           AI-powered procurement automation with agentic process optimization - cut costs, increase efficiency, and make data-driven decisions
@@ -1705,7 +1720,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
           </div>
           <Button
             variant="outline"
-            onClick={handleResetChat}
+            onClick={() => window.location.reload()}
             className="text-red-600 border-red-200 hover:bg-red-50"
             size="sm"
           >
@@ -1751,18 +1766,6 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSubstrateData(null);
-                      setSelectedKeyword('');
-                      handleResetChat();
-                    }}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    Change Family & Reset
-                  </Button>
                 </div>
               </div>
             )}
@@ -1805,8 +1808,9 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                     }`}
                   >
                     {message.parts.map((part, partIndex) => {
-                      // Try to detect JSON supplier comparison table
+                      // Try to detect JSON tables (both supplier comparison and MRP decision tables)
                       let jsonTable = null;
+                      let mrpTable = null;
                       let textWithoutJson = part.text || '';
 
                       if (part.text && message.role === 'model') {
@@ -1815,9 +1819,15 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                         if (jsonMatch) {
                           try {
                             const jsonData = JSON.parse(jsonMatch[1]);
+
+                            // Check if it's a supplier comparison table
                             if (jsonData.type === 'supplier_comparison_table') {
                               jsonTable = jsonData;
-                              // Remove JSON from text
+                              textWithoutJson = part.text.replace(/```json[\s\S]*?```/, '').trim();
+                            }
+                            // Check if it's an MRP decision table (array format)
+                            else if (Array.isArray(jsonData) && jsonData.length > 0) {
+                              mrpTable = jsonData;
                               textWithoutJson = part.text.replace(/```json[\s\S]*?```/, '').trim();
                             }
                           } catch (e) {
@@ -1848,6 +1858,16 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                                 compact={true}
                                 enableExport={false}
                                 enableSearch={false}
+                                enableSort={true}
+                              />
+                            </div>
+                          )}
+                          {mrpTable && (
+                            <div className="mt-4">
+                              <MrpDecisionTable
+                                data={mrpTable}
+                                substrateFamilyKeyword={substrateData?.keyword}
+                                compact={true}
                                 enableSort={true}
                               />
                             </div>
@@ -1969,18 +1989,6 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                         </p>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSubstrateData(null);
-                        setSelectedKeyword('');
-                        handleResetChat();
-                      }}
-                      className="text-red-600 border-red-200 hover:bg-red-50"
-                    >
-                      Change Family & Reset
-                    </Button>
                   </div>
                 </div>
               )}
@@ -2011,8 +2019,9 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                         <div className="flex flex-col space-y-2 flex-1">
                           <div className={`px-6 py-4 rounded-2xl ${message.role === 'user' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white ml-auto max-w-lg' : 'bg-white shadow-sm border'}`}>
                             {message.parts.map((part, partIndex) => {
-                              // Try to detect JSON supplier comparison table
+                              // Try to detect JSON tables (both supplier comparison and MRP decision tables)
                               let jsonTable = null;
+                              let mrpTable = null;
                               let textWithoutJson = part.text || '';
 
                               if (part.text && message.role === 'model') {
@@ -2021,9 +2030,15 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                                 if (jsonMatch) {
                                   try {
                                     const jsonData = JSON.parse(jsonMatch[1]);
+
+                                    // Check if it's a supplier comparison table
                                     if (jsonData.type === 'supplier_comparison_table') {
                                       jsonTable = jsonData;
-                                      // Remove JSON from text
+                                      textWithoutJson = part.text.replace(/```json[\s\S]*?```/, '').trim();
+                                    }
+                                    // Check if it's an MRP decision table (array format)
+                                    else if (Array.isArray(jsonData) && jsonData.length > 0) {
+                                      mrpTable = jsonData;
                                       textWithoutJson = part.text.replace(/```json[\s\S]*?```/, '').trim();
                                     }
                                   } catch (e) {
@@ -2051,6 +2066,16 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                                         compact={true}
                                         enableExport={false}
                                         enableSearch={false}
+                                        enableSort={true}
+                                      />
+                                    </div>
+                                  )}
+                                  {mrpTable && (
+                                    <div className="mt-4">
+                                      <MrpDecisionTable
+                                        data={mrpTable}
+                                        substrateFamilyKeyword={substrateData?.keyword}
+                                        compact={true}
                                         enableSort={true}
                                       />
                                     </div>

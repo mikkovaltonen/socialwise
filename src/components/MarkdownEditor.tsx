@@ -83,7 +83,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         {/* Formatted text overlay */}
         <div
           ref={formattedRef}
-          className="absolute inset-0 p-3 font-mono text-sm whitespace-pre-wrap overflow-y-auto overflow-x-hidden border rounded-md bg-white pointer-events-none leading-normal"
+          className="absolute inset-0 p-3 font-mono text-sm overflow-y-auto overflow-x-hidden border rounded-md bg-white pointer-events-none leading-normal"
           style={{
             minHeight,
             wordWrap: 'break-word',

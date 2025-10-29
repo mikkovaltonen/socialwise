@@ -35,9 +35,15 @@ export function SubstrateFamilySelector({ onFamilySelected, disabled }: Substrat
       const snapshot = await getDocs(stockRef);
 
       const keywordSet = new Set<string>();
+
+      // New structure: Each document ID is the keyword (substrate family)
       snapshot.forEach((doc) => {
         const data = doc.data();
-        if (data.keyword) {
+        // In new structure, document ID is the keyword
+        if (data.materials && Array.isArray(data.materials)) {
+          keywordSet.add(doc.id);
+        } else if (data.keyword) {
+          // Fallback for old structure
           keywordSet.add(data.keyword);
         }
       });
@@ -69,11 +75,27 @@ export function SubstrateFamilySelector({ onFamilySelected, disabled }: Substrat
       const snapshot = await getDocs(q);
 
       const records: any[] = [];
+
+      // New structure: Each document contains a materials array
       snapshot.forEach((doc) => {
-        records.push({
-          id: doc.id,
-          ...doc.data()
-        });
+        const data = doc.data();
+
+        if (data.materials && Array.isArray(data.materials)) {
+          // New structure: extract materials from the array
+          data.materials.forEach((material: any, index: number) => {
+            records.push({
+              id: `${doc.id}_${index}`,
+              keyword: selectedKeyword,
+              ...material
+            });
+          });
+        } else {
+          // Fallback for old structure (flat documents)
+          records.push({
+            id: doc.id,
+            ...data
+          });
+        }
       });
 
       if (records.length === 0) {
@@ -82,7 +104,7 @@ export function SubstrateFamilySelector({ onFamilySelected, disabled }: Substrat
       }
 
       onFamilySelected(selectedKeyword, records);
-      toast.success(`Loaded ${records.length} records for ${selectedKeyword}`);
+      toast.success(`Loaded ${records.length} material${records.length > 1 ? 's' : ''} for ${selectedKeyword}`);
     } catch (error) {
       console.error('Error loading family records:', error);
       toast.error('Failed to load substrate family data');

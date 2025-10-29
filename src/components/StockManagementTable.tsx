@@ -54,11 +54,29 @@ export function StockManagementTable() {
       const snapshot = await getDocs(stockRef);
 
       const items: StockItem[] = [];
+
+      // New structure: Each document represents a substrate family with nested materials array
       snapshot.forEach((doc) => {
-        items.push({
-          id: doc.id,
-          ...doc.data()
-        } as StockItem);
+        const data = doc.data();
+        const keyword = data.keyword || doc.id; // Substrate family identifier
+
+        // Check if materials array exists (new structure)
+        if (data.materials && Array.isArray(data.materials)) {
+          // Flatten the materials array
+          data.materials.forEach((material: any, index: number) => {
+            items.push({
+              id: `${doc.id}_${index}`, // Create unique ID combining doc ID and index
+              keyword: keyword, // Add the substrate family keyword
+              ...material
+            } as StockItem);
+          });
+        } else {
+          // Fallback for old structure (flat documents)
+          items.push({
+            id: doc.id,
+            ...data
+          } as StockItem);
+        }
       });
 
       setAllData(items);
@@ -236,11 +254,29 @@ export function StockManagementTable() {
               <TableBody>
                 {processedData.map((item, idx) => (
                   <TableRow key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    {columns.map((col) => (
-                      <TableCell key={col.key} className="text-xs py-2">
-                        {item[col.key] || '-'}
-                      </TableCell>
-                    ))}
+                    {columns.map((col) => {
+                      let value = item[col.key] || '-';
+
+                      // Format expected_date to remove time
+                      if (col.key === 'expected_date' && value !== '-') {
+                        // Handle various date formats and extract just the date part
+                        const dateStr = String(value);
+                        // Handle ISO format (2025-12-02T00:00:00)
+                        if (dateStr.includes('T')) {
+                          value = dateStr.split('T')[0];
+                        }
+                        // Handle space-separated format (2025-12-02 00:00:00)
+                        else if (dateStr.includes(' ')) {
+                          value = dateStr.split(' ')[0];
+                        }
+                      }
+
+                      return (
+                        <TableCell key={col.key} className="text-xs py-2">
+                          {value}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
               </TableBody>

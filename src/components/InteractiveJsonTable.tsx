@@ -272,16 +272,6 @@ export const InteractiveJsonTable: React.FC<InteractiveJsonTableProps> = ({
                 Filters
               </Button>
             )}
-            {enableExport && (
-              <Button
-                variant="outline"
-                size={compact ? "sm" : "default"}
-                onClick={exportToCSV}
-              >
-                <Download className="h-4 w-4 mr-1" />
-                Export
-              </Button>
-            )}
           </div>
         </div>
 
