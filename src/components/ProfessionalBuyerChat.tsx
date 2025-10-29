@@ -1694,7 +1694,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
         </div>
         <div className="flex items-center justify-center mb-4">
           <img src="/Gravic_icon.png" alt="Gravic" className="h-10 w-10 mr-3" />
-          <h1 className="text-3xl font-bold">Professional Demand Manager AI Assistant</h1>
+          <h1 className="text-3xl font-bold">Professional Demand Manager</h1>
         </div>
         <p className="text-gray-100 text-lg max-w-7xl mx-auto">
           AI-powered procurement automation with agentic process optimization - cut costs, increase efficiency, and make data-driven decisions
