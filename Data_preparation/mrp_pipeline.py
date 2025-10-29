@@ -303,12 +303,10 @@ class MRPPipeline:
         try:
             base_url = f"https://firestore.googleapis.com/v1/projects/{self.firebase_project_id}/databases/(default)/documents/{FIRESTORE_COLLECTION}"
 
-            # FULL RELOAD: Delete all existing documents first
-            logger.info("Starting full reload - deleting existing documents...")
-            deleted_count = self._delete_all_documents(base_url)
-            logger.info(f"✓ Deleted {deleted_count} existing documents")
+            # UPSERT: Use PATCH to create or update documents (no delete needed)
+            logger.info("Starting upsert operation (create or update documents)...")
 
-            # Upload new documents
+            # Upload/update documents
             total_written = 0
             total_keywords = len(self.mrp_data)
 
@@ -334,62 +332,6 @@ class MRPPipeline:
         except Exception as e:
             logger.error(f"Failed to upload to Firestore: {e}")
             raise
-
-    def _delete_all_documents(self, base_url):
-        """Delete all documents in the collection using REST API with pagination"""
-        try:
-            headers = {"Authorization": f"Bearer {self.id_token}"}
-            deleted_count = 0
-            page_token = None
-
-            # Handle pagination to delete ALL documents
-            while True:
-                # Build URL with pagination token if available
-                # Use pageSize=300 (max allowed by Firestore REST API is 300)
-                list_url = f"{base_url}?pageSize=300"
-                if page_token:
-                    list_url += f"&pageToken={page_token}"
-
-                # List documents
-                response = requests.get(list_url, headers=headers)
-
-                if response.status_code == 404:
-                    logger.info("Collection doesn't exist yet, no need to delete")
-                    return deleted_count
-
-                response.raise_for_status()
-                data = response.json()
-
-                documents = data.get('documents', [])
-
-                # Delete each document
-                for doc in documents:
-                    doc_name = doc['name']
-                    # Add the full URL prefix if not present
-                    if not doc_name.startswith('https://'):
-                        doc_url = f"https://firestore.googleapis.com/v1/{doc_name}"
-                    else:
-                        doc_url = doc_name
-
-                    delete_response = requests.delete(doc_url, headers=headers)
-
-                    if delete_response.status_code in [200, 204]:
-                        deleted_count += 1
-                    else:
-                        logger.warning(f"Failed to delete document: {delete_response.status_code} - {delete_response.text}")
-
-                # Check if there are more pages
-                page_token = data.get('nextPageToken')
-                if not page_token:
-                    break  # No more pages
-
-                logger.info(f"  Deleted {deleted_count} documents so far, fetching next page...")
-
-            return deleted_count
-
-        except Exception as e:
-            logger.warning(f"Error deleting documents: {e}")
-            return deleted_count
 
     def _upload_document(self, base_url, keyword, doc_data):
         """Upload a single document to Firestore using REST API"""
