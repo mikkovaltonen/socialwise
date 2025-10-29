@@ -171,8 +171,12 @@ export const MrpDecisionTable: React.FC<MrpDecisionTableProps> = ({
 
     // Format expected_date to remove time
     if (column.toLowerCase().includes('expected') && column.toLowerCase().includes('date') && displayValue !== '—') {
-      // If it contains time (space followed by time), extract just date part
-      if (displayValue.includes(' ')) {
+      // Handle ISO format (2025-12-02T00:00:00)
+      if (displayValue.includes('T')) {
+        displayValue = displayValue.split('T')[0];
+      }
+      // Handle space-separated format (2025-12-02 00:00:00)
+      else if (displayValue.includes(' ')) {
         displayValue = displayValue.split(' ')[0];
       }
     }

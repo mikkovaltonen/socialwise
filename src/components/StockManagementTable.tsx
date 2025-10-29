@@ -261,8 +261,12 @@ export function StockManagementTable() {
                       if (col.key === 'expected_date' && value !== '-') {
                         // Handle various date formats and extract just the date part
                         const dateStr = String(value);
-                        // If it contains time (space followed by time), extract just date part
-                        if (dateStr.includes(' ')) {
+                        // Handle ISO format (2025-12-02T00:00:00)
+                        if (dateStr.includes('T')) {
+                          value = dateStr.split('T')[0];
+                        }
+                        // Handle space-separated format (2025-12-02 00:00:00)
+                        else if (dateStr.includes(' ')) {
                           value = dateStr.split(' ')[0];
                         }
                       }

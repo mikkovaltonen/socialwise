@@ -235,7 +235,10 @@ interface Message {
 }
 
 const processTextWithCitations = (text: string, citationSources?: CitationSource[]) => {
-  const originalText = text;
+  // Remove time portion from ISO datetime strings (e.g., "2025-12-02T00:00:00" -> "2025-12-02")
+  let processedText = text.replace(/(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}:\d{2}(\.\d+)?/g, '$1');
+
+  const originalText = processedText;
   const formattedSources: string[] = [];
 
   if (citationSources && citationSources.length > 0) {
