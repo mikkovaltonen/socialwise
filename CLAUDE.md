@@ -22,7 +22,15 @@ This is the Professional Demand Manager application built with React, TypeScript
 - **Purpose**: Help find best matching vendors for specific needs
 - **Languages**: Finnish and English support
 
-### 3. Document Analysis
+### 3. Stock Management & Substrate Family Selection
+- **Database**: Stock management data organized by substrate families in `stock_management` collection
+- **Substrate Family Selector**: Dropdown with all unique keyword values (e.g., "_MAD_GR_0209")
+- **Context Initialization**: Select a substrate family, all related materials loaded into AI chat context
+- **Material Tracking**: Track material IDs, widths, stock levels, reservations, and lead times
+- **Stock Visibility**: View safety stock, total stock, reservations, and final available stock
+- **Interactive Table**: Sort, filter, and view all stock management data with responsive design
+
+### 4. Document Analysis
 - **Supported Formats**: PDF, Excel (.xlsx, .xls), CSV, Word (.doc, .docx)
 - **Processing**: Extract and analyze procurement data
 - **Integration**: Works with supplier search for comprehensive analysis
@@ -109,6 +117,36 @@ src/
   }
 }
 ```
+
+### `stock_management` Collection
+Stock management data organized by substrate families (keyword field). Each document represents a material/width combination within a substrate family.
+
+```javascript
+{
+  id: string,                   // Firestore document ID
+  material_id: string,          // Material identifier (e.g., "100906")
+  supplier_keyword: string,     // Supplier name (e.g., "AVERY DENN")
+  keyword: string,              // Substrate family identifier (e.g., "_MAD_GR_0209")
+  width: string,                // Material width (e.g., "50 mm")
+  length: string,               // Material length (e.g., "—" for not applicable)
+  ref_at_supplier: string,      // Reference at supplier (e.g., "Slit by Gravic")
+  description: string,          // Full material description
+  lead_time: string,            // Lead time in days (e.g., "20" or "n/a")
+  safety_stock: number,         // Safety stock level
+  total_stock: number,          // Total current stock
+  reservations: number,         // Reserved stock quantity
+  final_stock: number,          // Available stock after reservations
+  expected_date: string,        // Expected delivery date (e.g., "5.12.2025")
+  historical_slit: string       // Slit history note (e.g., "Slit target", "No slit")
+}
+```
+
+**Key Features:**
+- **Substrate Families**: Materials are grouped by `keyword` field (e.g., "_MAD_GR_0209", "_3M_ADH_1102")
+- **Stock Tracking**: Tracks safety stock, total stock, reservations, and final available stock
+- **Supplier Integration**: Links to supplier via `supplier_keyword` field
+- **Material Variants**: Same substrate family can have multiple widths and configurations
+- **Context Initialization**: Users select a substrate family from dropdown, all materials with that keyword are loaded into chat context
 
 ## Important Implementation Details
 
@@ -216,12 +254,31 @@ Features:
 - Verify collection name is `suppliers_complete`
 
 ## Recent Updates (October 2025)
+
+### Supplier Management
 - Unified all suppliers into single `suppliers_complete` collection
 - Database contains ~400 suppliers (131 Business consulting, 100 Training, 52 R&D, 45 Legal, 26 Certification, 26 Patent, 14 Leased workforce, 2 Testing, 1 Facility)
 - Updated UI to reflect simplified database structure
 - Complete fuzzy search with case-insensitive matching
 - Simplified search UI with only 4 search fields
-- Added comprehensive CSV export functionality
-- Implemented paged document viewer for policies
+
+### Stock Management (Latest)
+- **Replaced Excel Upload**: Removed Excel file upload, replaced with dropdown substrate family selector
+- **Database Integration**: Direct selection from `stock_management` collection via `keyword` field
+- **Context Initialization**: Select substrate family (e.g., "_MAD_GR_0209"), all materials with that keyword loaded into AI context
+- **Interactive Table View**: Added StockManagementTable component with 14 columns:
+  - Material ID, Description, Supplier, Substrate Family
+  - Width, Length, Ref at Supplier, Lead Time
+  - Safety Stock, Total Stock, Reservations, Final Stock
+  - Expected Date, Historical Slit
+- **Removed CSV Export**: Simplified table view (removed export functionality)
+- **Workbench Integration**: Stock management table visible via "Show stock management" toggle in workbench
+
+### UI Components
 - Added InteractiveMarkdownTable component for dynamic table rendering
-- Models shold  one more time x-ai/grok-4-fast:free, google/gemini-2.5-flash and google/gemini-2.5-pro. Model selection is solution  wide like production promt
+- Added SubstrateFamilySelector component for substrate family selection
+- Implemented paged document viewer for policies
+
+### LLM Configuration
+- Models: x-ai/grok-4-fast:free, google/gemini-2.5-flash, google/gemini-2.5-pro
+- Model selection is solution-wide via production prompt configuration

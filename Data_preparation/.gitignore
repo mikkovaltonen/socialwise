@@ -1,0 +1,29 @@
+# Firebase credentials - DO NOT COMMIT
+firebase-service-account.json
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Output files
+output/
+*.log
+
+# Excel temp files
+~$*.xlsx
+~$*.xls
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

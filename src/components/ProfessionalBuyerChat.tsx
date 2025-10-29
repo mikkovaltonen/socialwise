@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 // Using OpenRouter API instead of Google Generative AI
 type Part = { text: string };
-import { Loader2, Send, RotateCcw, Paperclip, Bot, LogOut, Settings, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Upload, FileSpreadsheet } from "lucide-react";
+import { Loader2, Send, RotateCcw, Paperclip, Bot, LogOut, Settings, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Upload, FileSpreadsheet, Package } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ import { search_suppliers, MAIN_CATEGORY_LOV } from '../lib/supplierSearchFuncti
 import { purchaseRequisitionService, RequisitionStatus } from '../lib/purchaseRequisitionService';
 import { InteractiveJsonTable } from './InteractiveJsonTable';
 import FunctionUsageIndicator from './FunctionUsageIndicator';
+import { SubstrateFamilySelector } from './SubstrateFamilySelector';
 import {
   CategorizedError,
   ErrorType,
@@ -259,9 +260,8 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
   const [sessionActive, setSessionActive] = useState(false);
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   const [sessionInitializing, setSessionInitializing] = useState(false);
-  const [excelData, setExcelData] = useState<any>(null);
-  const [excelFileName, setExcelFileName] = useState<string>('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [substrateData, setSubstrateData] = useState<any>(null);
+  const [selectedKeyword, setSelectedKeyword] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
   const sessionIdRef = useRef<string | null>(null);
   const hasReceivedResponseRef = useRef<boolean>(false);
@@ -318,7 +318,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
     console.log('🔄 COMPONENT MOUNTED - Checking session state');
     console.log('Current messages count:', messages.length);
     console.log('Session active:', sessionActive);
-    console.log('Excel data loaded:', !!excelData);
+    console.log('Substrate data loaded:', !!substrateData);
 
     const initializeSession = async () => {
       if (!mounted) return;
@@ -329,15 +329,15 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
         return;
       }
 
-      // Don't auto-initialize if no Excel data - wait for user to upload
-      if (!excelData) {
-        console.log('⏸️ Waiting for Excel upload before initializing chat');
-        // Show upload prompt message
+      // Don't auto-initialize if no substrate data - wait for user to select
+      if (!substrateData) {
+        console.log('⏸️ Waiting for substrate family selection before initializing chat');
+        // Show selection prompt message
         if (messages.length === 0) {
           const promptMessage: Message = {
             role: 'model',
             parts: [{
-              text: `👋 Welcome to the Stock Management Assistant!\n\n**Please upload an Excel file** containing stock management data (per material card) rows of one substrate family to begin.\n\nOnce you upload the file, I'll help you make correct purchase/transfer wait decision for one substrate family.`
+              text: `👋 Welcome to the Stock Management Assistant!\n\n**Please select a substrate family** from the dropdown below to begin.\n\nOnce you select a family, I'll help you make correct purchase/transfer wait decision for that substrate family.`
             }]
           };
           setMessages([promptMessage]);
@@ -345,9 +345,9 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
         return;
       }
 
-      if (!sessionActive && user && !sessionInitializing && excelData) {
-        // Excel data is already loaded, session will be initialized by initializeChatWithExcelContext
-        console.log('📊 Excel data exists, session should be initialized via initializeChatWithExcelContext');
+      if (!sessionActive && user && !sessionInitializing && substrateData) {
+        // Substrate data is already loaded, session will be initialized by initializeChatWithSubstrateContext
+        console.log('📊 Substrate data exists, session should be initialized via initializeChatWithSubstrateContext');
         return;
       }
     };
@@ -367,7 +367,7 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
       }
       console.log('🔚 Component unmounting - cleanup performed');
     };
-  }, [sessionActive, user, excelData]); // Added excelData to deps
+  }, [sessionActive, user, substrateData]); // Added substrateData to deps
 
   // Reset session when user changes
   React.useEffect(() => {
@@ -1442,84 +1442,32 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
     navigate('/admin');
   };
 
-  // Handle Excel file upload for stock management
-  const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // Handle substrate family selection for stock management
+  const handleSubstrateFamilySelected = async (keyword: string, records: any[]) => {
+    setSelectedKeyword(keyword);
 
-    // Check if file is Excel format
-    if (!file.name.match(/\.(xlsx|xls)$/)) {
-      toast.error('Please select an Excel file (.xlsx or .xls)');
-      return;
-    }
+    // Store the substrate data
+    const substrateContent = {
+      keyword: keyword,
+      data: records,
+      recordCount: records.length,
+      loadedAt: new Date().toISOString()
+    };
 
-    setExcelFileName(file.name);
+    setSubstrateData(substrateContent);
 
-    try {
-      // Read the file
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const data = e.target?.result;
-          if (!data) throw new Error('Failed to read file');
+    console.log('📊 Substrate family loaded:', {
+      keyword: keyword,
+      records: records.length,
+      firstRecord: records[0]
+    });
 
-          // Parse Excel file
-          const workbook = XLSX.read(data, { type: 'array' });
-
-          // Get first sheet
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-
-          // Convert to JSON
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-          // Also get it as objects with headers
-          const jsonDataWithHeaders = XLSX.utils.sheet_to_json(worksheet);
-
-          // Store the Excel data
-          const excelContent = {
-            fileName: file.name,
-            sheetName: sheetName,
-            rawData: jsonData,
-            data: jsonDataWithHeaders,
-            headers: jsonData[0] || [],
-            rowCount: jsonData.length,
-            uploadedAt: new Date().toISOString()
-          };
-
-          setExcelData(excelContent);
-
-          console.log('📊 Excel file loaded:', {
-            fileName: file.name,
-            sheetName: sheetName,
-            rows: jsonDataWithHeaders.length,
-            columns: Object.keys(jsonDataWithHeaders[0] || {}).length
-          });
-
-          // Initialize chat with Excel context
-          await initializeChatWithExcelContext(excelContent);
-
-          toast.success(`Excel file "${file.name}" loaded successfully`);
-        } catch (error) {
-          console.error('Error parsing Excel:', error);
-          toast.error('Failed to parse Excel file');
-        }
-      };
-
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      console.error('Error loading Excel file:', error);
-      toast.error('Failed to load Excel file');
-    }
-
-    // Clear the file input so the same file can be re-uploaded
-    if (event.target) {
-      event.target.value = '';
-    }
+    // Initialize chat with substrate context
+    await initializeChatWithSubstrateContext(substrateContent);
   };
 
-  // Initialize chat with Excel context
-  const initializeChatWithExcelContext = async (excelContent: any) => {
+  // Initialize chat with Substrate Family context
+  const initializeChatWithSubstrateContext = async (substrateContent: any) => {
     if (!user) return;
 
     setSessionInitializing(true);
@@ -1528,27 +1476,26 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
       const userName = user.email?.split('@')[0] || 'User';
 
       // Create context with user info and JSON data
-      const excelContext = `User: ${userName}\n\n\`\`\`json
-${JSON.stringify(excelContent.data, null, 2)}
+      const substrateContext = `User: ${userName}\n\nSubstrate Family: ${substrateContent.keyword}\n\n\`\`\`json
+${JSON.stringify(substrateContent.data, null, 2)}
 \`\`\``;
 
-      // Initialize session with Excel context
+      // Initialize session with substrate context
       const session = await sessionService.initializeChatSession(user.uid);
 
-      // Append Excel context to the session
+      // Append substrate context to the session
       if (session) {
-        session.fullContext = session.fullContext + '\n\n' + excelContext;
+        session.fullContext = session.fullContext + '\n\n' + substrateContext;
         setChatSession(session);
 
-        console.log('✅ Chat initialized with Excel context');
+        console.log('✅ Chat initialized with substrate family context');
 
         // Let the LLM generate a welcome message based on the loaded data
         setMessages([]);
         setSessionActive(true);
 
         // Send an initial prompt to the LLM to generate a welcome message
-        const dataRowCount = excelContent.rowCount - 1; // Exclude header row
-        const initialPrompt = `Excel file "${excelContent.fileName}" with ${dataRowCount} rows of data has been loaded for user ${userName}. Please greet ${userName} by name and explain what you can help with regarding this stock management data for substrate family.`;
+        const initialPrompt = `Substrate family "${substrateContent.keyword}" with ${substrateContent.recordCount} material records has been loaded for user ${userName}. Please greet ${userName} by name and explain what you can help with regarding this stock management data for substrate family "${substrateContent.keyword}".`;
 
         // Trigger the LLM to generate welcome message (hidden from UI)
         setTimeout(() => {
@@ -1556,8 +1503,8 @@ ${JSON.stringify(excelContent.data, null, 2)}
         }, 100);
       }
     } catch (error) {
-      console.error('Failed to initialize chat with Excel context:', error);
-      toast.error('Failed to initialize chat with Excel data');
+      console.error('Failed to initialize chat with substrate context:', error);
+      toast.error('Failed to initialize chat with substrate family data');
     } finally {
       setSessionInitializing(false);
     }
@@ -1781,44 +1728,26 @@ ${JSON.stringify(excelContent.data, null, 2)}
               <div className={"flex flex-col items-stretch"}>
 
 
-            {/* Excel Upload Section */}
-            {!excelData && (
-              <div className="bg-blue-50 border-2 border-blue-200 border-dashed rounded-lg p-6 mb-4 text-center">
-                <FileSpreadsheet className="h-12 w-12 text-blue-600 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                  Upload Stock Management Data
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Upload an Excel file containing stock management (per material card) rows of one substrate family
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleExcelUpload}
-                  className="hidden"
-                  id="excel-upload"
+            {/* Substrate Family Selector Section */}
+            {!substrateData && (
+              <div className="mb-4">
+                <SubstrateFamilySelector
+                  onFamilySelected={handleSubstrateFamilySelected}
+                  disabled={isLoading || sessionInitializing}
                 />
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Stock management (per material card) rows of one substrate family
-                </Button>
               </div>
             )}
 
-            {/* Show uploaded file info */}
-            {excelData && (
+            {/* Show loaded substrate family info */}
+            {substrateData && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <FileSpreadsheet className="h-6 w-6 text-green-600" />
+                    <Package className="h-6 w-6 text-green-600" />
                     <div>
-                      <p className="font-medium text-gray-800">{excelFileName}</p>
+                      <p className="font-medium text-gray-800">Substrate Family: {selectedKeyword}</p>
                       <p className="text-sm text-gray-600">
-                        {excelData.rowCount - 1} data rows loaded • {excelData.headers.length} columns
+                        {substrateData.recordCount} material records loaded
                       </p>
                     </div>
                   </div>
@@ -1826,13 +1755,13 @@ ${JSON.stringify(excelContent.data, null, 2)}
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setExcelData(null);
-                      setExcelFileName('');
+                      setSubstrateData(null);
+                      setSelectedKeyword('');
                       handleResetChat();
                     }}
                     className="text-red-600 border-red-200 hover:bg-red-50"
                   >
-                    Remove & Reset
+                    Change Family & Reset
                   </Button>
                 </div>
               </div>
@@ -1985,17 +1914,17 @@ ${JSON.stringify(excelContent.data, null, 2)}
                     <Input
                       ref={inputRef}
                       type="text"
-                      placeholder={excelData ? "Ask about the stock management data..." : "Please upload an Excel file first"}
+                      placeholder={substrateData ? "Ask about the stock management data..." : "Please select a substrate family first"}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      disabled={isLoading || !excelData}
+                      disabled={isLoading || !substrateData}
                       className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                     />
                   </div>
                   <Button
                     onClick={() => handleSendMessage()}
-                    disabled={!input.trim() || isLoading || !excelData}
+                    disabled={!input.trim() || isLoading || !substrateData}
                     className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl"
                   >
                     <Send className="h-5 w-5" />
@@ -2017,44 +1946,26 @@ ${JSON.stringify(excelContent.data, null, 2)}
             {/* When no left panel, show full-width chat */}
             <div className={"flex flex-col items-stretch"}>
 
-              {/* Excel Upload Section */}
-              {!excelData && (
-                <div className="bg-blue-50 border-2 border-blue-200 border-dashed rounded-lg p-6 mb-4 text-center">
-                  <FileSpreadsheet className="h-12 w-12 text-blue-600 mx-auto mb-3" />
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                    Upload Stock Management Data
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Upload an Excel file containing stock management (per material card) rows of one substrate family
-                  </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".xlsx,.xls"
-                    onChange={handleExcelUpload}
-                    className="hidden"
-                    id="excel-upload-2"
+              {/* Substrate Family Selector Section */}
+              {!substrateData && (
+                <div className="mb-4">
+                  <SubstrateFamilySelector
+                    onFamilySelected={handleSubstrateFamilySelected}
+                    disabled={isLoading || sessionInitializing}
                   />
-                  <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Stock management (per material card) rows of one substrate family
-                  </Button>
                 </div>
               )}
 
-              {/* Show uploaded file info */}
-              {excelData && (
+              {/* Show loaded substrate family info */}
+              {substrateData && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <FileSpreadsheet className="h-6 w-6 text-green-600" />
+                      <Package className="h-6 w-6 text-green-600" />
                       <div>
-                        <p className="font-medium text-gray-800">{excelFileName}</p>
+                        <p className="font-medium text-gray-800">Substrate Family: {selectedKeyword}</p>
                         <p className="text-sm text-gray-600">
-                          {excelData.rowCount - 1} data rows loaded • {excelData.headers.length} columns
+                          {substrateData.recordCount} material records loaded
                         </p>
                       </div>
                     </div>
@@ -2062,13 +1973,13 @@ ${JSON.stringify(excelContent.data, null, 2)}
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setExcelData(null);
-                        setExcelFileName('');
+                        setSubstrateData(null);
+                        setSelectedKeyword('');
                         handleResetChat();
                       }}
                       className="text-red-600 border-red-200 hover:bg-red-50"
                     >
-                      Remove & Reset
+                      Change Family & Reset
                     </Button>
                   </div>
                 </div>
@@ -2187,9 +2098,9 @@ ${JSON.stringify(excelContent.data, null, 2)}
                 <div className="max-w-full mx-auto">
                   <div className="flex space-x-4 items-end">
                     <div className="flex-1">
-                      <Input ref={inputRef} type="text" placeholder={excelData ? "Ask about the stock management data..." : "Please upload an Excel file first"} value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !excelData} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent" />
+                      <Input ref={inputRef} type="text" placeholder={substrateData ? "Ask about the stock management data..." : "Please select a substrate family first"} value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !substrateData} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent" />
                     </div>
-                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !excelData} className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl">
+                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !substrateData} className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl">
                       <Send className="h-5 w-5" />
                     </Button>
                   </div>

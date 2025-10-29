@@ -19,7 +19,11 @@
     "clean:suppliers": "node scripts/clean-ext-labour-suppliers.js",
     "clean:training": "node scripts/clean-training-suppliers.js",
     "merge:suppliers": "node scripts/merge-suppliers-training-data.js",
-    "merge:complete": "node scripts/merge-suppliers-training-complete.js"
+    "merge:complete": "node scripts/merge-suppliers-training-complete.js",
+    "migrate:stock": "powershell -ExecutionPolicy Bypass -File ./Data_preparation/migrate-stock-data.ps1",
+    "migrate:stock:direct": "node dist/scripts/migrateStockData.js",
+    "migrate:stock:auth": "powershell -ExecutionPolicy Bypass -File ./Data_preparation/migrate-with-auth.ps1",
+    "migrate:stock:simple": "npx tsx Data_preparation/migrateWithUserAuth.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",

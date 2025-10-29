@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, Database, ArrowLeft, Bot, AlertTriangle, UserPlus } from "lucide-react";
+import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, Database } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import DocumentAnalysis from "@/components/DocumentAnalysis";
-import { FirestoreDataTester } from "@/components/FirestoreDataTester";
 import {
   Dialog,
   DialogContent,
@@ -17,12 +16,12 @@ import {
 import PromptEditor from "../components/PromptEditor";
 import SystemPromptManager from "../components/SystemPromptManager";
 import UserRegistration from "@/components/UserRegistration";
+import DataPreparationViewer from "@/components/DataPreparationViewer";
 
 const Admin = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [showFirestoreTester, setShowFirestoreTester] = useState(false);
   const [showUserRegistration, setShowUserRegistration] = useState(false);
 
   const handleLogout = () => {
@@ -160,53 +159,47 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Secondary Tools */}
-        <div className="grid md:grid-cols-2 gap-6">
-
-          {/* AI Prompt Management - Moved to featured section above */}
-
-
-          {/* Consolidated Data Search & Testing */}
+        {/* Data Preparation Section */}
+        <div className="mb-8">
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
-              <CardTitle className="flex items-center">
-                <Database className="mr-3 h-6 w-6" />
-                Supplier Database Search
+            <CardHeader className="bg-gradient-to-r from-green-700 to-green-800 text-white rounded-t-lg p-8">
+              <CardTitle className="flex items-center text-2xl">
+                <Database className="mr-4 h-8 w-8" />
+                Data Preparation Pipeline
               </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <p className="text-gray-600 mb-4">
-                Search the unified supplier database with ~400 verified suppliers across all categories.
+              <p className="text-gray-300 mt-2 text-lg">
+                View ETL pipeline documentation and execution history
               </p>
-              <Dialog open={showFirestoreTester} onOpenChange={setShowFirestoreTester}>
+            </CardHeader>
+            <CardContent className="p-8">
+              <p className="text-gray-600 mb-6 text-lg">
+                Monitor the MRP data preparation pipeline that processes material stock movements and uploads to Firestore. View specifications and latest execution summary.
+              </p>
+              <Dialog>
                 <DialogTrigger asChild>
                   <Button
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 py-4 text-lg text-white"
                   >
-                    <Database className="mr-2 h-4 w-4" />
-                    Search Procurement Data
+                    <Database className="mr-2 h-5 w-5" />
+                    View Pipeline Documentation
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[95vw] max-h-[95vh] h-[95vh] p-0 overflow-hidden">
-                  <DialogHeader className="px-6 pt-6 pb-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <DialogTitle>Supplier Database Search</DialogTitle>
-                        <DialogDescription>
-                          Search the unified supplier database with ~400 verified suppliers, plus additional procurement data sources.
-                        </DialogDescription>
-                      </div>
-                    </div>
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Data Preparation Pipeline</DialogTitle>
+                    <DialogDescription>
+                      ETL pipeline specifications and execution history
+                    </DialogDescription>
                   </DialogHeader>
-                  <div className="flex-1 overflow-y-auto px-6 pb-6">
-                    <FirestoreDataTester />
-                  </div>
+                  <DataPreparationViewer />
                 </DialogContent>
               </Dialog>
             </CardContent>
           </Card>
+        </div>
 
-          
+        {/* Secondary Tools */}
+        <div className="grid md:grid-cols-2 gap-6">
 
           {/* Issue Report */}
           <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
@@ -221,7 +214,7 @@ const Admin = () => {
                 View and manage negative feedback issues from user interactions. Track resolution status.
               </p>
               <Link to="/issues">
-                <Button 
+                <Button
                   className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
                 >
                   <AlertTriangle className="mr-2 h-4 w-4" />
