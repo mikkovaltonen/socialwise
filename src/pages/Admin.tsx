@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, Database } from "lucide-react";
+import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, Database, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import DocumentAnalysis from "@/components/DocumentAnalysis";
 import {
@@ -192,6 +192,122 @@ const Admin = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <DataPreparationViewer />
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Mass Processing Section */}
+        <div className="mb-8">
+          <Card className="border-gray-300 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader className="bg-gradient-to-r from-purple-700 to-purple-800 text-white rounded-t-lg p-8">
+              <CardTitle className="flex items-center text-2xl">
+                <Zap className="mr-4 h-8 w-8" />
+                Mass Processing
+              </CardTitle>
+              <p className="text-gray-300 mt-2 text-lg">
+                Batch processing system for analyzing all substrate families
+              </p>
+            </CardHeader>
+            <CardContent className="p-8">
+              <p className="text-gray-600 mb-6 text-lg">
+                Process 1000+ substrate families through AI and rule-based logic. Single-material families use automatic rule-based decisions, while multi-material families get AI analysis via OpenRouter API.
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 py-4 text-lg text-white"
+                  >
+                    <Zap className="mr-2 h-5 w-5" />
+                    View Processing Logic
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Mass Processing Logic</DialogTitle>
+                    <DialogDescription>
+                      How the batch processing system analyzes substrate families
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="mt-4 space-y-4">
+                    <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                      <h3 className="text-lg font-semibold mb-4 text-gray-900">Processing Flow</h3>
+                      <pre className="bg-white p-4 rounded border border-gray-300 text-sm font-mono overflow-x-auto whitespace-pre">
+{`For each substrate family:
+  ├─ Load materials from stock_management collection
+  ├─ Check material count
+  │  ├─ If 1 material → Rule-based decision
+  │  │   └─ Compare final_stock vs safety_stock
+  │  │      ├─ final_stock < safety_stock → YES
+  │  │      └─ final_stock >= safety_stock → NO
+  │  │
+  │  └─ If 2+ materials → AI analysis
+  │      ├─ Load system_prompt.md
+  │      ├─ Build JSON context
+  │      ├─ Call OpenRouter API
+  │      └─ Parse Conclusion from JSON response
+  │
+  └─ Update Firestore with results`}
+                      </pre>
+                    </div>
+
+                    <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                      <h3 className="text-lg font-semibold mb-3 text-blue-900">Key Features</h3>
+                      <ul className="space-y-2 text-gray-700">
+                        <li className="flex items-start">
+                          <span className="mr-2">✅</span>
+                          <span><strong>Intelligent Processing:</strong> Single-material families use rule-based logic, multi-material families get AI analysis</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">✅</span>
+                          <span><strong>Robust Error Handling:</strong> Automatic retry on API failures (3 attempts), resume from last saved progress</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">✅</span>
+                          <span><strong>Progress Tracking:</strong> Real-time updates, saved progress state every 10 batches, duration tracking and ETA</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">✅</span>
+                          <span><strong>Shared Business Logic:</strong> Uses same system_prompt.md and AI processing logic as Chat UI</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-amber-50 p-6 rounded-lg border border-amber-200">
+                      <h3 className="text-lg font-semibold mb-3 text-amber-900">Database Updates</h3>
+                      <p className="text-gray-700 mb-3">Each material document receives these new fields:</p>
+                      <pre className="bg-white p-4 rounded border border-gray-300 text-sm font-mono overflow-x-auto">
+{`{
+  ai_conclusion: "YES" | "NO" | "SLIT",
+  ai_output_text: string,
+  ai_processed_at: "2025-10-30T...",
+  ai_model: string,
+  processing_method: "ai" | "rule-based"
+}`}
+                      </pre>
+                    </div>
+
+                    <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                      <h3 className="text-lg font-semibold mb-3 text-green-900">Performance</h3>
+                      <p className="text-gray-700 mb-3">Estimated processing time for 1000 families:</p>
+                      <ul className="space-y-1 text-gray-700 ml-4">
+                        <li>• Rule-based (1 material): ~100ms per family → ~2 minutes total</li>
+                        <li>• AI analysis (2-5 materials): ~2-4s per family → ~45-75 minutes total</li>
+                        <li>• AI analysis (6+ materials): ~5-10s per family → ~90-180 minutes total</li>
+                      </ul>
+                      <p className="text-gray-600 mt-3 text-sm italic">Mixed workload estimate: 1.5 - 3 hours for 1000 families</p>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm text-gray-600">
+                      <p className="mb-2">
+                        <strong>Location:</strong> <code className="bg-white px-2 py-1 rounded">/mass_processing/</code>
+                      </p>
+                      <p>
+                        <strong>Documentation:</strong> See <code className="bg-white px-2 py-1 rounded">mass_processing/README.md</code> for full instructions
+                      </p>
+                    </div>
+                  </div>
                 </DialogContent>
               </Dialog>
             </CardContent>
