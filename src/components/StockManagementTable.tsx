@@ -55,7 +55,7 @@ export function StockManagementTable() {
   const [sortColumn, setSortColumn] = useState<keyof StockItem | null>('keyword');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [substrateFamilyFilter, setSubstrateFamilyFilter] = useState('');
-  const [showOnlyReplenishmentMaterials, setShowOnlyReplenishmentMaterials] = useState(false);
+  const [showOnlyReplenishmentMaterials, setShowOnlyReplenishmentMaterials] = useState(true);
   const [showOnlyReplenishmentFamilies, setShowOnlyReplenishmentFamilies] = useState(false);
 
   useEffect(() => {
@@ -343,7 +343,10 @@ export function StockManagementTable() {
                   {processedData.map((item, idx) => (
                     <TableRow key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       {columns.map((col) => {
-                        let value = item[col.key] || '-';
+                        // Get raw value (preserve 0, null, undefined, empty string)
+                        const rawValue = item[col.key];
+                        // Show dash only for null, undefined, or empty string; preserve 0
+                        let value = rawValue !== null && rawValue !== undefined && rawValue !== '' ? rawValue : '-';
 
                         // Format expected_date to remove time
                         if (col.key === 'expected_date' && value !== '-') {
