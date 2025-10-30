@@ -58,6 +58,24 @@ export function StockManagementTable() {
   const [showOnlyReplenishmentMaterials, setShowOnlyReplenishmentMaterials] = useState(true);
   const [showOnlyReplenishmentFamilies, setShowOnlyReplenishmentFamilies] = useState(false);
 
+  // Handlers for mutually exclusive filter switches
+  // Only one can be ON at a time, but both can be OFF
+  const handleMaterialFilterChange = (checked: boolean) => {
+    if (checked) {
+      // Turning this filter ON - turn the other OFF
+      setShowOnlyReplenishmentFamilies(false);
+    }
+    setShowOnlyReplenishmentMaterials(checked);
+  };
+
+  const handleFamilyFilterChange = (checked: boolean) => {
+    if (checked) {
+      // Turning this filter ON - turn the other OFF
+      setShowOnlyReplenishmentMaterials(false);
+    }
+    setShowOnlyReplenishmentFamilies(checked);
+  };
+
   useEffect(() => {
     loadStockData();
   }, []);
@@ -286,7 +304,7 @@ export function StockManagementTable() {
                   <Switch
                     id="replenishment-materials"
                     checked={showOnlyReplenishmentMaterials}
-                    onCheckedChange={setShowOnlyReplenishmentMaterials}
+                    onCheckedChange={handleMaterialFilterChange}
                   />
                   <Label htmlFor="replenishment-materials" className="text-xs text-gray-600 cursor-pointer">
                     Show Material IDs that need replenishment
@@ -298,7 +316,7 @@ export function StockManagementTable() {
                   <Switch
                     id="replenishment-families"
                     checked={showOnlyReplenishmentFamilies}
-                    onCheckedChange={setShowOnlyReplenishmentFamilies}
+                    onCheckedChange={handleFamilyFilterChange}
                   />
                   <Label htmlFor="replenishment-families" className="text-xs text-gray-600 cursor-pointer">
                     Show substrate families where one or more material needs replenishment
