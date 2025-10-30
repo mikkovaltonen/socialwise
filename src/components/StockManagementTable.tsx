@@ -34,7 +34,8 @@ interface StockItem {
   description?: string;
   lead_time?: string;
   safety_stock?: number | string;
-  total_stock?: number | string;
+  current_stock?: number | string;
+  to_be_delivered?: number | string;
   reservations?: number | string;
   final_stock?: number | string;
   expected_date?: string;
@@ -191,18 +192,19 @@ export function StockManagementTable() {
 
   const columns: Array<{ key: keyof StockItem; label: string; width?: string }> = [
     { key: 'keyword', label: 'Substrate Family', width: 'w-40' },
-    { key: 'material_id', label: 'Material ID', width: 'w-28' },
+    { key: 'material_id', label: 'Material ID', width: 'w-24' },
     { key: 'supplier_keyword', label: 'Supplier', width: 'w-32' },
-    { key: 'width', label: 'Width', width: 'w-24' },
+    { key: 'width', label: 'Width', width: 'w-20' },
     { key: 'ref_at_supplier', label: 'Ref at Supplier', width: 'w-36' },
-    { key: 'lead_time', label: 'Lead Time', width: 'w-24' },
-    { key: 'safety_stock', label: 'Safety Stock', width: 'w-28' },
-    { key: 'total_stock', label: 'Total Stock', width: 'w-28' },
-    { key: 'reservations', label: 'Reservations', width: 'w-28' },
-    { key: 'final_stock', label: 'Final Stock', width: 'w-28' },
-    { key: 'expected_date', label: 'Expected Date', width: 'w-32' },
-    { key: 'historical_slit', label: 'Historical Slit', width: 'w-32' },
-    { key: 'ai_conclusion', label: 'Conclusion', width: 'w-28' },
+    { key: 'lead_time', label: 'Lead Time', width: 'w-20' },
+    { key: 'safety_stock', label: 'Safety Stock', width: 'w-20' },
+    { key: 'current_stock', label: 'Current Stock', width: 'w-20' },
+    { key: 'to_be_delivered', label: 'To Be Delivered', width: 'w-20' },
+    { key: 'reservations', label: 'Reservations', width: 'w-20' },
+    { key: 'final_stock', label: 'Final Stock', width: 'w-20' },
+    { key: 'expected_date', label: 'Expected Date', width: 'w-28' },
+    { key: 'historical_slit', label: 'Historical Slit', width: 'w-28' },
+    { key: 'ai_conclusion', label: 'Is action needed?', width: 'w-28' },
   ];
 
   if (loading) {
@@ -321,10 +323,10 @@ export function StockManagementTable() {
                         className={`cursor-pointer hover:bg-gray-100 ${col.width || ''}`}
                         onClick={() => handleSort(col.key)}
                       >
-                        <div className="flex items-center gap-1 whitespace-nowrap">
-                          <span className="font-semibold text-xs">{col.label}</span>
+                        <div className="flex items-start gap-1">
+                          <span className="font-semibold text-xs break-words leading-tight">{col.label}</span>
                           {sortColumn === col.key && (
-                            <span className="ml-auto">
+                            <span className="flex-shrink-0 mt-0.5">
                               {sortDirection === 'asc' ? (
                                 <ChevronUp className="h-4 w-4" />
                               ) : (
