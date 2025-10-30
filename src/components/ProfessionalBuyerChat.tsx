@@ -1699,7 +1699,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
           <img src="/Gravic_icon.png" alt="Gravic" className="h-10 w-10 mr-3" />
           <h1 className="text-3xl font-bold">Professional Demand Manager</h1>
         </div>
-        <p className="text-gray-100 text-lg max-w-7xl mx-auto">
+        <p className="text-gray-100 text-lg mx-auto">
           AI-powered procurement automation with agentic process optimization - cut costs, increase efficiency, and make data-driven decisions
         </p>
       </div>
@@ -1707,7 +1707,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
 
       {/* Main Content under header with optional left panel */}
       {/* Controls row under header */}
-      <div className="max-w-7xl mx-auto px-4 mt-4 flex justify-between w-full">
+      <div className="mx-auto px-4 mt-4 flex justify-between w-full">
         {topRightControls}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
@@ -1718,19 +1718,10 @@ ${JSON.stringify(substrateContent.data, null, 2)}
               onCheckedChange={onChatVisibleChange}
             />
           </div>
-          <Button
-            variant="outline"
-            onClick={() => window.location.reload()}
-            className="text-red-600 border-red-200 hover:bg-red-50"
-            size="sm"
-          >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Reset Chat
-          </Button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-2 pb-6 w-full">
+      <div className="mx-auto px-2 pb-6 w-full">
         {leftPanelVisible && chatVisible ? (
           // Both panels visible - use resizable layout
           <ResizablePanelGroup direction="horizontal" className="h-full min-h-[60vh]">
@@ -1949,6 +1940,14 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                   >
                     <Send className="h-5 w-5" />
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.location.reload()}
+                    className="h-12 px-6 text-red-600 border-red-200 hover:bg-red-50 rounded-xl"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset Chat
+                  </Button>
                 </div>
               </div>
             </div>
@@ -2127,6 +2126,14 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                     </div>
                     <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !substrateData} className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl">
                       <Send className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => window.location.reload()}
+                      className="h-12 px-6 text-red-600 border-red-200 hover:bg-red-50 rounded-xl"
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Reset Chat
                     </Button>
                   </div>
                 </div>

@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 const Workbench = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const [stockManagementVisible, setStockManagementVisible] = React.useState(false);
-  const [chatVisible, setChatVisible] = React.useState(true);
+  const [stockManagementVisible, setStockManagementVisible] = React.useState(true);
+  const [chatVisible, setChatVisible] = React.useState(false);
 
   // Smart toggle handlers - if closing the only visible panel, show the other one
   const handleChatToggle = (newChatVisible: boolean) => {
@@ -44,7 +44,7 @@ const Workbench = () => {
         chatVisible={chatVisible}
         onChatVisibleChange={handleChatToggle}
         leftPanel={
-          <div className="h-full overflow-y-auto p-4">
+          <div className="h-full overflow-y-auto px-2 py-2">
             <StockManagementTable />
           </div>
         }
