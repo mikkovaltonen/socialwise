@@ -133,7 +133,7 @@ Stock management data organized by substrate families (keyword field). Each docu
   description: string,          // Full material description
   lead_time: string,            // Lead time in days (e.g., "20" or "n/a")
   safety_stock: number,         // Safety stock level
-  total_stock: number,          // Total current stock
+  current_stock: number,        // Current stock level
   reservations: number,         // Reserved stock quantity
   final_stock: number,          // Available stock after reservations
   expected_date: string,        // Expected delivery date (e.g., "5.12.2025")
@@ -269,7 +269,7 @@ Features:
 - **Interactive Table View**: Added StockManagementTable component with 14 columns:
   - Material ID, Description, Supplier, Substrate Family
   - Width, Length, Ref at Supplier, Lead Time
-  - Safety Stock, Total Stock, Reservations, Final Stock
+  - Safety Stock, Current Stock, To Be Delivered, Reservations, Final Stock
   - Expected Date, Historical Slit
 - **Removed CSV Export**: Simplified table view (removed export functionality)
 - **Workbench Integration**: Stock management table visible via "Show stock management" toggle in workbench

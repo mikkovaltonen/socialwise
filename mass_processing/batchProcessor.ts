@@ -103,7 +103,7 @@ async function main() {
 
       if (data.materials && Array.isArray(data.materials)) {
         // New structure: document ID is keyword, materials is array
-        const keyword = doc.id;
+        const keyword = doc.id.trim(); // Trim whitespace
         if (!keywordMap.has(keyword)) {
           keywordMap.set(keyword, []);
         }
@@ -117,7 +117,7 @@ async function main() {
         });
       } else if (data.keyword) {
         // Old structure: each document is a material
-        const keyword = data.keyword;
+        const keyword = String(data.keyword).trim(); // Trim whitespace
         if (!keywordMap.has(keyword)) {
           keywordMap.set(keyword, []);
         }
@@ -133,9 +133,10 @@ async function main() {
 
     // Apply substrate family filter if provided
     if (SUBSTRATE_FILTER) {
-      const matchingKeywords = allKeywords.filter(k => k === SUBSTRATE_FILTER);
+      const filterTrimmed = SUBSTRATE_FILTER.trim();
+      const matchingKeywords = allKeywords.filter(k => k === filterTrimmed);
       if (matchingKeywords.length === 0) {
-        console.error(`❌ Error: Substrate family "${SUBSTRATE_FILTER}" not found in database`);
+        console.error(`❌ Error: Substrate family "${filterTrimmed}" not found in database`);
         console.log(`\n💡 Available substrate families (first 20):`);
         allKeywords.slice(0, 20).forEach(k => console.log(`   - ${k}`));
         if (allKeywords.length > 20) {
@@ -144,7 +145,7 @@ async function main() {
         process.exit(1);
       }
       allKeywords = matchingKeywords;
-      console.log(`🎯 Filtered to substrate family: ${SUBSTRATE_FILTER}\n`);
+      console.log(`🎯 Filtered to substrate family: ${filterTrimmed}\n`);
     }
 
     progress.totalKeywords = allKeywords.length;

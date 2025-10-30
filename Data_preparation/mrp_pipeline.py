@@ -15,6 +15,7 @@ import os
 import json
 from collections import defaultdict
 import requests
+import argparse
 
 # Load environment variables from .env file
 try:
@@ -50,11 +51,12 @@ OUTPUT_JSON = "output/mrp_summary.json"
 class MRPPipeline:
     """Pipeline to process material stock movements grouped by substrate family"""
 
-    def __init__(self):
+    def __init__(self, filter_material_id=None):
         self.movements_df = None
         self.material_master_df = None
         self.mrp_data = None  # Will be dict grouped by keyword
         self.db = None
+        self.filter_material_id = filter_material_id  # Optional material ID filter for testing
         self._initialize_firebase()
 
     def _initialize_firebase(self):
@@ -121,6 +123,9 @@ class MRPPipeline:
             self.movements_df = pd.read_excel(MOVEMENT_FILE)
             logger.info(f"✓ Loaded {len(self.movements_df)} movement rows")
 
+            # Fix decimal comma format (European format: 1,32 -> 1.32)
+            self._fix_decimal_columns(self.movements_df, ['In', 'Out', 'StockBefore', 'StockAfter'])
+
             # Extract material master data
             logger.info(f"Reading material master data from {MATERIAL_MASTER_FILE}")
             self.material_master_df = pd.read_excel(MATERIAL_MASTER_FILE)
@@ -131,11 +136,29 @@ class MRPPipeline:
             logger.error(f"Failed to extract data: {e}")
             raise
 
+    def _fix_decimal_columns(self, df, columns):
+        """Convert European decimal format (comma) to standard format (period)"""
+        for col in columns:
+            if col in df.columns:
+                # Convert to string first, replace comma with period, then to float
+                df[col] = df[col].apply(lambda x:
+                    float(str(x).replace(',', '.')) if pd.notna(x) and str(x).strip() != '' else 0.0
+                )
+                logger.debug(f"  Converted {col} to numeric (handling comma decimals)")
+
     def transform(self):
         """Transform: Aggregate movements and group by keyword"""
         logger.info("=" * 80)
         logger.info("TRANSFORM PHASE - Grouping by substrate family (keyword)")
         logger.info("=" * 80)
+
+        # Apply material ID filter if provided
+        if self.filter_material_id:
+            logger.info(f"🔍 FILTERING: Processing only Material ID = {self.filter_material_id}")
+            material_ids = [self.filter_material_id]
+        else:
+            material_ids = self.movements_df['MaterialID'].unique()
+            logger.info(f"Processing all {len(material_ids)} materials")
 
         today = pd.Timestamp.now().normalize()
 
@@ -144,14 +167,23 @@ class MRPPipeline:
             'keyword': '',
             'materials': [],
             'material_count': 0,
-            'total_stock': 0,
+            'current_stock': 0,
+            'total_to_be_delivered': 0,
             'total_reservations': 0,
             'total_final_stock': 0
         })
 
         # Process each material
-        for material_id in self.movements_df['MaterialID'].unique():
+        for material_id in material_ids:
             material_df = self.movements_df[self.movements_df['MaterialID'] == material_id].copy()
+
+            # Check if material exists
+            if len(material_df) == 0:
+                if self.filter_material_id:
+                    logger.error(f"❌ Material ID {material_id} not found in MaterialStockMovement.xlsx")
+                    logger.info(f"Available material IDs: {sorted(self.movements_df['MaterialID'].unique())[:10]}... (showing first 10)")
+                continue
+
             material_df = material_df.sort_values(['Date', 'Hour'])
 
             # Separate historical vs future
@@ -159,13 +191,35 @@ class MRPPipeline:
             historical = material_df[~material_df['is_future']]
             future = material_df[material_df['is_future']]
 
-            # Calculate stock levels
-            available_stock = historical.iloc[-1]['StockAfter'] if len(historical) > 0 else material_df.iloc[0]['StockBefore']
+            # Debug output for test mode
+            if self.filter_material_id and material_id == self.filter_material_id:
+                logger.info(f"\n📋 Movement Data for Material {material_id}:")
+                logger.info(f"  Total movements: {len(material_df)}")
+                logger.info(f"  Historical: {len(historical)}, Future: {len(future)}")
+                logger.info(f"\n  Recent movements:")
+                for idx, row in material_df.head(5).iterrows():
+                    logger.info(f"    {row['Date']} | {row['KindOfMovement']:30s} | In: {row['In']:8.2f} | Out: {row['Out']:8.2f} | Stock: {row['StockAfter']:8.2f}")
 
-            reservations_df = future[future['KindOfMovement'].str.contains('Reservation', case=False, na=False)]
-            reservations = int(reservations_df['Out'].sum())
+            # Calculate stock levels (use float for decimals)
+            # If historical movements exist, use StockAfter of last historical movement
+            # If only future movements, use StockBefore of first future movement
+            if len(historical) > 0:
+                available_stock = float(historical.iloc[-1]['StockAfter'])
+            elif len(future) > 0:
+                available_stock = float(future.iloc[0]['StockBefore'])
+            else:
+                available_stock = 0.0  # No movements at all
 
-            final_stock = available_stock - reservations
+            # Calculate ALL future deliveries (Purchase Orders, Deliveries, Goods returned, etc.)
+            to_be_delivered = float(future['In'].sum())
+
+            # Calculate ALL future outgoing movements (Reservations, Consumption, Waste, etc.)
+            reservations = float(future['Out'].sum())
+
+            # Final stock = Current stock + All Future In - All Future Out
+            final_stock = available_stock + to_be_delivered - reservations
+
+            # Find first shortage date (simulates timeline chronologically)
             expected_date = self._find_first_shortage_date(future, available_stock)
             historical_slit = self._assess_historical_slit(historical)
 
@@ -173,7 +227,7 @@ class MRPPipeline:
             master_data = self._get_material_master_data(material_id)
             keyword = master_data.get('keyword', 'UNKNOWN')
 
-            # Create material record
+            # Create material record (use float to preserve decimals)
             material_record = {
                 'material_id': str(material_id),
                 'supplier_keyword': master_data.get('supplier_keyword', ''),
@@ -183,20 +237,22 @@ class MRPPipeline:
                 'description': master_data.get('description', ''),
                 'lead_time': master_data.get('lead_time', ''),
                 'safety_stock': master_data.get('safety_stock', 0),
-                'total_stock': int(available_stock),
-                'reservations': reservations,
-                'final_stock': int(final_stock),
-                'expected_date': expected_date.isoformat() if expected_date else None,
+                'current_stock': round(available_stock, 2),
+                'to_be_delivered': round(to_be_delivered, 2),
+                'reservations': round(reservations, 2),
+                'final_stock': round(final_stock, 2),
+                'expected_date': expected_date.strftime('%Y-%m-%d') if expected_date else None,
                 'historical_slit': historical_slit
             }
 
-            # Add to grouped data
+            # Add to grouped data (use float to preserve decimals)
             grouped_data[keyword]['keyword'] = keyword
             grouped_data[keyword]['materials'].append(material_record)
             grouped_data[keyword]['material_count'] += 1
-            grouped_data[keyword]['total_stock'] += int(available_stock)
-            grouped_data[keyword]['total_reservations'] += reservations
-            grouped_data[keyword]['total_final_stock'] += int(final_stock)
+            grouped_data[keyword]['current_stock'] += round(available_stock, 2)
+            grouped_data[keyword]['total_to_be_delivered'] += round(to_be_delivered, 2)
+            grouped_data[keyword]['total_reservations'] += round(reservations, 2)
+            grouped_data[keyword]['total_final_stock'] += round(final_stock, 2)
 
         self.mrp_data = dict(grouped_data)
 
@@ -221,8 +277,8 @@ class MRPPipeline:
         length = f"{length_value} mm" if pd.notna(length_value) and length_value != '' else ''
 
         return {
-            'supplier_keyword': str(row['SupplierKeyword']) if pd.notna(row['SupplierKeyword']) else '',
-            'keyword': str(row['MaterialKeyword']) if pd.notna(row['MaterialKeyword']) else 'UNKNOWN',
+            'supplier_keyword': str(row['SupplierKeyword']).strip() if pd.notna(row['SupplierKeyword']) else '',
+            'keyword': str(row['MaterialKeyword']).strip() if pd.notna(row['MaterialKeyword']) else 'UNKNOWN',
             'width': width,
             'length': length,
             'ref_at_supplier': str(row['RefSupplier']) if pd.notna(row['RefSupplier']) else '',
@@ -295,6 +351,11 @@ class MRPPipeline:
         logger.info("=" * 80)
         logger.info("UPLOADING TO FIRESTORE")
         logger.info("=" * 80)
+
+        # Skip Firestore upload in test mode
+        if self.filter_material_id:
+            logger.info("🧪 TEST MODE: Skipping Firestore upload (local JSON only)")
+            return self
 
         if self.db is None:
             logger.error("Firestore not initialized. Skipping upload.")
@@ -390,12 +451,12 @@ class MRPPipeline:
         logger.info("=" * 80)
 
         total_materials = sum(g['material_count'] for g in self.mrp_data.values())
-        total_stock = sum(g['total_stock'] for g in self.mrp_data.values())
+        current_stock = sum(g['current_stock'] for g in self.mrp_data.values())
         total_reservations = sum(g['total_reservations'] for g in self.mrp_data.values())
 
         logger.info(f"✓ {len(self.mrp_data)} substrate families")
         logger.info(f"✓ {total_materials} total materials")
-        logger.info(f"✓ {total_stock:,} total stock")
+        logger.info(f"✓ {current_stock:,} current stock")
         logger.info(f"✓ {total_reservations:,} total reservations")
 
         # Check for unknown keywords
@@ -457,7 +518,7 @@ class MRPPipeline:
 
             # Top families by stock
             top_families = sorted(
-                [(k, v['total_stock']) for k, v in self.mrp_data.items()],
+                [(k, v['current_stock']) for k, v in self.mrp_data.items()],
                 key=lambda x: x[1],
                 reverse=True
             )[:10]
@@ -500,7 +561,7 @@ class MRPPipeline:
 ### Output Data
 - **Substrate Families**: {len(self.mrp_data):,}
 - **Total Materials Processed**: {sum(g['material_count'] for g in self.mrp_data.values()):,}
-- **Total Stock**: {sum(g['total_stock'] for g in self.mrp_data.values()):,} units
+- **Current Stock**: {sum(g['current_stock'] for g in self.mrp_data.values()):,} units
 - **Total Reservations**: {sum(g['total_reservations'] for g in self.mrp_data.values()):,} units
 - **Final Available Stock**: {sum(g['total_final_stock'] for g in self.mrp_data.values()):,} units
 
@@ -517,7 +578,7 @@ class MRPPipeline:
 
 ## Top 10 Substrate Families by Stock
 
-| Keyword | Total Stock |
+| Keyword | Current Stock |
 |---------|-------------|
 """
                 for keyword, stock in top_families:
@@ -553,7 +614,7 @@ class MRPPipeline:
       "description": "Material description",
       "lead_time": "Lead time in days",
       "safety_stock": "Minimum stock level",
-      "total_stock": "Current stock",
+      "current_stock": "Current stock",
       "reservations": "Future reservations",
       "final_stock": "Available after reservations",
       "expected_date": "First shortage date (if any)",
@@ -590,23 +651,96 @@ class MRPPipeline:
 
 def main():
     """Main entry point"""
-    pipeline = MRPPipeline()
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(
+        description='MRP ETL Pipeline - Process material stock movements grouped by substrate family',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Process all materials (default)
+  python3 mrp_pipeline.py
+
+  # Process only a specific material ID for testing
+  python3 mrp_pipeline.py --material-id 100026
+
+  # Debug a specific material
+  python3 mrp_pipeline.py -m 100059
+        """
+    )
+
+    parser.add_argument(
+        '--material-id', '-m',
+        type=str,
+        help='Optional: Filter to process only a specific material ID (for testing/debugging)',
+        default=None
+    )
+
+    args = parser.parse_args()
+
+    # Convert material_id to int if provided
+    filter_material_id = None
+    if args.material_id:
+        try:
+            filter_material_id = int(args.material_id)
+            logger.info(f"🎯 Running in TEST MODE: Processing only Material ID = {filter_material_id}")
+        except ValueError:
+            logger.error(f"Invalid material ID: {args.material_id}. Must be an integer.")
+            return None
+
+    # Run pipeline with optional filter
+    pipeline = MRPPipeline(filter_material_id=filter_material_id)
     result = pipeline.run()
 
     # Print summary
     print("\n" + "="*80)
-    print("SUMMARY BY SUBSTRATE FAMILY")
-    print("="*80)
-    print(f"{'Keyword':<30} {'Materials':>10} {'Stock':>15} {'Reservations':>15} {'Final':>15}")
-    print("-"*80)
+    if filter_material_id:
+        print(f"TEST MODE SUMMARY - Material ID: {filter_material_id}")
+        print("="*80)
 
-    for keyword in sorted(result.keys())[:20]:  # Show first 20
-        data = result[keyword]
-        print(f"{keyword:<30} {data['material_count']:>10} {data['total_stock']:>15,} "
-              f"{data['total_reservations']:>15,} {data['total_final_stock']:>15,}")
+        # Find and print detailed information for the filtered material
+        for keyword, data in result.items():
+            for material in data['materials']:
+                if int(material['material_id']) == filter_material_id:
+                    print(f"\n📦 Material Details:")
+                    print(f"  Material ID:        {material['material_id']}")
+                    print(f"  Substrate Family:   {keyword}")
+                    print(f"  Supplier:           {material['supplier_keyword']}")
+                    print(f"  Description:        {material['description']}")
+                    print(f"  Width:              {material['width']}")
+                    print(f"  Length:             {material['length']}")
+                    print(f"  Ref at Supplier:    {material['ref_at_supplier']}")
+                    print(f"  Lead Time:          {material['lead_time']} days")
+                    print(f"\n📊 Stock Information:")
+                    print(f"  Safety Stock:       {material['safety_stock']:.2f}")
+                    print(f"  Current Stock:      {material['current_stock']:.2f}")
+                    print(f"  To Be Delivered:    {material['to_be_delivered']:.2f}")
+                    print(f"  Reservations:       {material['reservations']:.2f}")
+                    print(f"  Final Stock:        {material['final_stock']:.2f}  (= {material['current_stock']:.2f} + {material['to_be_delivered']:.2f} - {material['reservations']:.2f})")
+                    print(f"  Expected Date:      {material['expected_date'] or 'No shortage'}")
+                    print(f"  Historical Slit:    {material['historical_slit']}")
 
-    if len(result) > 20:
-        print(f"... and {len(result) - 20} more substrate families")
+                    # Stock status indicator
+                    if material['final_stock'] < 0:
+                        print(f"\n⚠️  WARNING: Stock shortage detected! ({material['final_stock']})")
+                    elif material['final_stock'] < material['safety_stock']:
+                        print(f"\n⚠️  WARNING: Below safety stock level!")
+                    else:
+                        print(f"\n✅ Stock level is healthy")
+
+                    break
+    else:
+        print("SUMMARY BY SUBSTRATE FAMILY")
+        print("="*80)
+        print(f"{'Keyword':<30} {'Materials':>10} {'Stock':>15} {'Reservations':>15} {'Final':>15}")
+        print("-"*80)
+
+        for keyword in sorted(result.keys())[:20]:  # Show first 20
+            data = result[keyword]
+            print(f"{keyword:<30} {data['material_count']:>10} {data['current_stock']:>15.2f} "
+                  f"{data['total_reservations']:>15.2f} {data['total_final_stock']:>15.2f}")
+
+        if len(result) > 20:
+            print(f"... and {len(result) - 20} more substrate families")
 
     print("="*80 + "\n")
 

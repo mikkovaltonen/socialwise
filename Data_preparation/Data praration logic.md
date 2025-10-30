@@ -4,9 +4,9 @@ The target is to aggregate data from **MaterialStockMovements.xlsx** and enrich 
 
 Read material stock movements and aggregate the data into the following target structure:
 
-| Material ID | Supplier Keyword | Keyword | Width | Length | Ref. at Supplier | Description | Lead Time | Min Stock | Available (In Stock) | Reservations | Final Stock | Expected Date | Historical Slit |
+| Material ID | Supplier Keyword | Keyword | Width | Length | Ref. at Supplier | Description | Lead Time | Min Stock | Current Stock | To Be Delivered | Reservations | Final Stock | Expected Date | Historical Slit |
 |---|---:|---:|---:|---|---|
-| 100026 | 198 | 157 | 41 | # | No corrections |
+| 100026 | 198 | 0 | 157 | 41 | # | No corrections |
 
 **Column definitions**
 
@@ -19,10 +19,11 @@ Read material stock movements and aggregate the data into the following target s
 - **Description**: Field `MaterialDescription`, read from `MaterialModule.xlsx` and joined with `Material ID`.
 - **Lead Time**: Read from `MaterialModule.xlsx` and joined with `Material ID`.
 - **Min Stock**: Read from `MaterialModule.xlsx` and joined with `Material ID`.
-- **Available (In Stock)**: The value of `StockAfter` after the last historical movement and before the first future reservation, from `MaterialStockMovement.xlsx`.
-- **Reservations**: The total sum where `KindOfMovement = "Reservation"` in `MaterialStockMovement.xlsx`.
-- **Final Stock**: Calculated as **Available (In Stock) − Reservations**. This should match the `StockAfter` value of the last movement in `MaterialStockMovement.xlsx`.
-- **Expected Date**: In case of a future shortage, this is the date when the first shortage occurs. Determined by identifying the first `Reservation` that causes a negative `StockAfter` value.
+- **Current Stock**: The current stock level calculated from `MaterialStockMovement.xlsx`. If historical movements exist, uses `StockAfter` from the last historical movement. If only future movements exist, uses `StockBefore` from the first future movement.
+- **To Be Delivered**: The total sum of **ALL** future incoming movements (`In` column sum for future dates). Includes: Purchase Orders (on time/late), Deliveries, Goods returned, Corrections (with In), and any other movements that increase stock.
+- **Reservations**: The total sum of **ALL** future outgoing movements (`Out` column sum for future dates). Includes: Reservations (on time/late), Consumption, Material waste, Corrections (with Out), and any other movements that decrease stock.
+- **Final Stock**: Calculated as **Current Stock + To Be Delivered − Reservations**. This represents the expected stock after all future incoming and outgoing movements.
+- **Expected Date**: The first date (YYYY-MM-DD format, without time) when stock goes negative in the future timeline. Determined by chronologically simulating all future movements and detecting when `StockAfter < 0`. Returns `null` if no shortage is expected.
 - **Historical Slit**: Assessment of past `KindOfMovement` values in `MaterialStockMovement.xlsx`.  
   - If a movement with `Correction` led to a positive **In**, then **Historical Slit** = “Slit output”.  
   - If a movement with `Correction` led to a positive **Out**, then **Historical Slit** = “Consumed by slit”.
@@ -58,14 +59,40 @@ pip install -r requirements.txt
 
 ### Running the Pipeline
 
+**Process all materials (production mode):**
 ```bash
 python3 mrp_pipeline.py
 ```
 
+**Test with a specific material ID (debug mode):**
+```bash
+# Test with material ID 100026
+python3 mrp_pipeline.py --material-id 100026
+
+# Or use short form
+python3 mrp_pipeline.py -m 106910
+```
+
+**Test mode features:**
+- Processes only the specified material ID
+- Shows detailed material information and movement history
+- Shows decimal values with 2-digit precision
+- Skips Firestore upload (local JSON only)
+- Faster execution for debugging
+- Shows stock status warnings
+
+### Decimal Handling
+
+The pipeline automatically handles European decimal format (comma as separator):
+- Input: `1,32` → Converted to: `1.32`
+- Works for: `In`, `Out`, `StockBefore`, `StockAfter` columns
+- All stock values stored with 2 decimal precision
+- Test script available: `test_decimal_parsing.py`
+
 This will:
 1. Extract data from `MaterialStockMovement.xlsx` and `MaterialModule.xlsx`
 2. Aggregate and join the data
-3. Full reload to Firestore collection `stock_management`
+3. Full reload to Firestore collection `stock_management` (skipped in test mode)
 4. Save backup to `output/mrp_summary.json`
 
 ### Output Structure (JSON)
@@ -79,7 +106,8 @@ The data is structured with **keyword as header level** and **materials as item 
   "_MAD_GF_0033": {
     "keyword": "_MAD_GF_0033",
     "material_count": 1,
-    "total_stock": 198,
+    "current_stock": 198,
+    "total_to_be_delivered": 0,
     "total_reservations": 157,
     "total_final_stock": 41,
     "materials": [
@@ -92,7 +120,8 @@ The data is structured with **keyword as header level** and **materials as item 
         "description": "PVC + ADH 001 135 700 x 1000",
         "lead_time": "10",
         "safety_stock": 0,
-        "total_stock": 198,
+        "current_stock": 198,
+        "to_be_delivered": 0,
         "reservations": 157,
         "final_stock": 41,
         "expected_date": null,
@@ -105,9 +134,10 @@ The data is structured with **keyword as header level** and **materials as item 
   "_MAD_GR_0083": {
     "keyword": "_MAD_GR_0083",
     "material_count": 7,
-    "total_stock": 9859,
+    "current_stock": 9859,
+    "total_to_be_delivered": 500,
     "total_reservations": 6563,
-    "total_final_stock": 3296,
+    "total_final_stock": 3796,
     "materials": [
       { "material_id": "100059", ... },
       { "material_id": "100701", ... }
@@ -124,8 +154,9 @@ The data is structured with **keyword as header level** and **materials as item 
   - `keyword`: Substrate family identifier
   - `materials`: Array of material objects
   - `material_count`: Total materials in this family
-  - `total_stock`: Sum of all material stocks
-  - `total_reservations`: Sum of all reservations
-  - `total_final_stock`: Sum of all final stocks
+  - `current_stock`: Sum of all material stocks (current, available)
+  - `total_to_be_delivered`: Sum of all future deliveries/purchase orders
+  - `total_reservations`: Sum of all future reservations
+  - `total_final_stock`: Sum of all final stocks (stock + deliveries - reservations)
   - `updated_at`: Pipeline execution timestamp
   - `pipeline_version`: Version identifier
