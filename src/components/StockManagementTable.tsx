@@ -57,6 +57,7 @@ export function StockManagementTable() {
   const [substrateFamilyFilter, setSubstrateFamilyFilter] = useState('');
   const [showOnlyReplenishmentMaterials, setShowOnlyReplenishmentMaterials] = useState(true);
   const [showOnlyReplenishmentFamilies, setShowOnlyReplenishmentFamilies] = useState(false);
+  const [showAIFailedFamilies, setShowAIFailedFamilies] = useState(false);
 
   useEffect(() => {
     loadStockData();
@@ -154,6 +155,14 @@ export function StockManagementTable() {
       });
     }
 
+    // Apply AI failed filter (show families where AI failed to calculate)
+    if (showAIFailedFamilies) {
+      filtered = filtered.filter(item => {
+        // Show items where ai_conclusion is empty, null, undefined, or dash
+        return !item.ai_conclusion || item.ai_conclusion === '-' || item.ai_conclusion === '';
+      });
+    }
+
     // Apply sorting
     if (sortColumn) {
       filtered.sort((a, b) => {
@@ -179,7 +188,7 @@ export function StockManagementTable() {
     }
 
     return filtered;
-  }, [allData, substrateFamilyFilter, showOnlyReplenishmentMaterials, showOnlyReplenishmentFamilies, sortColumn, sortDirection]);
+  }, [allData, substrateFamilyFilter, showOnlyReplenishmentMaterials, showOnlyReplenishmentFamilies, showAIFailedFamilies, sortColumn, sortDirection]);
 
   const handleSort = (column: keyof StockItem) => {
     if (sortColumn === column) {
@@ -302,6 +311,18 @@ export function StockManagementTable() {
                   />
                   <Label htmlFor="replenishment-families" className="text-xs text-gray-600 cursor-pointer">
                     Show substrate families where one or more material needs replenishment
+                  </Label>
+                </div>
+
+                {/* Toggle Filter 3: Show families where AI failed */}
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                  <Switch
+                    id="ai-failed-families"
+                    checked={showAIFailedFamilies}
+                    onCheckedChange={setShowAIFailedFamilies}
+                  />
+                  <Label htmlFor="ai-failed-families" className="text-xs text-gray-600 cursor-pointer">
+                    AI failed to calculate requirement
                   </Label>
                 </div>
               </div>
