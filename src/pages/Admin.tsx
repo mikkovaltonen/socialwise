@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
 import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, Database, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import DocumentAnalysis from "@/components/DocumentAnalysis";
 import {
   Dialog,
   DialogContent,

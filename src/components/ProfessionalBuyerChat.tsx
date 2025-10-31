@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useImperativeHandle, forwardRef } from 'react';
 // Using OpenRouter API instead of Google Generative AI
 type Part = { text: string };
 import { Loader2, Send, RotateCcw, Paperclip, Bot, LogOut, Settings, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Upload, FileSpreadsheet, Package } from "lucide-react";
@@ -44,6 +44,10 @@ interface ProfessionalBuyerChatProps {
   chatVisible?: boolean;
   onChatVisibleChange?: (visible: boolean) => void;
   topRightControls?: React.ReactNode;
+}
+
+export interface ProfessionalBuyerChatRef {
+  loadSubstrateFamily: (keyword: string, records: any[]) => Promise<void>;
 }
 
 const openRouterApiKey = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
@@ -257,7 +261,7 @@ const processTextWithCitations = (text: string, citationSources?: CitationSource
   return { originalText, formattedSources };
 };
 
-const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout, leftPanel, leftPanelVisible = false, chatVisible = true, onChatVisibleChange, topRightControls }) => {
+const ProfessionalBuyerChat = forwardRef<ProfessionalBuyerChatRef, ProfessionalBuyerChatProps>(({ onLogout, leftPanel, leftPanelVisible = false, chatVisible = true, onChatVisibleChange, topRightControls }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -291,6 +295,13 @@ const ProfessionalBuyerChat: React.FC<ProfessionalBuyerChatProps> = ({ onLogout,
     knowledgeCount: 0,
     erpCount: 0
   });
+
+  // Expose methods via ref for external components
+  useImperativeHandle(ref, () => ({
+    loadSubstrateFamily: async (keyword: string, records: any[]) => {
+      await handleSubstrateFamilySelected(keyword, records);
+    }
+  }));
 
   React.useEffect(() => {
     const checkStatus = async () => {
@@ -2203,6 +2214,6 @@ ${JSON.stringify(substrateContent.data, null, 2)}
       </Dialog>
     </div>
   );
-};
+});
 
 export default ProfessionalBuyerChat;
