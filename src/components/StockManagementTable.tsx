@@ -45,10 +45,17 @@ interface StockItem {
   ai_processed_at?: string;
   ai_model?: string;
   processing_method?: string;
+  source?: string;
+  forecast?: number | string;
+  lot_size?: number | string;
   [key: string]: any;
 }
 
-export function StockManagementTable() {
+interface StockManagementTableProps {
+  onSubstrateFamilyClick?: (keyword: string) => void;
+}
+
+export function StockManagementTable({ onSubstrateFamilyClick }: StockManagementTableProps = {}) {
   const [allData, setAllData] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -210,10 +217,13 @@ export function StockManagementTable() {
     { key: 'current_stock', label: 'Current Stock', width: 'w-20' },
     { key: 'to_be_delivered', label: 'To Be Delivered', width: 'w-20' },
     { key: 'reservations', label: 'Reservations', width: 'w-20' },
+    { key: 'forecast', label: 'Forecast', width: 'w-20' },
     { key: 'final_stock', label: 'Final Stock', width: 'w-20' },
     { key: 'expected_date', label: 'Expected Date', width: 'w-28' },
     { key: 'historical_slit', label: 'Historical Slit', width: 'w-28' },
     { key: 'ai_conclusion', label: 'Is action needed?', width: 'w-28' },
+    { key: 'source', label: 'Source', width: 'w-24' },
+    { key: 'lot_size', label: 'Lot Size', width: 'w-24' },
   ];
 
   if (loading) {
@@ -383,6 +393,20 @@ export function StockManagementTable() {
                           }
                         }
 
+                        // Special handling for keyword (substrate family) - make it clickable
+                        if (col.key === 'keyword' && onSubstrateFamilyClick && value !== '-') {
+                          return (
+                            <TableCell key={col.key} className="text-xs py-2">
+                              <button
+                                onClick={() => onSubstrateFamilyClick(String(value))}
+                                className="text-blue-600 hover:text-blue-800 underline decoration-dotted cursor-pointer font-medium"
+                              >
+                                {value}
+                              </button>
+                            </TableCell>
+                          );
+                        }
+
                         // Special handling for material_id with tooltip
                         if (col.key === 'material_id' && item.description) {
                           return (
@@ -421,11 +445,12 @@ export function StockManagementTable() {
 
                         // Special handling for ai_conclusion with tooltip showing all AI header info
                         if (col.key === 'ai_conclusion' && (item.ai_output_text || item.ai_model || item.processing_method)) {
+                          const isActionNeeded = value === 'YES';
                           return (
                             <TableCell key={col.key} className="text-xs py-2">
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="cursor-help underline decoration-dotted font-semibold">
+                                  <span className={`cursor-help underline decoration-dotted font-semibold ${isActionNeeded ? 'text-red-600 font-bold' : ''}`}>
                                     {value}
                                   </span>
                                 </TooltipTrigger>
@@ -463,6 +488,35 @@ export function StockManagementTable() {
                                   </div>
                                 </TooltipContent>
                               </Tooltip>
+                            </TableCell>
+                          );
+                        }
+
+                        // Apply red/bold formatting for ai_conclusion = 'YES' even without tooltip
+                        if (col.key === 'ai_conclusion' && value === 'YES') {
+                          return (
+                            <TableCell key={col.key} className="text-xs py-2">
+                              <span className="text-red-600 font-bold">
+                                {value}
+                              </span>
+                            </TableCell>
+                          );
+                        }
+
+                        // Special handling for source and lot_size - show "Phase 1" as default
+                        if ((col.key === 'source' || col.key === 'lot_size') && value === '-') {
+                          return (
+                            <TableCell key={col.key} className="text-xs py-2">
+                              Phase 1
+                            </TableCell>
+                          );
+                        }
+
+                        // Special handling for forecast - show "Phase 2" for all rows
+                        if (col.key === 'forecast') {
+                          return (
+                            <TableCell key={col.key} className="text-xs py-2">
+                              Phase 2
                             </TableCell>
                           );
                         }

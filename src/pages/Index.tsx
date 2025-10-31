@@ -749,6 +749,50 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Application Screenshot Section */}
+      <section className="py-20 px-8 bg-white">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">See the Platform in Action</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Experience the intuitive interface that brings AI-powered procurement to your fingertips
+            </p>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl shadow-2xl overflow-hidden p-8">
+            <img
+              src="/screenshot_from_app.png"
+              alt="Professional Demand Manager Application Interface"
+              className="w-full h-auto rounded-2xl shadow-xl"
+            />
+          </div>
+
+          <div className="mt-12 grid md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                <MessageSquare className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Natural Language Interface</h3>
+              <p className="text-sm text-gray-600">Ask questions in plain language and get instant AI-powered answers</p>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                <BarChart3 className="h-6 w-6 text-purple-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Real-time Data Visualization</h3>
+              <p className="text-sm text-gray-600">View stock levels, forecasts, and recommendations in interactive tables</p>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                <Sparkles className="h-6 w-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Intelligent Automation</h3>
+              <p className="text-sm text-gray-600">AI agents work autonomously to analyze data and make recommendations</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* AI Development Method Section */}
       <section className="py-20 px-8">
         <div className="container mx-auto">

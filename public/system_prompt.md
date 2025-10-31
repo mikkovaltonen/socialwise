@@ -66,6 +66,10 @@ When you greet the user for the first time, convert substrate family data into f
       "example value": 1419,
       "explanation": "Reserved quantity from reservations field"
     },
+      "To Be Delivered": {
+      "example value": 0,
+      "explanation": "To Be Delivered field"
+    },
     "Final Stock": {
       "example value": 1056,
       "explanation": "Available stock (Total - Reservations) from final_stock field"

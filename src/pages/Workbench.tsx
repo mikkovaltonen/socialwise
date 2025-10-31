@@ -1,7 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import ProfessionalBuyerChat from "@/components/ProfessionalBuyerChat";
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { toast } from 'sonner';
+import ProfessionalBuyerChat, { ProfessionalBuyerChatRef } from "@/components/ProfessionalBuyerChat";
 import { StockManagementTable } from "@/components/StockManagementTable";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -13,6 +16,7 @@ const Workbench = () => {
   const { logout } = useAuth();
   const [stockManagementVisible, setStockManagementVisible] = React.useState(true);
   const [chatVisible, setChatVisible] = React.useState(false);
+  const chatRef = React.useRef<ProfessionalBuyerChatRef>(null);
 
   // Smart toggle handlers - if closing the only visible panel, show the other one
   const handleChatToggle = (newChatVisible: boolean) => {
@@ -36,16 +40,68 @@ const Workbench = () => {
     navigate('/');
   };
 
+  const handleSubstrateFamilyClick = async (keyword: string) => {
+    try {
+      // Show chat panel if it's hidden
+      if (!chatVisible) {
+        setChatVisible(true);
+      }
+
+      // Fetch substrate family data from Firestore
+      const stockRef = collection(db, 'stock_management');
+      const q = query(stockRef, where('keyword', '==', keyword));
+      const snapshot = await getDocs(q);
+
+      const records: any[] = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+
+        if (data.materials && Array.isArray(data.materials)) {
+          // New structure: extract materials from the array
+          data.materials.forEach((material: any, index: number) => {
+            records.push({
+              id: `${doc.id}_${index}`,
+              keyword: keyword,
+              ...material
+            });
+          });
+        } else {
+          // Fallback for old structure (flat documents)
+          records.push({
+            id: doc.id,
+            ...data
+          });
+        }
+      });
+
+      if (records.length === 0) {
+        toast.error(`No records found for ${keyword}`);
+        return;
+      }
+
+      // Call the loadSubstrateFamily method on ProfessionalBuyerChat
+      if (chatRef.current) {
+        await chatRef.current.loadSubstrateFamily(keyword, records);
+        toast.success(`Loaded ${records.length} material${records.length > 1 ? 's' : ''} for ${keyword}`);
+      }
+    } catch (error) {
+      console.error('Error loading substrate family:', error);
+      toast.error('Failed to load substrate family data');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <ProfessionalBuyerChat
+        ref={chatRef}
         onLogout={handleLogout}
         leftPanelVisible={stockManagementVisible}
         chatVisible={chatVisible}
         onChatVisibleChange={handleChatToggle}
         leftPanel={
           <div className="h-full overflow-y-auto px-2 py-2">
-            <StockManagementTable />
+            <StockManagementTable onSubstrateFamilyClick={handleSubstrateFamilyClick} />
           </div>
         }
         topRightControls={

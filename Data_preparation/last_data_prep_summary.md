@@ -2,8 +2,8 @@
 
 ## Run Information
 
-- **Execution Time**: 2025-10-29 12:35:07
-- **Duration**: 375.97 seconds (6.3 minutes)
+- **Execution Time**: 2025-10-30 17:43:10
+- **Duration**: 9.36 seconds (0.2 minutes)
 - **Status**: ✅ SUCCESS
 - **Authenticated As**: admin@zealai.com
 - **Project**: demandmanager-f3efd
@@ -16,57 +16,39 @@
 - **Unique Materials**: 2,479
 
 ### Output Data
-- **Substrate Families**: 1,287
-- **Total Materials Processed**: 2,479
-- **Total Stock**: 1,332,172 units
-- **Total Reservations**: 638,076 units
-- **Final Available Stock**: 694,128 units
+- **Substrate Families**: 1
+- **Total Materials Processed**: 1
+- **Current Stock**: 0.0 units
+- **Total Reservations**: 0.0 units
+- **Final Available Stock**: 0.0 units
 
 ### Alerts
-- **Materials with Shortages**: 194
-- **Materials Below Safety Stock**: 331
-- **Unknown Keywords**: 43
+- **Materials with Shortages**: 0
+- **Materials Below Safety Stock**: 0
+- **Unknown Keywords**: 0
 
 ## Firestore Upload
 
 - **Collection**: `stock_management`
-- **Documents Uploaded**: 1,287
+- **Documents Uploaded**: 1
 - **Upload Status**: ✅ Completed
 
 ## Top 10 Substrate Families by Stock
 
-| Keyword | Total Stock |
+| Keyword | Current Stock |
 |---------|-------------|
-| _MAD_GR_0046 | 134,865 |
-| _MAT_GR_0189 | 60,997 |
-| _MAD_GE_0031 | 49,059 |
-| _MAT_GR_0006 | 48,531 |
-| _MAD_GR_0403 | 40,890 |
-| _MAD_GR_0446 | 40,145 |
-| _MAT_GR_0162 | 40,000 |
-| _MAD_GE_0211 | 34,938 |
-| MAD1138 | 33,905 |
-| _FOU_GH_0416 | 27,500 |
+| _ADH_GE_0006 | 0.0 |
 
 ## Top 10 Substrate Families by Reservations
 
 | Keyword | Total Reservations |
 |---------|-------------------|
-| _MAD_GR_0050 | 37,179 |
-| _MAD_GE_0110 | 20,529 |
-| _MAT_GR_0006 | 19,014 |
-| _MAD_GR_0046 | 18,114 |
-| _MAD_GE_0211 | 17,918 |
-| _MAT_GR_0102 | 16,259 |
-| _MAT_GR_0093 | 15,137 |
-| MAD1059 | 15,136 |
-| _MAD_GR_0432 | 14,158 |
-| _ADH_GR_0106 | 13,710 |
+| _ADH_GE_0006 | 0.0 |
 
 ## Output Files
 
-- **Local JSON Backup**: `output/mrp_summary.json` (1.25 MB)
-- **Firestore Collection**: `stock_management` (1,287 documents)
+- **Local JSON Backup**: `output/mrp_summary.json` (0.00 MB)
+- **Firestore Collection**: `stock_management` (1 documents)
 
 ## Data Structure
 
@@ -83,7 +65,7 @@
       "description": "Material description",
       "lead_time": "Lead time in days",
       "safety_stock": "Minimum stock level",
-      "total_stock": "Current stock",
+      "current_stock": "Current stock",
       "reservations": "Future reservations",
       "final_stock": "Available after reservations",
       "expected_date": "First shortage date (if any)",
