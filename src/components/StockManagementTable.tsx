@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, getStockManagementCollection } from '@/lib/firebase';
+import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -56,6 +57,7 @@ interface StockManagementTableProps {
 }
 
 export function StockManagementTable({ onSubstrateFamilyClick }: StockManagementTableProps = {}) {
+  const { user, loading: authLoading } = useAuth();
   const [allData, setAllData] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -67,15 +69,21 @@ export function StockManagementTable({ onSubstrateFamilyClick }: StockManagement
   const [showAIFailedFamilies, setShowAIFailedFamilies] = useState(false);
 
   useEffect(() => {
-    loadStockData();
-  }, []);
+    // Wait for auth to be ready before loading data
+    if (!authLoading) {
+      loadStockData();
+    }
+  }, [authLoading]);
 
   const loadStockData = async () => {
     setLoading(true);
     setError('');
 
     try {
-      const stockRef = collection(db, 'stock_management');
+      // Use public_stock_management for public@viewer.com, stock_management for others
+      const collectionName = getStockManagementCollection(user?.email);
+      console.log(`📊 StockManagementTable - Auth ready! Loading from collection: ${collectionName} (user: ${user?.email})`);
+      const stockRef = collection(db, collectionName);
       const snapshot = await getDocs(stockRef);
 
       const items: StockItem[] = [];

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, getStockManagementCollection } from '@/lib/firebase';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Select,
   SelectContent,
@@ -19,19 +20,26 @@ interface SubstrateFamilySelectorProps {
 }
 
 export function SubstrateFamilySelector({ onFamilySelected, disabled }: SubstrateFamilySelectorProps) {
+  const { user, loading: authLoading } = useAuth();
   const [keywords, setKeywords] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedKeyword, setSelectedKeyword] = useState<string>('');
   const [loadingRecords, setLoadingRecords] = useState(false);
 
   useEffect(() => {
-    loadUniqueKeywords();
-  }, []);
+    // Wait for auth to be ready before loading data
+    if (!authLoading) {
+      loadUniqueKeywords();
+    }
+  }, [authLoading]);
 
   const loadUniqueKeywords = async () => {
     setLoading(true);
     try {
-      const stockRef = collection(db, 'stock_management');
+      // Use public_stock_management for public@viewer.com, stock_management for others
+      const collectionName = getStockManagementCollection(user?.email);
+      console.log(`📊 SubstrateFamilySelector - Auth ready! Loading from collection: ${collectionName} (user: ${user?.email})`);
+      const stockRef = collection(db, collectionName);
       const snapshot = await getDocs(stockRef);
 
       const keywordSet = new Set<string>();
@@ -70,7 +78,9 @@ export function SubstrateFamilySelector({ onFamilySelected, disabled }: Substrat
 
     setLoadingRecords(true);
     try {
-      const stockRef = collection(db, 'stock_management');
+      // Use public_stock_management for public@viewer.com, stock_management for others
+      const collectionName = getStockManagementCollection(user?.email);
+      const stockRef = collection(db, collectionName);
       const q = query(stockRef, where('keyword', '==', selectedKeyword));
       const snapshot = await getDocs(q);
 
