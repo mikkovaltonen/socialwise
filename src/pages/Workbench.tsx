@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, getStockManagementCollection } from '@/lib/firebase';
 import { toast } from 'sonner';
 import ProfessionalBuyerChat, { ProfessionalBuyerChatRef } from "@/components/ProfessionalBuyerChat";
 import { StockManagementTable } from "@/components/StockManagementTable";
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 
 const Workbench = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [stockManagementVisible, setStockManagementVisible] = React.useState(true);
   const [chatVisible, setChatVisible] = React.useState(false);
   const chatRef = React.useRef<ProfessionalBuyerChatRef>(null);
@@ -48,7 +48,10 @@ const Workbench = () => {
       }
 
       // Fetch substrate family data from Firestore
-      const stockRef = collection(db, 'stock_management');
+      // Use public_stock_management for public@viewer.com, stock_management for others
+      const collectionName = getStockManagementCollection(user?.email);
+      console.log(`📊 Workbench - Loading substrate family '${keyword}' from collection: ${collectionName} (user: ${user?.email})`);
+      const stockRef = collection(db, collectionName);
       const q = query(stockRef, where('keyword', '==', keyword));
       const snapshot = await getDocs(q);
 

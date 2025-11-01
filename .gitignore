@@ -34,3 +34,10 @@ Thumbs.db
 
 .vercel
 genai-456910-9dfd3b277f28.json
+
+# Firebase service accounts
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+
+# Data anonymization mappings (contains sensitive original→anonymized mappings)
+data-mappings/
