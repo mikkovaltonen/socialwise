@@ -490,6 +490,15 @@ const Index = () => {
             </p>
           </div>
 
+          {/* Software Industry Disruption */}
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-16">
+            <img
+              src="/distruption.png"
+              alt="Software industry under disruption - Evolution from Software 1.0 to 3.0"
+              className="w-full h-auto"
+            />
+          </div>
+
           {/* Main Tech Stack Visualization */}
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-16">
             <img
