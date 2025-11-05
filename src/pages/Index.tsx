@@ -13,8 +13,8 @@ const Index = () => {
             <Cpu className="h-6 w-6 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-semibold tracking-tight text-gray-900">Professional Demand Manager</span>
-            <span className="text-xs text-gray-500">AI-Powered Procurement Automation</span>
+            <span className="text-xl font-semibold tracking-tight text-gray-900">Massify</span>
+            <span className="text-xs text-gray-500">Mass Tailored Proposals Platform</span>
           </div>
         </Link>
         <div className="flex gap-4">
@@ -39,49 +39,51 @@ const Index = () => {
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-medium">
                 <Sparkles className="h-4 w-4" />
-                Software 3.0 - Agentic Process Automation
+                AI-Powered Proposal Automation
               </div>
 
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-                Professional
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Demand Manager</span>
+                Unlock Hidden Revenue from Your CRM with
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Mass Tailored Proposals</span>
               </h1>
 
               <p className="text-xl text-gray-600 leading-relaxed">
-                Do you have a solid ERP setup and relatively good data quality—yet your working capital still feels bloated, and delivery reliability and lead times could be better? Professional Demand Manager automates monitoring and decision support on top of your ERP database using Generative AI.
+                No-code SAAS platform that empowers one marketer to identify campaign leads from CRM, calculate personalized prices, and send professional proposals to thousands of potential customers. Turn your hidden CRM data into high-conversion contract proposals.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium shadow-lg shadow-blue-600/25 group"
-                  onClick={() => window.location.href = 'mailto:mikko@zealsourcing.fi?subject=Book%20Free%20Demo%20with%20Our%20Data&body=Hi%20Mikko,%0A%0AWe%20would%20like%20to%20book%20a%20free%20demo%20of%20Professional%20Demand%20Manager%20using%20our%20own%20data.%0A%0ACompany:%20%0AName:%20%0ARole:%20%0APreferred%20demo%20time:%20%0AType%20of%20data%20we%20want%20to%20test:%20%0A%0ABest%20regards'}
+                  asChild
                 >
-                  Book Free Demo with Your Data
-                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  <Link to="/login">
+                    Start Creating Proposals
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
                 </Button>
               </div>
               
               <div className="flex items-center gap-8 pt-4">
                 <div className="flex items-center gap-2">
                   <Check className="h-5 w-5 text-blue-600" />
-                  <span className="text-sm text-gray-600">Test with your own data</span>
+                  <span className="text-sm text-gray-600">Free trial available</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="h-5 w-5 text-blue-600" />
-                  <span className="text-sm text-gray-600">Free consultation</span>
+                  <span className="text-sm text-gray-600">No credit card required</span>
                 </div>
               </div>
             </div>
             
             <div className="relative">
               <img
-                src="/solution_overview.png"
-                alt="Agentic Process Automation"
+                src="/tech_stack.png"
+                alt="Massify Technology Stack - Software 1.0, 2.0, and 3.0"
                 className="rounded-2xl shadow-2xl w-full h-auto"
               />
               <div className="absolute -top-4 -right-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full text-sm font-semibold transform rotate-12 shadow-lg">
-                Software 3.0
+                AI-Powered
               </div>
             </div>
           </div>
@@ -93,20 +95,20 @@ const Index = () => {
         <div className="container mx-auto px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="text-4xl font-bold text-gray-900">78%</div>
-              <div className="text-gray-600 mt-2">Cost Reduction</div>
+              <div className="text-4xl font-bold text-gray-900">1000+</div>
+              <div className="text-gray-600 mt-2">Proposals per Marketer</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-gray-900">10x</div>
-              <div className="text-gray-600 mt-2">Faster Processing</div>
+              <div className="text-4xl font-bold text-gray-900">No-Code</div>
+              <div className="text-gray-600 mt-2">Campaign Setup</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-gray-900">99.9%</div>
-              <div className="text-gray-600 mt-2">Accuracy Rate</div>
+              <div className="text-4xl font-bold text-gray-900">3x</div>
+              <div className="text-gray-600 mt-2">Higher Conversion</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-gray-900">24/7</div>
-              <div className="text-gray-600 mt-2">AI Availability</div>
+              <div className="text-4xl font-bold text-gray-900">AI</div>
+              <div className="text-gray-600 mt-2">Powered Pricing</div>
             </div>
           </div>
         </div>
@@ -116,9 +118,9 @@ const Index = () => {
       <section className="py-20 px-8">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Current Procurement Challenges</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">The Marketing Challenge</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Even with good ERP systems, buyers face daily challenges that AI can help solve
+              Your CRM holds valuable customer data, but marketers lack time to identify leads, match them to services, calculate prices, and send personalized proposals at scale.
             </p>
           </div>
 
@@ -133,6 +135,38 @@ const Index = () => {
 
           {/* Pain Points Details */}
           <div className="grid lg:grid-cols-2 gap-8 mb-16">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-red-50 to-orange-50 hover:shadow-2xl transition-all duration-300">
+              <CardContent className="p-8">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <AlertCircle className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">The Problem: Revenue Left on the Table</h3>
+                    <p className="text-gray-600">Your CRM data is valuable but underutilized</p>
+                  </div>
+                </div>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">Hidden opportunities in CRM never identified</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">No time to manually match prospects to services</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">Complex price calculations slow down sales</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
+                    <span className="text-gray-700">Generic proposals have low conversion rates</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
             <Card className="border-0 shadow-xl bg-gradient-to-br from-green-50 to-green-100 hover:shadow-2xl transition-all duration-300">
               <CardContent className="p-8">
                 <div className="flex items-start gap-4 mb-6">
@@ -140,58 +174,26 @@ const Index = () => {
                     <Check className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">What AI Can Solve</h3>
-                    <p className="text-gray-600">Automated analysis and intelligent recommendations</p>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">The Solution: AI-Powered Mass Tailoring</h3>
+                    <p className="text-gray-600">No-code platform for high-conversion campaigns</p>
                   </div>
                 </div>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
-                    <span className="text-gray-700">Forecast conversion from multiple sources</span>
+                    <span className="text-gray-700">AI identifies leads from CRM data automatically</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
-                    <span className="text-gray-700">Source determination optimization</span>
+                    <span className="text-gray-700">Sophisticated price calculator with custom rules</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
-                    <span className="text-gray-700">Production plan coordination</span>
+                    <span className="text-gray-700">Mass generation of personalized proposals</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
-                    <span className="text-gray-700">Stock policy optimization</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-yellow-50 to-orange-50 hover:shadow-2xl transition-all duration-300">
-              <CardContent className="p-8">
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-12 h-12 bg-yellow-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Manual Pain Points</h3>
-                    <p className="text-gray-600">Time-consuming tasks buyers face daily</p>
-                  </div>
-                </div>
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-yellow-600 rounded-full mt-2"></div>
-                    <span className="text-gray-700">SKU conversion between systems</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-yellow-600 rounded-full mt-2"></div>
-                    <span className="text-gray-700">Material requirements planning</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-orange-600 rounded-full mt-2"></div>
-                    <span className="text-gray-700">Non-moving stock alerts</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-red-600 rounded-full mt-2"></div>
-                    <span className="text-gray-700">Why don't you trust your MRP purchase list?</span>
+                    <span className="text-gray-700">One marketer reaches thousands of prospects</span>
                   </li>
                 </ul>
               </CardContent>
@@ -200,10 +202,10 @@ const Index = () => {
 
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 text-center">
             <p className="text-lg text-gray-700 mb-4">
-              <span className="font-semibold">The Reality:</span> Buyers jump between multiple ERP modules daily
+              <span className="font-semibold">The Reality:</span> Marketers can only create 10-20 manual proposals per week
             </p>
             <p className="text-gray-600">
-              Professional Demand Manager brings all these capabilities into one AI-powered interface
+              Massify enables one marketer to send 1,000+ personalized proposals with AI-calculated pricing
             </p>
           </div>
         </div>
@@ -213,45 +215,45 @@ const Index = () => {
       <section className="py-20 px-8 bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Agentic Process Automation</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">How Massify Works</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Software 3.0 approach - AI Agent autonomously plans and executes procurement tasks
+              No-code platform combining CRM integration, AI lead identification, price calculation, and mass proposal generation
             </p>
           </div>
 
           {/* Main Solution Diagram */}
           <div className="bg-white rounded-3xl shadow-2xl p-8 mb-16">
-            <h3 className="text-2xl font-semibold text-gray-900 mb-8 text-center">How Professional Demand Manager Works</h3>
+            <h3 className="text-2xl font-semibold text-gray-900 mb-8 text-center">Complete Campaign Workflow</h3>
             <img
-              src="/solution_overview.png"
-              alt="Agentic Process Automation Architecture"
+              src="/ai_development_method.png"
+              alt="Forward Deployment Engineering - Right Balance of Software 1.0, 2.0, and 3.0"
               className="w-full h-auto rounded-2xl"
             />
             <div className="mt-8 grid md:grid-cols-3 gap-6">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
-                <h4 className="font-semibold text-gray-900 mb-2">User Interface</h4>
-                <p className="text-sm text-gray-600">Natural language queries like "How much and what to purchase today?"</p>
+                <h4 className="font-semibold text-gray-900 mb-2">Campaign Designer UI</h4>
+                <p className="text-sm text-gray-600">Configure campaigns, pricing rules, and email templates with no-code interface</p>
               </div>
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
-                <h4 className="font-semibold text-gray-900 mb-2">AI Agent Processing</h4>
-                <p className="text-sm text-gray-600">Autonomous planning, execution, and self-evaluation of tasks</p>
+                <h4 className="font-semibold text-gray-900 mb-2">AI Processing</h4>
+                <p className="text-sm text-gray-600">Automatic lead identification, price calculation, and proposal personalization</p>
               </div>
               <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
-                <h4 className="font-semibold text-gray-900 mb-2">CERM-ERP Integration</h4>
-                <p className="text-sm text-gray-600">Real-time data from stock, reservations, materials, and forecasts</p>
+                <h4 className="font-semibold text-gray-900 mb-2">CRM Integration</h4>
+                <p className="text-sm text-gray-600">Connect to MS Dynamics CRM, Salesforce, or upload customer data files</p>
               </div>
             </div>
           </div>
 
-          {/* DevOps Cycle */}
+          {/* Key Features */}
           <div className="grid lg:grid-cols-2 gap-8 mb-16">
             <Card className="border-0 shadow-xl bg-white">
               <CardContent className="p-8">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <RefreshCw className="h-6 w-6 text-blue-600" />
+                    <Settings className="h-6 w-6 text-blue-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900">Continuous AI Improvement</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">Campaign Configuration</h3>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
@@ -259,8 +261,8 @@ const Index = () => {
                       <span className="text-xs font-bold text-purple-600">1</span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">AI Generation</p>
-                      <p className="text-sm text-gray-600">Agent creates procurement recommendations</p>
+                      <p className="font-medium text-gray-900">Define Campaigns</p>
+                      <p className="text-sm text-gray-600">Select service offerings and target segments from CRM</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -268,8 +270,8 @@ const Index = () => {
                       <span className="text-xs font-bold text-purple-600">2</span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Human Verification</p>
-                      <p className="text-sm text-gray-600">Review and approve AI suggestions</p>
+                      <p className="font-medium text-gray-900">Configure Pricing Rules</p>
+                      <p className="text-sm text-gray-600">No-code pricing calculator based on customer attributes</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -277,8 +279,8 @@ const Index = () => {
                       <span className="text-xs font-bold text-purple-600">3</span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Continuous Improvement</p>
-                      <p className="text-sm text-gray-600">Learn from outcomes and optimize</p>
+                      <p className="font-medium text-gray-900">Design Email Templates</p>
+                      <p className="text-sm text-gray-600">Personalized emails with PDF proposal attachments</p>
                     </div>
                   </div>
                 </div>
@@ -289,30 +291,30 @@ const Index = () => {
               <CardContent className="p-8">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                    <GitBranch className="h-6 w-6 text-green-600" />
+                    <RefreshCw className="h-6 w-6 text-green-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900">DevOps Excellence</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">Human-in-the-Loop</h3>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">Automated Testing</p>
-                      <p className="text-sm text-gray-600">Continuous validation of AI outputs</p>
+                      <p className="font-medium text-gray-900">Review Before Send</p>
+                      <p className="text-sm text-gray-600">Verify AI-generated proposals and pricing before release</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">Version Control</p>
-                      <p className="text-sm text-gray-600">Track all changes and improvements</p>
+                      <p className="font-medium text-gray-900">Campaign Monitoring</p>
+                      <p className="text-sm text-gray-600">Track proposal delivery and response rates in real-time</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">Continuous Deployment</p>
-                      <p className="text-sm text-gray-600">Seamless updates without disruption</p>
+                      <p className="font-medium text-gray-900">Rate Limiting</p>
+                      <p className="text-sm text-gray-600">Control email volume (e.g., max 1 per recipient per day)</p>
                     </div>
                   </div>
                 </div>
@@ -326,9 +328,9 @@ const Index = () => {
       <section className="py-20 px-8">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">AI Assistant Features</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Core Platform Features</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Balancing user experience, development efficiency, and AI capabilities
+              Everything you need to run high-conversion mass marketing campaigns with no-code configuration
             </p>
           </div>
 
@@ -400,24 +402,24 @@ const Index = () => {
             <Card className="border-0 shadow-xl bg-white hover:shadow-2xl transition-all duration-300 group hover:-translate-y-2">
               <CardContent className="p-8">
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Package className="h-8 w-8 text-white" />
+                  <Search className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Source Determination</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">CRM Lead Identification</h3>
                 <p className="text-gray-600 mb-6">
-                  AI identifies the most appropriate source for each order - supplier or intercompany
+                  AI analyzes your CRM data to identify hidden opportunities and match prospects to service offerings
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Automated vendor selection</span>
+                    <span className="text-sm text-gray-600">MS Dynamics CRM integration</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Cost optimization</span>
+                    <span className="text-sm text-gray-600">Automated prospect matching</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Lead time analysis</span>
+                    <span className="text-sm text-gray-600">Opportunity prioritization</span>
                   </li>
                 </ul>
               </CardContent>
@@ -426,24 +428,24 @@ const Index = () => {
             <Card className="border-0 shadow-xl bg-white hover:shadow-2xl transition-all duration-300 group hover:-translate-y-2">
               <CardContent className="p-8">
                 <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <BarChart3 className="h-8 w-8 text-white" />
+                  <DollarSign className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Stock Policy AI</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Sophisticated Price Calculator</h3>
                 <p className="text-gray-600 mb-6">
-                  Intelligent recommendations for minimum stock levels and reorder points
+                  No-code pricing engine with custom rules based on customer attributes and service parameters
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Dynamic min/max levels</span>
+                    <span className="text-sm text-gray-600">Rule-based pricing logic</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Non-moving stock alerts</span>
+                    <span className="text-sm text-gray-600">Multiple pricing attributes</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Material optimization</span>
+                    <span className="text-sm text-gray-600">Personalized pricing per lead</span>
                   </li>
                 </ul>
               </CardContent>
@@ -452,24 +454,24 @@ const Index = () => {
             <Card className="border-0 shadow-xl bg-white hover:shadow-2xl transition-all duration-300 group hover:-translate-y-2">
               <CardContent className="p-8">
                 <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <TrendingUp className="h-8 w-8 text-white" />
+                  <FileText className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Forecast Conversion</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Mass Proposal Generation</h3>
                 <p className="text-gray-600 mb-6">
-                  Transform customer forecasts into actionable material requirements
+                  Generate thousands of personalized proposals with custom pricing and send them via email at scale
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-orange-600 flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Multi-source integration</span>
+                    <span className="text-sm text-gray-600">Personalized email content</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-orange-600 flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Batch size optimization</span>
+                    <span className="text-sm text-gray-600">PDF proposal attachments</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-orange-600 flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Production planning</span>
+                    <span className="text-sm text-gray-600">Campaign rate limiting</span>
                   </li>
                 </ul>
               </CardContent>
@@ -618,72 +620,75 @@ const Index = () => {
       <section className="py-20 px-8 bg-gradient-to-br from-purple-50 to-blue-50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">AI Agent Capabilities in Action</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">AI Agent Architecture</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how our AI agents solve real procurement challenges autonomously
+              See how our AI agents process campaigns from configuration to delivery
             </p>
           </div>
 
+          {/* AI Agent Architecture Diagram */}
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-16">
+            <img
+              src="/agents.png"
+              alt="Massify AI Agent Architecture - Campaign workflow from designer to verifier"
+              className="w-full h-auto"
+            />
+          </div>
+
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Source Determination */}
+            {/* Campaign Designer */}
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
-              <div className="aspect-video bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center p-4">
-                <img
-                  src="/source_determination_ai_agent.png"
-                  alt="Source Determination AI Agent"
-                  className="w-full h-full object-contain rounded"
-                />
+              <div className="bg-gradient-to-br from-blue-100 to-blue-200 p-8 flex items-center justify-center">
+                <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center">
+                  <Settings className="h-12 w-12 text-blue-600" />
+                </div>
               </div>
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Source Determination</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Campaign Designer UI</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  AI automatically identifies the best source - supplier vs intercompany - based on cost, lead time, and availability
+                  No-code interface to configure campaigns, define pricing rules, and design email templates with PDF attachments
                 </p>
                 <div className="flex items-center gap-2 text-xs text-blue-600">
                   <Sparkles className="h-4 w-4" />
-                  <span>Saves 2-3 hours per PO</span>
+                  <span>Zero coding required</span>
                 </div>
               </div>
             </div>
 
-            {/* Stock Policy */}
+            {/* AI Agent Processing */}
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
-              <div className="aspect-video bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center p-4">
-                <img
-                  src="/stock_policy_AI_Agent.png"
-                  alt="Stock Policy AI Agent"
-                  className="w-full h-full object-contain rounded"
-                />
+              <div className="bg-gradient-to-br from-purple-100 to-purple-200 p-8 flex items-center justify-center">
+                <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center">
+                  <Bot className="h-12 w-12 text-purple-600" />
+                </div>
               </div>
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Stock Policy Optimization</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Agent Processing</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Dynamic adjustments to min/max levels based on consumption patterns and lead times
+                  Autonomous AI identifies leads from CRM, calculates prices, and generates personalized proposals
+                </p>
+                <div className="flex items-center gap-2 text-xs text-purple-600">
+                  <Brain className="h-4 w-4" />
+                  <span>Fully automated workflow</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Campaign Verifier */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <div className="bg-gradient-to-br from-green-100 to-green-200 p-8 flex items-center justify-center">
+                <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center">
+                  <Check className="h-12 w-12 text-green-600" />
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Campaign Verifier UI</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Human-in-the-loop verification interface to review and approve proposals before mass sending
                 </p>
                 <div className="flex items-center gap-2 text-xs text-green-600">
-                  <TrendingDown className="h-4 w-4" />
-                  <span>30% reduction in stock value</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Forecast Conversion */}
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
-              <div className="aspect-video bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center p-4">
-                <img
-                  src="/Forecast_converion_AI_Agent.png"
-                  alt="Forecast Conversion AI Agent"
-                  className="w-full h-full object-contain rounded"
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Forecast Conversion</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Transform customer forecasts into material requirements with batch optimization
-                </p>
-                <div className="flex items-center gap-2 text-xs text-orange-600">
-                  <Clock className="h-4 w-4" />
-                  <span>95% faster than manual</span>
+                  <Shield className="h-4 w-4" />
+                  <span>Quality control before send</span>
                 </div>
               </div>
             </div>
@@ -692,15 +697,15 @@ const Index = () => {
           <div className="mt-12 bg-white rounded-2xl p-8 shadow-xl">
             <div className="grid lg:grid-cols-2 gap-8 items-center">
               <div>
-                <h3 className="text-2xl font-semibold text-gray-900 mb-4">Additional AI Capabilities</h3>
+                <h3 className="text-2xl font-semibold text-gray-900 mb-4">Platform Integration Features</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <Check className="h-4 w-4 text-purple-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Material Width Optimization</p>
-                      <p className="text-sm text-gray-600">Check widths and propose internal slitting before ordering</p>
+                      <p className="font-medium text-gray-900">CRM Integration</p>
+                      <p className="text-sm text-gray-600">Connect to MS Dynamics CRM or import customer data via CSV/Excel</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
@@ -708,8 +713,8 @@ const Index = () => {
                       <Check className="h-4 w-4 text-purple-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Non-Moving Stock Alerts</p>
-                      <p className="text-sm text-gray-600">Flag materials at risk of becoming obsolete</p>
+                      <p className="font-medium text-gray-900">Email Integration</p>
+                      <p className="text-sm text-gray-600">Seamless email delivery with rate limiting and campaign monitoring</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
@@ -717,30 +722,30 @@ const Index = () => {
                       <Check className="h-4 w-4 text-purple-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Production Batch Planning</p>
-                      <p className="text-sm text-gray-600">Optimize batch sizes based on costs and annual volumes</p>
+                      <p className="font-medium text-gray-900">Activity Tracking</p>
+                      <p className="text-sm text-gray-600">Automatic logging of all campaign activities back to CRM</p>
                     </div>
                   </li>
                 </ul>
               </div>
               <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white">
-                <h4 className="text-xl font-semibold mb-4">AI Impact</h4>
+                <h4 className="text-xl font-semibold mb-4">Platform Benefits</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-3xl font-bold">78%</p>
-                    <p className="text-sm text-white/80">Cost reduction</p>
+                    <p className="text-3xl font-bold">1000+</p>
+                    <p className="text-sm text-white/80">Proposals per marketer</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold">10x</p>
-                    <p className="text-sm text-white/80">Faster processing</p>
+                    <p className="text-3xl font-bold">3x</p>
+                    <p className="text-sm text-white/80">Higher conversion</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold">99.9%</p>
-                    <p className="text-sm text-white/80">Accuracy</p>
+                    <p className="text-3xl font-bold">100%</p>
+                    <p className="text-sm text-white/80">Personalized pricing</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold">24/7</p>
-                    <p className="text-sm text-white/80">Availability</p>
+                    <p className="text-3xl font-bold">No-Code</p>
+                    <p className="text-sm text-white/80">Easy setup</p>
                   </div>
                 </div>
               </div>
@@ -762,7 +767,7 @@ const Index = () => {
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl shadow-2xl overflow-hidden p-8">
             <img
               src="/screenshot_from_app.png"
-              alt="Professional Demand Manager Application Interface"
+              alt="Massify Application Interface"
               className="w-full h-auto rounded-2xl shadow-xl"
             />
           </div>
@@ -847,17 +852,17 @@ const Index = () => {
       <section className="py-20 px-8 bg-gradient-to-r from-valmet-green to-valmet-teal">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
-            Ready to Transform Your Procurement?
+            Ready to Unlock Hidden Revenue from Your CRM?
           </h2>
           <p className="text-xl text-green-100 mb-10 max-w-2xl mx-auto">
-            Join leading organizations using AI to revolutionize their procurement processes. 
-            Schedule a personalized demo to see how we can cut your procurement costs by 78%.
+            Join forward-thinking companies using AI to scale their marketing reach.
+            Schedule a personalized demo to see how one marketer can send 1,000+ high-conversion proposals.
           </p>
           <div className="flex justify-center">
             <Button
               size="lg"
               className="bg-white text-valmet-green hover:bg-gray-100 font-semibold shadow-xl"
-              onClick={() => window.location.href = 'mailto:mikko@zealsourcing.fi?subject=Request%20for%20ProcureAI%20Demo&body=Hi%20Mikko,%0A%0AI%20am%20interested%20in%20learning%20more%20about%20ProcureAI%20and%20would%20like%20to%20schedule%20a%20demo.%0A%0ACompany:%20%0AName:%20%0ARole:%20%0APreferred%20time:%20%0A%0ABest%20regards'}
+              onClick={() => window.location.href = 'mailto:mikko@zealsourcing.fi?subject=Request%20for%20Massify%20Demo&body=Hi%20Mikko,%0A%0AI%20am%20interested%20in%20learning%20more%20about%20Massify%20for%20mass%20tailored%20proposal%20generation%20and%20would%20like%20to%20schedule%20a%20demo.%0A%0ACompany:%20%0AName:%20%0ARole:%20%0ACurrent%20CRM:%20%0AAverage%20proposals%20sent%20per%20month:%20%0APreferred%20time:%20%0A%0ABest%20regards'}
             >
               Request Free Demo
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -866,8 +871,8 @@ const Index = () => {
           <div className="mt-8 text-green-100">
             <p className="text-sm">
               Or contact us directly at{' '}
-              <a 
-                href="mailto:mikko@zealsourcing.fi" 
+              <a
+                href="mailto:mikko@zealsourcing.fi"
                 className="underline hover:text-white transition-colors font-semibold"
               >
                 mikko@zealsourcing.fi
@@ -890,23 +895,23 @@ const Index = () => {
                   </div>
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                  Buying Stuff, But Better
+                  AI-Powered Business Solutions
                 </h2>
                 <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                  Zeal Sourcing transforms how businesses approach procurement. We combine deep industry expertise with cutting-edge AI technology to deliver measurable results.
+                  Zeal Sourcing builds cutting-edge AI solutions for businesses. Massify is our no-code SAAS platform that enables marketers to unlock hidden revenue from CRM data through mass tailored proposals.
                 </p>
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-valmet-green" />
-                    <span className="text-gray-700">20+ years of procurement expertise</span>
+                    <span className="text-gray-700">Forward Deployment Engineering approach</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-valmet-green" />
-                    <span className="text-gray-700">Trusted by Fortune 500 companies</span>
+                    <span className="text-gray-700">Software 1.0, 2.0, and 3.0 integration</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-5 w-5 text-valmet-green" />
-                    <span className="text-gray-700">AI-first approach to procurement</span>
+                    <span className="text-gray-700">AI-first no-code platforms</span>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -950,12 +955,12 @@ const Index = () => {
                   <Cpu className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xl font-semibold text-white">Professional Demand Manager</span>
-                  <span className="text-xs text-gray-400">AI-Powered Procurement Automation</span>
+                  <span className="text-xl font-semibold text-white">Massify</span>
+                  <span className="text-xs text-gray-400">Mass Tailored Proposals Platform</span>
                 </div>
               </div>
               <p className="text-gray-400">
-                AI-powered procurement intelligence for modern businesses.
+                No-code SAAS platform for AI-powered mass marketing campaigns with personalized pricing.
               </p>
             </div>
             
@@ -996,7 +1001,7 @@ const Index = () => {
                 © 2024 Zeal Sourcing. All rights reserved.
               </p>
               <p className="text-gray-500 text-sm">
-                Professional Demand Manager by Zeal Sourcing
+                Massify - Mass Tailored Proposals Platform
               </p>
             </div>
           </div>

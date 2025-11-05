@@ -1,16 +1,24 @@
 {
-  "name": "Professional Demand Manager",
-  "short_name": "PDM",
-  "description": "AI-Powered Procurement Automation - Transform your procurement with Software 3.0",
+  "name": "Massify - Mass Tailored Proposals Platform",
+  "short_name": "Massify",
+  "description": "No-code SAAS platform for AI-powered mass marketing campaigns with personalized pricing",
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#3b82f6",
   "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/placeholder.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "scope": "/",
+  "lang": "en-US"
 }
