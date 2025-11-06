@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
-import ProfessionalBuyerChat, { ProfessionalBuyerChatRef } from "@/components/ProfessionalBuyerChat";
+import MarketingPlannerChat, { MarketingPlannerChatRef } from "@/components/MarketingPlannerChat";
 import { StockManagementTable } from "@/components/StockManagementTable";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,7 @@ const Workbench = () => {
   const { user, logout } = useAuth();
   const [stockManagementVisible, setStockManagementVisible] = React.useState(true);
   const [chatVisible, setChatVisible] = React.useState(false);
-  const chatRef = React.useRef<ProfessionalBuyerChatRef>(null);
+  const chatRef = React.useRef<MarketingPlannerChatRef>(null);
 
   // Smart toggle handlers - if closing the only visible panel, show the other one
   const handleChatToggle = (newChatVisible: boolean) => {
@@ -60,7 +60,7 @@ const Workbench = () => {
       const customerDoc = snapshot.docs[0];
       const customerData = customerDoc.data();
 
-      // Call the loadSubstrateFamily method on ProfessionalBuyerChat with customer data
+      // Call the loadSubstrateFamily method on MarketingPlannerChat with customer data
       // Note: This uses the existing method but passes customer data instead
       if (chatRef.current) {
         const customerInfo = {
@@ -79,7 +79,7 @@ const Workbench = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ProfessionalBuyerChat
+      <MarketingPlannerChat
         ref={chatRef}
         onLogout={handleLogout}
         leftPanelVisible={stockManagementVisible}

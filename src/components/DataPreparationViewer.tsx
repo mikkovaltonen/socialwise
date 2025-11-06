@@ -16,24 +16,24 @@ const DataPreparationViewer = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch specifications
-        const specsResponse = await fetch('/Data_preparation/Data praration logic.md');
+        // Fetch functional specifications
+        const specsResponse = await fetch('/Data_preparation/data_prep.md');
         if (specsResponse.ok) {
           const specsText = await specsResponse.text();
           setSpecificationsContent(specsText);
         } else {
           console.warn('Specifications not found');
-          setSpecificationsContent('# Specifications\n\nDocument not found. Ensure `Data praration logic.md` is in the public folder.');
+          setSpecificationsContent('# Functional Specifications\n\nDocument not found. Ensure `data_prep.md` is in the Data_preparation folder.');
         }
 
-        // Fetch latest execution summary
-        const summaryResponse = await fetch('/Data_preparation/last_data_prep_summary.md');
+        // Fetch latest execution log
+        const summaryResponse = await fetch('/Data_preparation/migration-run-report.md');
         if (summaryResponse.ok) {
           const summaryText = await summaryResponse.text();
           setSummaryContent(summaryText);
         } else {
-          console.warn('Summary not found');
-          setSummaryContent('# Latest Execution Summary\n\nNo execution summary available yet. Run the ETL pipeline to generate this file.');
+          console.warn('Run log not found');
+          setSummaryContent('# CRM Data Migration - Run Log\n\nNo execution log available yet. Run the migration script to generate this file.');
         }
 
       } catch (err) {
@@ -93,9 +93,9 @@ const DataPreparationViewer = () => {
                 value={summaryContent}
                 onChange={() => {}} // Read-only
                 readOnly={true}
-                label="Latest Execution Summary"
+                label="CRM Data Migration - Run Log"
                 minHeight="600px"
-                placeholder="No execution summary available yet. Run the ETL pipeline to generate this file."
+                placeholder="No execution log available yet. Run the migration script to generate this file."
               />
             </CardContent>
           </Card>
@@ -108,9 +108,9 @@ const DataPreparationViewer = () => {
                 value={specificationsContent}
                 onChange={() => {}} // Read-only
                 readOnly={true}
-                label="Pipeline Specifications"
+                label="CRM Data Preparation - Functional Specifications"
                 minHeight="600px"
-                placeholder="Document not found. Ensure Data praration logic.md is in the public folder."
+                placeholder="Document not found. Ensure data_prep.md is in the Data_preparation folder."
               />
             </CardContent>
           </Card>

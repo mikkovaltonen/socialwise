@@ -18,6 +18,12 @@ import {
 import {
   TooltipProvider,
 } from '@/components/ui/tooltip';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@/components/ui/hover-card';
+import { Calendar, FileText } from 'lucide-react';
 
 interface CRMCustomer {
   id: string;
@@ -160,6 +166,77 @@ export function StockManagementTable({ onCustomerClick }: StockManagementTablePr
       setSortColumn(column);
       setSortDirection('asc');
     }
+  };
+
+  // Render service history records
+  const renderServiceHistory = (serviceHistory: Record<string, any>) => {
+    if (!serviceHistory || Object.keys(serviceHistory).length === 0) {
+      return (
+        <div className="text-sm text-gray-500 italic">
+          No service history available
+        </div>
+      );
+    }
+
+    // Convert serviceHistory object to array for display
+    const historyEntries = Object.entries(serviceHistory);
+
+    return (
+      <div className="space-y-3 max-h-96 overflow-y-auto">
+        <div className="flex items-center gap-2 mb-2">
+          <FileText className="h-4 w-4 text-blue-600" />
+          <span className="font-semibold text-sm">Service History ({historyEntries.length} records)</span>
+        </div>
+        <div className="space-y-2">
+          {historyEntries.map(([key, value], idx) => {
+            // Parse the value if it's an object
+            const record = typeof value === 'object' ? value : { note: value };
+
+            return (
+              <div key={idx} className="border-l-2 border-blue-200 pl-3 py-2 bg-gray-50 rounded-r">
+                <div className="space-y-1">
+                  {record.service_date && (
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <Calendar className="h-3 w-3" />
+                      <span>{record.service_date}</span>
+                    </div>
+                  )}
+                  {record.service_type && (
+                    <div className="text-xs font-semibold text-gray-700">
+                      {record.service_type}
+                    </div>
+                  )}
+                  {record.description && (
+                    <div className="text-xs text-gray-600">
+                      {record.description}
+                    </div>
+                  )}
+                  {record.status && (
+                    <div className="text-xs">
+                      <span className={`inline-block px-2 py-0.5 rounded ${
+                        record.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        record.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {record.status}
+                      </span>
+                    </div>
+                  )}
+                  {/* Display any other fields */}
+                  {Object.entries(record).filter(([k]) =>
+                    !['service_date', 'service_type', 'description', 'status'].includes(k)
+                  ).map(([k, v]) => (
+                    <div key={k} className="text-xs text-gray-500">
+                      <span className="font-medium">{k}:</span> {String(v)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   const columns: Array<{ key: string; label: string; width?: string }> = [
@@ -311,6 +388,39 @@ export function StockManagementTable({ onCustomerClick }: StockManagementTablePr
                               >
                                 {displayValue}
                               </button>
+                            </TableCell>
+                          );
+                        }
+
+                        // Special handling for Y-tunnus - show service history on hover
+                        if (col.key === 'customerInfo.ytunnus' && displayValue !== '-') {
+                          const hasHistory = item.serviceHistory && Object.keys(item.serviceHistory).length > 0;
+                          return (
+                            <TableCell key={col.key} className="text-xs py-2">
+                              <HoverCard openDelay={200}>
+                                <HoverCardTrigger asChild>
+                                  <span className={`cursor-help ${hasHistory ? 'text-blue-700 font-medium underline decoration-dotted' : ''}`}>
+                                    {displayValue}
+                                    {hasHistory && (
+                                      <span className="ml-1 text-blue-500 text-[10px]">
+                                        ({Object.keys(item.serviceHistory).length})
+                                      </span>
+                                    )}
+                                  </span>
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-[500px] p-4" side="right">
+                                  <div className="space-y-2">
+                                    <div className="border-b pb-2">
+                                      <h4 className="font-semibold text-sm text-gray-900">
+                                        {item.customerInfo?.account_name || 'Customer'}
+                                      </h4>
+                                      <p className="text-xs text-gray-500">Y-tunnus: {displayValue}</p>
+                                      <p className="text-xs text-gray-500">Tampuuri: {item.tampuurinumero}</p>
+                                    </div>
+                                    {renderServiceHistory(item.serviceHistory || {})}
+                                  </div>
+                                </HoverCardContent>
+                              </HoverCard>
                             </TableCell>
                           );
                         }

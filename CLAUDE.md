@@ -1,39 +1,39 @@
 # Claude Code Instructions
 
 ## Project Overview
-This is the Professional Demand Manager application built with React, TypeScript, and Vite. It provides intelligent supplier search, vendor selection assistance, and AI-powered procurement automation for enterprise demand management.
+This is Massify - a SAAS platform for creating mass tailored proposals with sophisticated price calculations. Built with React, TypeScript, and Vite, it helps businesses personalize each proposal for every recipient with intelligent pricing automation.
 
 ## Core Features
 
-### 1. Supplier Search
-- **Database**: ~400 verified suppliers in Firestore `suppliers_complete` collection
-- **Search Capabilities**: Fuzzy, case-insensitive matching
-- **Search Fields**:
-  - Main Category (text search)
-  - Supplier Categories (text search)
-  - Country/Region (text search)
-  - City (text search)
-- **Data Structure**: Optimized with 60% storage reduction
-- **Export**: Full CSV export with all supplier fields
+### 1. Mass Proposal Generation
+- **Database**: Recipient data and proposal templates in Firestore collections
+- **Personalization**: AI-driven content tailoring for each recipient
+- **Generation**: Batch create customized proposals at scale
+- **Data Fields**:
+  - Recipient information (name, company, industry)
+  - Pricing parameters and calculation rules
+  - Proposal template selection
+  - Customization preferences
+- **Export**: Batch export personalized proposals in multiple formats
 
-### 2. AI Chat Assistant
+### 2. AI Proposal Assistant
 - **Model**: Multiple LLM options via OpenRouter (Grok, Gemini)
-- **Context**: System prompts only (no document context)
-- **Purpose**: Help find best matching vendors for specific needs
+- **Context**: Recipient data and proposal templates
+- **Purpose**: Create personalized proposals and optimize pricing strategies
 - **Languages**: Finnish and English support
 
-### 3. Stock Management & Substrate Family Selection
-- **Database**: Stock management data organized by substrate families in `stock_management` collection
-- **Substrate Family Selector**: Dropdown with all unique keyword values (e.g., "_MAD_GR_0209")
-- **Context Initialization**: Select a substrate family, all related materials loaded into AI chat context
-- **Material Tracking**: Track material IDs, widths, stock levels, reservations, and lead times
-- **Stock Visibility**: View safety stock, total stock, reservations, and final available stock
-- **Interactive Table**: Sort, filter, and view all stock management data with responsive design
+### 3. Sophisticated Pricing Engine
+- **Database**: Pricing rules and calculation templates in Firestore
+- **Price Calculation**: Dynamic pricing based on recipient data and business rules
+- **Context Initialization**: Load recipient data, pricing rules applied automatically
+- **Price Optimization**: AI-driven pricing recommendations
+- **Price Visibility**: View base price, adjustments, discounts, and final price
+- **Interactive Table**: Sort, filter, and view all pricing data with responsive design
 
 ### 4. Document Analysis
 - **Supported Formats**: PDF, Excel (.xlsx, .xls), CSV, Word (.doc, .docx)
-- **Processing**: Extract and analyze procurement data
-- **Integration**: Works with supplier search for comprehensive analysis
+- **Processing**: Extract and analyze recipient data and proposal templates
+- **Integration**: Works with proposal generation for comprehensive automation
 
 ## Development Commands
 

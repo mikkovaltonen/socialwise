@@ -1,13 +1,13 @@
-# Professional Demand Manager
+# Massify
 
-AI-powered procurement automation platform with agentic process optimization for enterprise demand management and supplier orchestration.
+Create mass tailored proposals with sophisticated price calculations. Massify is a SAAS platform that helps you personalize each proposal for every recipient with intelligent pricing automation.
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                           🤖 AI CHAT INTERFACE (LLM)                            │
-│                        ProfessionalBuyerChat.tsx                                │
+│                        MarketingPlannerChat.tsx                                 │
 │                         OpenRouter API (Grok-4)                                 │
 └─────────────────────┬───────────────────────────────────────────────────────────┘
                       │
@@ -71,21 +71,22 @@ AI-powered procurement automation platform with agentic process optimization for
 
 ## 🎯 Purpose
 
-This application serves as an intelligent procurement automation platform, helping organizations:
-- Search and analyze 400+ verified suppliers across multiple categories
-- Find vendors for professional services (consulting, training, R&D, legal services)
-- Automate procurement workflows and decision-making
-- Make data-driven vendor selection decisions
+Massify helps businesses create personalized proposals at scale:
+- Generate mass tailored proposals with unique content for each recipient
+- Sophisticated price calculation engine for custom pricing per proposal
+- AI-powered proposal personalization and optimization
+- Automated pricing strategies based on recipient data
+- Streamline proposal workflow and increase conversion rates
 
 ## Features
 
-- **Supplier Search**: Fuzzy, case-insensitive search across 400+ suppliers
-- **AI-Powered Assistant**: Multiple LLM options (Gemini, Grok) for intelligent procurement assistance
-- **Document Analysis**: Process and analyze procurement documents (PDF, Excel, Word, CSV)
-- **System Prompt Management**: Production and testing versions with version control
-- **Supplier Statistics**: Real-time analytics on supplier distribution
-- **Export Capabilities**: Download supplier data and search results as CSV
-- **Multi-language Support**: Multiple language interfaces
+- **Mass Proposal Generation**: Create personalized proposals for multiple recipients simultaneously
+- **Sophisticated Pricing Engine**: Advanced price calculations tailored to each recipient
+- **AI-Powered Assistant**: Multiple LLM options (Gemini, Grok) for intelligent proposal creation
+- **Document Analysis**: Process and analyze proposal templates and data (PDF, Excel, Word, CSV)
+- **Price Optimization**: AI-driven pricing recommendations and strategies
+- **Export Capabilities**: Download proposals and pricing data as CSV
+- **Multi-language Support**: Create proposals in multiple languages
 
 ## Technologies
 
@@ -100,8 +101,8 @@ This application serves as an intelligent procurement automation platform, helpi
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/mikkovaltonen/demand-manager
-cd demand-manager
+git clone https://github.com/mikkovaltonen/massify
+cd massify
 ```
 
 2. **Install dependencies**
@@ -143,37 +144,37 @@ The application uses Firebase Authentication. Contact your administrator for acc
 
 ### Core Functionality
 
-1. **Document Upload**: 
-   - Drag and drop or select files (PDF, Excel, CSV, Word)
-   - Supported formats: `.pdf`, `.xlsx`, `.xls`, `.csv`, `.doc`, `.docx`
+1. **Recipient Data Upload**:
+   - Upload recipient lists and data (Excel, CSV)
+   - Supported formats: `.xlsx`, `.xls`, `.csv`
 
-2. **AI Analysis Session**:
-   - Start an analysis session with uploaded documents
-   - AI provides initial overview and insights
+2. **Proposal Template Management**:
+   - Upload and manage proposal templates
+   - Define variable placeholders for personalization
+   - Configure pricing calculation rules
 
-3. **Structured Data Extraction**:
-   - **Extract Suppliers**: Get structured supplier information
-   - **Extract Pricing**: Analyze pricing data and trends
-   - **Extract Contracts**: Identify contract terms and conditions
+3. **Mass Proposal Generation**:
+   - **Personalize Content**: AI tailors each proposal to recipient
+   - **Calculate Pricing**: Sophisticated pricing engine applies custom calculations
+   - **Generate Proposals**: Batch create personalized proposals at scale
 
-4. **Interactive Analysis**:
-   - Ask natural language questions about your documents
-   - Get AI-powered insights and recommendations
-   - Export extracted data as CSV files
+4. **Interactive Proposal Refinement**:
+   - Review and edit generated proposals
+   - Adjust pricing strategies with AI assistance
+   - Get optimization recommendations
 
-5. **System Prompt Versioning**:
-   - Create and manage different versions of AI system prompts
-   - Evaluate and compare different prompt strategies
-   - Browse version history and track improvements
-   - Add evaluation notes for each prompt version
+5. **Export and Delivery**:
+   - Export proposals in multiple formats (PDF, Word, Excel)
+   - Batch download all personalized proposals
+   - Track proposal status and responses
 
 ### Quick Actions
 
-The application provides pre-built analysis prompts for:
-- Supplier capability assessment
-- Pricing optimization opportunities
-- Contract risk analysis
-- Process improvement recommendations
+The application provides pre-built features for:
+- Recipient data analysis and segmentation
+- Pricing strategy optimization
+- Proposal personalization suggestions
+- Conversion rate improvement recommendations
 
 ## Project Structure
 
@@ -182,7 +183,7 @@ src/
 ├── components/          # React components
 │   ├── ui/             # Base UI components (shadcn/ui)
 │   ├── DocumentAnalysis.tsx  # Document upload and management
-│   ├── ProcurementChat.tsx   # AI chat interface
+│   ├── MarketingPlannerChat.tsx    # AI chat interface
 │   └── LoginForm.tsx
 ├── hooks/              # Custom React hooks
 │   └── useAuth.ts
@@ -229,15 +230,15 @@ npm run lint
 3. Test functionality locally
 4. Ensure TypeScript checks pass
 
-## Evaluation Scenarios
+## Use Cases
 
-This tool is perfect for demonstrating:
+Massify is perfect for:
 
-1. **Document Processing**: Upload real procurement documents to see AI extraction capabilities
-2. **Data Structuring**: Transform unorganized data into structured formats
-3. **Natural Language Querying**: Ask complex questions about procurement data
-4. **Export Integration**: Show how AI-extracted data can integrate with existing systems
-5. **Process Automation**: Demonstrate potential for procurement workflow automation
+1. **Sales Teams**: Generate personalized proposals for multiple prospects simultaneously
+2. **B2B Companies**: Create tailored quotes with sophisticated pricing for different customer segments
+3. **Service Providers**: Mass customize service proposals based on client needs
+4. **Agencies**: Batch create personalized pitches with dynamic pricing
+5. **Enterprise Sales**: Automate proposal workflow while maintaining personalization at scale
 
 ## System Requirements
 
@@ -269,4 +270,4 @@ MIT
 
 ## Support
 
-For questions about the procurement AI evaluation capabilities or technical implementation, please create an issue in the repository.
+For questions about Massify's proposal generation capabilities or technical implementation, please create an issue in the repository.

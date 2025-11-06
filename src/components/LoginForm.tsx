@@ -64,8 +64,8 @@ const LoginForm = () => {
               <Cpu className="h-10 w-10 text-white" />
             </div>
             <div className="space-y-1">
-              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Professional Demand Manager</h1>
-              <p className="text-sm text-gray-500">AI-Powered Procurement Automation</p>
+              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Massify</h1>
+              <p className="text-sm text-gray-500">Mass Tailored Proposals Platform</p>
             </div>
           </Link>
           <div className="space-y-2 pt-4">
