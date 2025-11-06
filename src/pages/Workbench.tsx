@@ -2,14 +2,12 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db, getStockManagementCollection } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
 import ProfessionalBuyerChat, { ProfessionalBuyerChatRef } from "@/components/ProfessionalBuyerChat";
 import { StockManagementTable } from "@/components/StockManagementTable";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 const Workbench = () => {
   const navigate = useNavigate();
@@ -40,57 +38,42 @@ const Workbench = () => {
     navigate('/');
   };
 
-  const handleSubstrateFamilyClick = async (keyword: string) => {
+  const handleCustomerClick = async (tampuurinumero: string) => {
     try {
       // Show chat panel if it's hidden
       if (!chatVisible) {
         setChatVisible(true);
       }
 
-      // Fetch substrate family data from Firestore
-      // Use public_stock_management for public@viewer.com, stock_management for others
-      const collectionName = getStockManagementCollection(user?.email);
-      console.log(`📊 Workbench - Loading substrate family '${keyword}' from collection: ${collectionName} (user: ${user?.email})`);
-      const stockRef = collection(db, collectionName);
-      const q = query(stockRef, where('keyword', '==', keyword));
+      // Fetch customer data from Firestore
+      const collectionName = 'crm_asikkaat_ja_palveluhistoria';
+      console.log(`📊 Workbench - Loading customer '${tampuurinumero}' from collection: ${collectionName}`);
+      const crmRef = collection(db, collectionName);
+      const q = query(crmRef, where('tampuurinumero', '==', tampuurinumero));
       const snapshot = await getDocs(q);
 
-      const records: any[] = [];
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-
-        if (data.materials && Array.isArray(data.materials)) {
-          // New structure: extract materials from the array
-          data.materials.forEach((material: any, index: number) => {
-            records.push({
-              id: `${doc.id}_${index}`,
-              keyword: keyword,
-              ...material
-            });
-          });
-        } else {
-          // Fallback for old structure (flat documents)
-          records.push({
-            id: doc.id,
-            ...data
-          });
-        }
-      });
-
-      if (records.length === 0) {
-        toast.error(`No records found for ${keyword}`);
+      if (snapshot.empty) {
+        toast.error(`No customer found with tampuurinumero ${tampuurinumero}`);
         return;
       }
 
-      // Call the loadSubstrateFamily method on ProfessionalBuyerChat
+      const customerDoc = snapshot.docs[0];
+      const customerData = customerDoc.data();
+
+      // Call the loadSubstrateFamily method on ProfessionalBuyerChat with customer data
+      // Note: This uses the existing method but passes customer data instead
       if (chatRef.current) {
-        await chatRef.current.loadSubstrateFamily(keyword, records);
-        toast.success(`Loaded ${records.length} material${records.length > 1 ? 's' : ''} for ${keyword}`);
+        const customerInfo = {
+          tampuurinumero: customerData.tampuurinumero,
+          ...customerData.customerInfo,
+          serviceHistory: customerData.serviceHistory
+        };
+        await chatRef.current.loadSubstrateFamily(tampuurinumero, [customerInfo]);
+        toast.success(`Loaded customer ${customerData.customerInfo?.account_name || tampuurinumero}`);
       }
     } catch (error) {
-      console.error('Error loading substrate family:', error);
-      toast.error('Failed to load substrate family data');
+      console.error('Error loading customer:', error);
+      toast.error('Failed to load customer data');
     }
   };
 
@@ -104,12 +87,12 @@ const Workbench = () => {
         onChatVisibleChange={handleChatToggle}
         leftPanel={
           <div className="h-full overflow-y-auto px-2 py-2">
-            <StockManagementTable onSubstrateFamilyClick={handleSubstrateFamilyClick} />
+            <StockManagementTable onCustomerClick={handleCustomerClick} />
           </div>
         }
         topRightControls={
           <div className="flex items-center gap-2">
-            <Label htmlFor="stock-toggle" className="text-xs text-gray-500">Show stock management</Label>
+            <Label htmlFor="stock-toggle" className="text-xs text-gray-500">Show CRM customers</Label>
             <Switch id="stock-toggle" checked={stockManagementVisible} onCheckedChange={handleStockManagementToggle} />
           </div>
         }

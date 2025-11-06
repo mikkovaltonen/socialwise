@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db, getStockManagementCollection } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { X, ChevronUp, ChevronDown, Package, Loader2, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -18,55 +16,44 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-interface StockItem {
+interface CRMCustomer {
   id: string;
-  material_id?: string;
-  supplier_keyword?: string;
-  keyword?: string;
-  width?: string;
-  length?: string;
-  ref_at_supplier?: string;
-  description?: string;
-  lead_time?: string;
-  safety_stock?: number | string;
-  current_stock?: number | string;
-  to_be_delivered?: number | string;
-  reservations?: number | string;
-  final_stock?: number | string;
-  expected_date?: string;
-  historical_slit?: string;
-  ai_conclusion?: string;
-  ai_output_text?: string;
-  ai_processed_at?: string;
-  ai_model?: string;
-  processing_method?: string;
-  source?: string;
-  forecast?: number | string;
-  lot_size?: number | string;
+  tampuurinumero?: string;
+  customerInfo?: {
+    tampuuri_tunnus?: string;
+    account_name?: string;
+    ytunnus?: string;
+    katuosoite?: string;
+    postal_code?: string;
+    city?: string;
+    isannoitsija?: string;
+    primary_email_isannoitsija_user?: string;
+    huoneistojen_lukumaara?: number | string;
+    rakennusten_lukumaara?: number | string;
+    kayttoonottoppaiva?: string;
+    asiakkuus_alkanut?: string;
+    [key: string]: any;
+  };
+  serviceHistory?: Record<string, any>;
+  mergedAt?: string;
   [key: string]: any;
 }
 
 interface StockManagementTableProps {
-  onSubstrateFamilyClick?: (keyword: string) => void;
+  onCustomerClick?: (tampuurinumero: string) => void;
 }
 
-export function StockManagementTable({ onSubstrateFamilyClick }: StockManagementTableProps = {}) {
+export function StockManagementTable({ onCustomerClick }: StockManagementTableProps = {}) {
   const { user, loading: authLoading } = useAuth();
-  const [allData, setAllData] = useState<StockItem[]>([]);
+  const [allData, setAllData] = useState<CRMCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [sortColumn, setSortColumn] = useState<keyof StockItem | null>('keyword');
+  const [sortColumn, setSortColumn] = useState<string | null>('tampuurinumero');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [substrateFamilyFilter, setSubstrateFamilyFilter] = useState('');
-  const [showOnlyReplenishmentMaterials, setShowOnlyReplenishmentMaterials] = useState(true);
-  const [showOnlyReplenishmentFamilies, setShowOnlyReplenishmentFamilies] = useState(false);
-  const [showAIFailedFamilies, setShowAIFailedFamilies] = useState(false);
+  const [searchFilter, setSearchFilter] = useState('');
 
   useEffect(() => {
     // Wait for auth to be ready before loading data
@@ -80,56 +67,32 @@ export function StockManagementTable({ onSubstrateFamilyClick }: StockManagement
     setError('');
 
     try {
-      // Use public_stock_management for public@viewer.com, stock_management for others
-      const collectionName = getStockManagementCollection(user?.email);
-      console.log(`📊 StockManagementTable - Auth ready! Loading from collection: ${collectionName} (user: ${user?.email})`);
-      const stockRef = collection(db, collectionName);
-      const snapshot = await getDocs(stockRef);
+      const collectionName = 'crm_asikkaat_ja_palveluhistoria';
+      console.log(`📊 StockManagementTable - Loading CRM customers from collection: ${collectionName}`);
+      const crmRef = collection(db, collectionName);
+      const snapshot = await getDocs(crmRef);
 
-      const items: StockItem[] = [];
+      const items: CRMCustomer[] = [];
 
-      // New structure: Each document represents a substrate family with nested materials array
       snapshot.forEach((doc) => {
         const data = doc.data();
-        const keyword = data.keyword || doc.id; // Substrate family identifier
-
-        // Check if materials array exists (new structure)
-        if (data.materials && Array.isArray(data.materials)) {
-          // Extract header-level AI fields
-          const headerAIFields = {
-            ai_output_text: data.ai_output_text,
-            ai_processed_at: data.ai_processed_at,
-            ai_model: data.ai_model,
-            processing_method: data.processing_method
-          };
-
-          // Flatten the materials array and include header-level AI fields
-          data.materials.forEach((material: any, index: number) => {
-            items.push({
-              id: `${doc.id}_${index}`, // Create unique ID combining doc ID and index
-              keyword: keyword, // Add the substrate family keyword
-              ...material,
-              // Include header-level AI fields for tooltip display
-              ...headerAIFields
-            } as StockItem);
-          });
-        } else {
-          // Fallback for old structure (flat documents)
-          items.push({
-            id: doc.id,
-            ...data
-          } as StockItem);
-        }
+        items.push({
+          id: doc.id,
+          tampuurinumero: data.tampuurinumero || doc.id,
+          customerInfo: data.customerInfo || {},
+          serviceHistory: data.serviceHistory || {},
+          mergedAt: data.mergedAt,
+        } as CRMCustomer);
       });
 
       setAllData(items);
 
       if (items.length === 0) {
-        setError('No stock management data found in database');
+        setError('No CRM customer data found in database');
       }
     } catch (err) {
-      console.error('Error loading stock management:', err);
-      setError('Failed to load stock management data. Please try again.');
+      console.error('Error loading CRM customers:', err);
+      setError('Failed to load CRM customer data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -139,50 +102,35 @@ export function StockManagementTable({ onSubstrateFamilyClick }: StockManagement
   const processedData = useMemo(() => {
     let filtered = [...allData];
 
-    // Apply substrate family filter
-    if (substrateFamilyFilter) {
+    // Apply search filter across multiple fields
+    if (searchFilter) {
       filtered = filtered.filter(item => {
-        const value = item.keyword;
-        return value && String(value).toLowerCase().includes(substrateFamilyFilter.toLowerCase());
-      });
-    }
-
-    // Apply replenishment material filter (show only materials that need replenishment)
-    if (showOnlyReplenishmentMaterials) {
-      filtered = filtered.filter(item => {
-        return item.ai_conclusion === 'YES';
-      });
-    }
-
-    // Apply replenishment family filter (show all materials from families where at least one needs replenishment)
-    if (showOnlyReplenishmentFamilies) {
-      // First, find all substrate families that have at least one material needing replenishment
-      const familiesNeedingReplenishment = new Set(
-        allData
-          .filter(item => item.ai_conclusion === 'YES')
-          .map(item => item.keyword)
-          .filter(Boolean)
-      );
-
-      // Then filter to show all materials from those families
-      filtered = filtered.filter(item => {
-        return item.keyword && familiesNeedingReplenishment.has(item.keyword);
-      });
-    }
-
-    // Apply AI failed filter (show families where AI failed to calculate)
-    if (showAIFailedFamilies) {
-      filtered = filtered.filter(item => {
-        // Show items where ai_conclusion is empty, null, undefined, or dash
-        return !item.ai_conclusion || item.ai_conclusion === '-' || item.ai_conclusion === '';
+        const searchLower = searchFilter.toLowerCase();
+        return (
+          item.tampuurinumero?.toLowerCase().includes(searchLower) ||
+          item.customerInfo?.account_name?.toLowerCase().includes(searchLower) ||
+          item.customerInfo?.ytunnus?.toLowerCase().includes(searchLower) ||
+          item.customerInfo?.city?.toLowerCase().includes(searchLower) ||
+          item.customerInfo?.isannoitsija?.toLowerCase().includes(searchLower)
+        );
       });
     }
 
     // Apply sorting
     if (sortColumn) {
       filtered.sort((a, b) => {
-        const aVal = a[sortColumn];
-        const bVal = b[sortColumn];
+        let aVal: any;
+        let bVal: any;
+
+        // Handle nested customerInfo fields
+        if (sortColumn.startsWith('customerInfo.')) {
+          const field = sortColumn.replace('customerInfo.', '');
+          aVal = a.customerInfo?.[field];
+          bVal = b.customerInfo?.[field];
+        } else {
+          aVal = (a as any)[sortColumn];
+          bVal = (b as any)[sortColumn];
+        }
 
         // Handle null/undefined
         if (!aVal && !bVal) return 0;
@@ -203,9 +151,9 @@ export function StockManagementTable({ onSubstrateFamilyClick }: StockManagement
     }
 
     return filtered;
-  }, [allData, substrateFamilyFilter, showOnlyReplenishmentMaterials, showOnlyReplenishmentFamilies, showAIFailedFamilies, sortColumn, sortDirection]);
+  }, [allData, searchFilter, sortColumn, sortDirection]);
 
-  const handleSort = (column: keyof StockItem) => {
+  const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -214,24 +162,17 @@ export function StockManagementTable({ onSubstrateFamilyClick }: StockManagement
     }
   };
 
-  const columns: Array<{ key: keyof StockItem; label: string; width?: string }> = [
-    { key: 'keyword', label: 'Substrate Family', width: 'w-40' },
-    { key: 'material_id', label: 'Material ID', width: 'w-24' },
-    { key: 'supplier_keyword', label: 'Supplier', width: 'w-32' },
-    { key: 'width', label: 'Width', width: 'w-20' },
-    { key: 'ref_at_supplier', label: 'Ref at Supplier', width: 'w-36' },
-    { key: 'lead_time', label: 'Lead Time', width: 'w-20' },
-    { key: 'safety_stock', label: 'Safety Stock', width: 'w-20' },
-    { key: 'current_stock', label: 'Current Stock', width: 'w-20' },
-    { key: 'to_be_delivered', label: 'To Be Delivered', width: 'w-20' },
-    { key: 'reservations', label: 'Reservations', width: 'w-20' },
-    { key: 'forecast', label: 'Forecast', width: 'w-20' },
-    { key: 'final_stock', label: 'Final Stock', width: 'w-20' },
-    { key: 'expected_date', label: 'Expected Date', width: 'w-28' },
-    { key: 'historical_slit', label: 'Historical Slit', width: 'w-28' },
-    { key: 'ai_conclusion', label: 'Is action needed?', width: 'w-28' },
-    { key: 'source', label: 'Source', width: 'w-24' },
-    { key: 'lot_size', label: 'Lot Size', width: 'w-24' },
+  const columns: Array<{ key: string; label: string; width?: string }> = [
+    { key: 'tampuurinumero', label: 'Tampuuri #', width: 'w-28' },
+    { key: 'customerInfo.account_name', label: 'Account Name', width: 'w-48' },
+    { key: 'customerInfo.ytunnus', label: 'Y-tunnus', width: 'w-32' },
+    { key: 'customerInfo.katuosoite', label: 'Address', width: 'w-40' },
+    { key: 'customerInfo.postal_code', label: 'Postal Code', width: 'w-24' },
+    { key: 'customerInfo.city', label: 'City', width: 'w-32' },
+    { key: 'customerInfo.isannoitsija', label: 'Isännöitsijä', width: 'w-40' },
+    { key: 'customerInfo.primary_email_isannoitsija_user', label: 'Email', width: 'w-48' },
+    { key: 'customerInfo.huoneistojen_lukumaara', label: 'Apartments', width: 'w-24' },
+    { key: 'customerInfo.rakennusten_lukumaara', label: 'Buildings', width: 'w-24' },
   ];
 
   if (loading) {
@@ -240,7 +181,7 @@ export function StockManagementTable({ onSubstrateFamilyClick }: StockManagement
         <CardContent className="flex items-center justify-center py-12">
           <div className="text-center space-y-3">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
-            <p className="text-gray-600">Loading stock management data...</p>
+            <p className="text-gray-600">Loading CRM customer data...</p>
           </div>
         </CardContent>
       </Card>
@@ -268,9 +209,9 @@ export function StockManagementTable({ onSubstrateFamilyClick }: StockManagement
               <div className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-blue-600" />
                 <div>
-                  <CardTitle>Stock Management</CardTitle>
+                  <CardTitle>CRM Customers</CardTitle>
                   <CardDescription>
-                    {allData.length} materials in inventory
+                    {allData.length} customers in database
                   </CardDescription>
                 </div>
               </div>
@@ -288,65 +229,28 @@ export function StockManagementTable({ onSubstrateFamilyClick }: StockManagement
 
             {/* Filters Section */}
             <div className="mt-4 space-y-3">
-              {/* Substrate Family Filter and Toggle Filters */}
               <div className="flex gap-4 items-center">
                 <div className="relative flex-1">
                   <Input
                     type="text"
-                    placeholder="Filter by Substrate Family..."
-                    value={substrateFamilyFilter}
-                    onChange={(e) => setSubstrateFamilyFilter(e.target.value)}
+                    placeholder="Search by customer name, Y-tunnus, city, or property manager..."
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
                     className="w-full pr-8"
                   />
-                  {substrateFamilyFilter && (
+                  {searchFilter && (
                     <button
-                      onClick={() => setSubstrateFamilyFilter('')}
+                      onClick={() => setSearchFilter('')}
                       className="absolute right-2 top-1/2 transform -translate-y-1/2"
                     >
                       <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                     </button>
                   )}
                 </div>
-
-                {/* Toggle Filter 1: Show only materials needing replenishment */}
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <Switch
-                    id="replenishment-materials"
-                    checked={showOnlyReplenishmentMaterials}
-                    onCheckedChange={setShowOnlyReplenishmentMaterials}
-                  />
-                  <Label htmlFor="replenishment-materials" className="text-xs text-gray-600 cursor-pointer">
-                    Show Material IDs that need replenishment
-                  </Label>
-                </div>
-
-                {/* Toggle Filter 2: Show only families needing replenishment */}
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <Switch
-                    id="replenishment-families"
-                    checked={showOnlyReplenishmentFamilies}
-                    onCheckedChange={setShowOnlyReplenishmentFamilies}
-                  />
-                  <Label htmlFor="replenishment-families" className="text-xs text-gray-600 cursor-pointer">
-                    Show substrate families where one or more material needs replenishment
-                  </Label>
-                </div>
-
-                {/* Toggle Filter 3: Show families where AI failed */}
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <Switch
-                    id="ai-failed-families"
-                    checked={showAIFailedFamilies}
-                    onCheckedChange={setShowAIFailedFamilies}
-                  />
-                  <Label htmlFor="ai-failed-families" className="text-xs text-gray-600 cursor-pointer">
-                    AI failed to calculate requirement
-                  </Label>
-                </div>
               </div>
 
               <div className="text-sm text-gray-500">
-                Showing {processedData.length} of {allData.length} items
+                Showing {processedData.length} of {allData.length} customers
               </div>
             </div>
           </CardHeader>
@@ -382,156 +286,38 @@ export function StockManagementTable({ onSubstrateFamilyClick }: StockManagement
                   {processedData.map((item, idx) => (
                     <TableRow key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       {columns.map((col) => {
-                        // Get raw value (preserve 0, null, undefined, empty string)
-                        const rawValue = item[col.key];
-                        // Show dash only for null, undefined, or empty string; preserve 0
-                        let value = rawValue !== null && rawValue !== undefined && rawValue !== '' ? rawValue : '-';
+                        let value: any;
 
-                        // Format expected_date to remove time
-                        if (col.key === 'expected_date' && value !== '-') {
-                          // Handle various date formats and extract just the date part
-                          const dateStr = String(value);
-                          // Handle ISO format (2025-12-02T00:00:00)
-                          if (dateStr.includes('T')) {
-                            value = dateStr.split('T')[0];
-                          }
-                          // Handle space-separated format (2025-12-02 00:00:00)
-                          else if (dateStr.includes(' ')) {
-                            value = dateStr.split(' ')[0];
-                          }
+                        // Handle nested customerInfo fields
+                        if (col.key.startsWith('customerInfo.')) {
+                          const field = col.key.replace('customerInfo.', '');
+                          value = item.customerInfo?.[field];
+                        } else if (col.key === 'tampuurinumero') {
+                          value = item.tampuurinumero;
+                        } else {
+                          value = (item as any)[col.key];
                         }
 
-                        // Special handling for keyword (substrate family) - make it clickable
-                        if (col.key === 'keyword' && onSubstrateFamilyClick && value !== '-') {
+                        // Show dash for null, undefined, or empty string
+                        const displayValue = value !== null && value !== undefined && value !== '' ? String(value) : '-';
+
+                        // Special handling for tampuurinumero - make it clickable
+                        if (col.key === 'tampuurinumero' && onCustomerClick && displayValue !== '-') {
                           return (
                             <TableCell key={col.key} className="text-xs py-2">
                               <button
-                                onClick={() => onSubstrateFamilyClick(String(value))}
+                                onClick={() => onCustomerClick(displayValue)}
                                 className="text-blue-600 hover:text-blue-800 underline decoration-dotted cursor-pointer font-medium"
                               >
-                                {value}
+                                {displayValue}
                               </button>
-                            </TableCell>
-                          );
-                        }
-
-                        // Special handling for material_id with tooltip
-                        if (col.key === 'material_id' && item.description) {
-                          return (
-                            <TableCell key={col.key} className="text-xs py-2">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="cursor-help underline decoration-dotted">
-                                    {value}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="right" className="max-w-md">
-                                  <p>{item.description}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TableCell>
-                          );
-                        }
-
-                        // Special handling for width with tooltip showing length
-                        if (col.key === 'width' && item.length) {
-                          return (
-                            <TableCell key={col.key} className="text-xs py-2">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="cursor-help underline decoration-dotted">
-                                    {value}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="right" className="max-w-md">
-                                  <p>Length: {item.length}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TableCell>
-                          );
-                        }
-
-                        // Special handling for ai_conclusion with tooltip showing all AI header info
-                        if (col.key === 'ai_conclusion' && (item.ai_output_text || item.ai_model || item.processing_method)) {
-                          const isActionNeeded = value === 'YES';
-                          return (
-                            <TableCell key={col.key} className="text-xs py-2">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className={`cursor-help underline decoration-dotted font-semibold ${isActionNeeded ? 'text-red-600 font-bold' : ''}`}>
-                                    {value}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="left" className="max-w-4xl">
-                                  <div className="space-y-2">
-                                    <div>
-                                      <p className="font-semibold mb-1">AI Analysis for {item.keyword}</p>
-                                    </div>
-                                    {item.processing_method && (
-                                      <div>
-                                        <span className="font-medium">Method: </span>
-                                        <span>{item.processing_method}</span>
-                                      </div>
-                                    )}
-                                    {item.ai_model && (
-                                      <div>
-                                        <span className="font-medium">Model: </span>
-                                        <span>{item.ai_model}</span>
-                                      </div>
-                                    )}
-                                    {item.ai_processed_at && (
-                                      <div>
-                                        <span className="font-medium">Processed: </span>
-                                        <span>
-                                          {new Date(item.ai_processed_at).toLocaleString()}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {item.ai_output_text && (
-                                      <div className="pt-2 border-t">
-                                        <p className="font-medium mb-1">AI Output:</p>
-                                        <p className="whitespace-pre-wrap">{item.ai_output_text}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TableCell>
-                          );
-                        }
-
-                        // Apply red/bold formatting for ai_conclusion = 'YES' even without tooltip
-                        if (col.key === 'ai_conclusion' && value === 'YES') {
-                          return (
-                            <TableCell key={col.key} className="text-xs py-2">
-                              <span className="text-red-600 font-bold">
-                                {value}
-                              </span>
-                            </TableCell>
-                          );
-                        }
-
-                        // Special handling for source and lot_size - show "Phase 1" as default
-                        if ((col.key === 'source' || col.key === 'lot_size') && value === '-') {
-                          return (
-                            <TableCell key={col.key} className="text-xs py-2">
-                              Phase 1
-                            </TableCell>
-                          );
-                        }
-
-                        // Special handling for forecast - show "Phase 2" for all rows
-                        if (col.key === 'forecast') {
-                          return (
-                            <TableCell key={col.key} className="text-xs py-2">
-                              Phase 2
                             </TableCell>
                           );
                         }
 
                         return (
                           <TableCell key={col.key} className="text-xs py-2">
-                            {value}
+                            {displayValue}
                           </TableCell>
                         );
                       })}
