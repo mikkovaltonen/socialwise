@@ -127,8 +127,8 @@ const Index = () => {
           {/* Pain Points Visualization */}
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-16">
             <img
-              src="/painpoints.png"
-              alt="Procurement Pain Points Assessment"
+              src="/agents.png"
+              alt="AI Agent Architecture for Mass Proposal Generation"
               className="w-full h-auto"
             />
           </div>
