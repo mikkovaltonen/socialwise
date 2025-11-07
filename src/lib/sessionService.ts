@@ -27,7 +27,7 @@ export class SessionService {
   async getLatestSystemPrompt(userId: string): Promise<SystemPromptVersion | null> {
     try {
       const q = query(
-        collection(db, 'systemPromptVersions'),
+        collection(db, 'crm_systemPromptVersions'),
         where('userId', '==', userId)
       );
       

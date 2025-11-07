@@ -1,31 +1,25 @@
 /**
- * System Prompt Manager Component
- * Allows users to view, edit, and switch between production and testing prompt versions
+ * Simplified System Prompt Manager Component
+ * Single collection with timestamp-based versioning
  */
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  getSystemPrompt,
+  getLatestSystemPrompt,
   saveSystemPrompt,
-  getUserPromptPreference,
-  setUserPromptPreference,
-  copyPromptVersion,
-  initializeSystemPrompts,
-  PromptVersion,
-  SystemPromptData,
+  getPromptHistory,
   getUserLLMModel,
   setUserLLMModel,
-  LLMModel
+  initializeSystemPrompts,
+  SystemPrompt
 } from '@/lib/systemPromptService';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import MarkdownEditor from './MarkdownEditor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -33,8 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, Copy, RefreshCw, AlertCircle, Check, FileText, FlaskConical, User, Bot, History, Maximize2 } from 'lucide-react';
-import { PromptHistoryDialog } from './PromptHistoryDialog';
+import { Save, RefreshCw, AlertCircle, Check, Bot, History, Maximize2 } from 'lucide-react';
 import { FullscreenPromptEditor } from './FullscreenPromptEditor';
 import {
   Dialog,
@@ -44,54 +37,52 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export default function SystemPromptManager() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [productionPrompt, setProductionPrompt] = useState<SystemPromptData | null>(null);
-  const [testingPrompt, setTestingPrompt] = useState<SystemPromptData | null>(null);
-  const [productionContent, setProductionContent] = useState('');
-  const [testingContent, setTestingContent] = useState('');
-  const [userVersion, setUserVersion] = useState<PromptVersion>('production');
-  const [selectedModel, setSelectedModel] = useState<LLMModel>('x-ai/grok-4-fast');
+  const [currentPrompt, setCurrentPrompt] = useState<SystemPrompt | null>(null);
+  const [content, setContent] = useState('');
+  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.5-pro');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [showDescriptionDialog, setShowDescriptionDialog] = useState(false);
+  const [description, setDescription] = useState('');
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
-  const [showVersionCommentDialog, setShowVersionCommentDialog] = useState(false);
-  const [versionComment, setVersionComment] = useState('');
-  const [pendingSaveVersion, setPendingSaveVersion] = useState<PromptVersion | null>(null);
+  const [history, setHistory] = useState<SystemPrompt[]>([]);
   const [showFullscreenEditor, setShowFullscreenEditor] = useState(false);
-  const [fullscreenEditVersion, setFullscreenEditVersion] = useState<PromptVersion>('production');
 
   useEffect(() => {
     if (user) {
-      loadPrompts();
+      loadPrompt();
       loadUserPreferences();
     }
   }, [user]);
 
-  const loadPrompts = async () => {
+  const loadPrompt = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      // Initialize prompts if needed
+      // Initialize if needed
       await initializeSystemPrompts(user.uid);
 
-      // Load both versions
-      const [prod, test] = await Promise.all([
-        getSystemPrompt('production'),
-        getSystemPrompt('testing')
-      ]);
-
-      setProductionPrompt(prod);
-      setTestingPrompt(test);
-      setProductionContent(prod?.content || '');
-      setTestingContent(test?.content || '');
+      // Load latest prompt
+      const latest = await getLatestSystemPrompt();
+      setCurrentPrompt(latest);
+      setContent(latest?.content || '');
     } catch (error) {
-      console.error('Error loading prompts:', error);
-      setError('Failed to load system prompts');
+      console.error('Error loading prompt:', error);
+      setError('Failed to load system prompt');
     } finally {
       setLoading(false);
     }
@@ -101,106 +92,60 @@ export default function SystemPromptManager() {
     if (!user) return;
 
     try {
-      const [promptPref, modelPref] = await Promise.all([
-        getUserPromptPreference(user.uid),
-        getUserLLMModel(user.uid)
-      ]);
-      setUserVersion(promptPref);
+      const modelPref = await getUserLLMModel(user.uid);
       setSelectedModel(modelPref);
     } catch (error) {
       console.error('Error loading user preferences:', error);
     }
   };
 
-  const handleSavePrompt = async (version: PromptVersion) => {
-    if (!user) return;
+  const loadHistory = async () => {
+    try {
+      const promptHistory = await getPromptHistory(50);
+      setHistory(promptHistory);
+    } catch (error) {
+      console.error('Error loading history:', error);
+    }
+  };
 
-    // Show version comment dialog
-    setPendingSaveVersion(version);
-    setShowVersionCommentDialog(true);
+  const handleSavePrompt = () => {
+    // Show description dialog
+    setShowDescriptionDialog(true);
   };
 
   const performSave = async () => {
-    if (!user || !pendingSaveVersion) return;
+    if (!user) return;
 
     setSaving(true);
     setMessage('');
     setError('');
-    setShowVersionCommentDialog(false);
+    setShowDescriptionDialog(false);
 
     try {
-      const content = pendingSaveVersion === 'production' ? productionContent : testingContent;
-      const success = await saveSystemPrompt(
-        pendingSaveVersion,
+      const id = await saveSystemPrompt(
         content,
         user.uid,
-        undefined,
-        versionComment,
-        user.email || ''
+        user.email || '',
+        description || 'System prompt update'
       );
 
-      if (success) {
-        setMessage(`${pendingSaveVersion} prompt saved successfully`);
-        setVersionComment('');
-        setPendingSaveVersion(null);
-        // Reload prompts to get updated timestamps
-        await loadPrompts();
+      if (id) {
+        setMessage('Prompt saved successfully');
+        setDescription('');
+        // Reload prompt to get updated info
+        await loadPrompt();
       } else {
-        setError(`Failed to save ${pendingSaveVersion} prompt`);
+        setError('Failed to save prompt');
       }
     } catch (error) {
       console.error('Error saving prompt:', error);
-      setError(`Error saving ${pendingSaveVersion} prompt`);
+      setError('Error saving prompt');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCopyPrompt = async (from: PromptVersion, to: PromptVersion) => {
-    if (!user) return;
-
-    setMessage('');
-    setError('');
-
-    try {
-      const success = await copyPromptVersion(from, to, user.uid);
-
-      if (success) {
-        setMessage(`Copied ${from} to ${to} successfully`);
-        // Reload prompts
-        await loadPrompts();
-      } else {
-        setError(`Failed to copy ${from} to ${to}`);
-      }
-    } catch (error) {
-      console.error('Error copying prompt:', error);
-      setError(`Error copying prompt`);
-    }
-  };
-
-
-  const handleVersionChange = async (version: PromptVersion) => {
-    if (!user) return;
-
-    setMessage('');
-    setError('');
-
-    try {
-      const success = await setUserPromptPreference(user.uid, version);
-
-      if (success) {
-        setUserVersion(version);
-        setMessage(`Switched to ${version} version`);
-      } else {
-        setError('Failed to update preference');
-      }
-    } catch (error) {
-      console.error('Error updating preference:', error);
-      setError('Error updating preference');
-    }
-  };
-
-  const handleModelChange = async (model: LLMModel) => {
+  const handleModelChange = async (model: string) => {
     if (!user) return;
 
     setMessage('');
@@ -211,20 +156,59 @@ export default function SystemPromptManager() {
 
       if (success) {
         setSelectedModel(model);
-        setMessage(`Your LLM model preference updated to ${model.includes('grok') ? 'Grok-4-Fast' : model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' : 'Gemini 2.5 Pro'}`);
+        const modelName = model.includes('grok') ? 'Grok-4-Fast' :
+                         model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' :
+                         'Gemini 2.5 Pro';
+        setMessage(`Your LLM model preference updated to ${modelName}`);
       } else {
         setError('Failed to update model preference');
       }
     } catch (error) {
-      console.error('Error updating system model:', error);
-      setError('Error updating system model');
+      console.error('Error updating model:', error);
+      setError('Error updating model');
     }
   };
 
-  const formatLastUpdated = (timestamp: any) => {
-    if (!timestamp) return 'Never';
+  const handleViewHistory = async () => {
+    await loadHistory();
+    setShowHistoryDialog(true);
+  };
+
+  const handleRevertToVersion = async (prompt: SystemPrompt) => {
+    if (!user) return;
+
+    setMessage('');
+    setError('');
+
+    try {
+      // Save current version to history before reverting
+      await saveSystemPrompt(
+        content,
+        user.uid,
+        user.email || '',
+        'Auto-saved before revert'
+      );
+
+      // Set content to historical version
+      setContent(prompt.content);
+      setMessage(`Reverted to version from ${formatDate(prompt.createdAt)}`);
+      setShowHistoryDialog(false);
+    } catch (error) {
+      console.error('Error reverting:', error);
+      setError('Error reverting to version');
+    }
+  };
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'Unknown';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleString();
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
   };
 
   if (loading) {
@@ -232,7 +216,7 @@ export default function SystemPromptManager() {
       <Card>
         <CardContent className="flex items-center justify-center h-32">
           <RefreshCw className="w-6 h-6 animate-spin mr-2" />
-          Loading prompts...
+          Loading prompt...
         </CardContent>
       </Card>
     );
@@ -240,205 +224,84 @@ export default function SystemPromptManager() {
 
   return (
     <div className="space-y-6">
-      {/* Configuration Card - Prompt Version & LLM Model */}
+      {/* Configuration Card - LLM Model Selection */}
       <Card className="p-4">
-        <div className="flex items-start justify-between gap-6">
-          {/* Left: Prompt Version */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-4 h-4 text-gray-600" />
-              <Label className="text-sm font-medium">Prompt Version</Label>
-            </div>
-            <div className="flex items-center gap-3">
-              <Select value={userVersion} onValueChange={(v) => handleVersionChange(v as PromptVersion)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="production">Production</SelectItem>
-                  <SelectItem value="testing">Testing</SelectItem>
-                </SelectContent>
-              </Select>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                userVersion === 'production'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                Active
-              </span>
-            </div>
-          </div>
-
-          {/* Right: LLM Model */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Bot className="w-4 h-4 text-gray-600" />
-              <Label className="text-sm font-medium">Language Model</Label>
-              <span className="text-xs text-gray-500">(OpenRouter BYOK)</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Select value={selectedModel} onValueChange={(v) => handleModelChange(v as LLMModel)}>
-                <SelectTrigger className="w-48">
-                  <SelectValue>
-                    {selectedModel.includes('grok')
-                      ? 'Grok-4-Fast'
-                      : selectedModel === 'google/gemini-2.5-flash'
-                        ? 'Gemini 2.5 Flash'
-                        : 'Gemini 2.5 Pro'}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="x-ai/grok-4-fast">Grok-4-Fast</SelectItem>
-                  <SelectItem value="google/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                  <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                </SelectContent>
-              </Select>
-              <span className="text-xs text-gray-500">Temp: 0</span>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 mb-2">
+          <Bot className="w-4 h-4 text-gray-600" />
+          <Label className="text-sm font-medium">Language Model</Label>
+          <span className="text-xs text-gray-500">(OpenRouter BYOK)</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Select value={selectedModel} onValueChange={handleModelChange}>
+            <SelectTrigger className="w-48">
+              <SelectValue>
+                {selectedModel.includes('grok')
+                  ? 'Grok-4-Fast'
+                  : selectedModel === 'google/gemini-2.5-flash'
+                    ? 'Gemini 2.5 Flash'
+                    : 'Gemini 2.5 Pro'}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="x-ai/grok-4-fast">Grok-4-Fast</SelectItem>
+              <SelectItem value="google/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+              <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-gray-500">Temp: 0</span>
         </div>
       </Card>
 
-      {/* Prompt Editor Tabs */}
+      {/* Prompt Editor */}
       <Card>
         <CardHeader>
-          <CardTitle>System Prompt Editor</CardTitle>
-          <CardDescription>
-            Manage production and testing versions of the system prompt
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>System Prompt Editor</CardTitle>
+              <CardDescription>
+                Latest version • {currentPrompt ? formatDate(currentPrompt.createdAt) : 'No prompt saved'}
+                {currentPrompt?.createdByEmail && ` • ${currentPrompt.createdByEmail}`}
+              </CardDescription>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowFullscreenEditor(true)}
+              title="Open fullscreen editor"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="production" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="production" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Production
-              </TabsTrigger>
-              <TabsTrigger value="testing" className="flex items-center gap-2">
-                <FlaskConical className="w-4 h-4" />
-                Testing
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Production Tab */}
-            <TabsContent value="production" className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label>Production Prompt (Stable)</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">
-                      Last updated: {formatLastUpdated(productionPrompt?.lastUpdated)}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setFullscreenEditVersion('production');
-                        setShowFullscreenEditor(true);
-                      }}
-                      title="Open fullscreen editor"
-                    >
-                      <Maximize2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs text-gray-500">
-                    {productionContent.split('\n').length} rows • {productionContent.length} characters
-                  </div>
-                  <MarkdownEditor
-                    value={productionContent}
-                    onChange={setProductionContent}
-                    placeholder="Enter production system prompt..."
-                    label=""
-                    minHeight="400px"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleSavePrompt('production')}
-                    disabled={saving}
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Production
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowHistoryDialog(true)}
-                  >
-                    <History className="w-4 h-4 mr-2" />
-                    View History
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleCopyPrompt('production', 'testing')}
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy to Testing
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Testing Tab */}
-            <TabsContent value="testing" className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label>Testing Prompt (Read-Only - Uses /public/system_prompt.md)</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">
-                      Always uses current system_prompt.md file
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setFullscreenEditVersion('testing');
-                        setShowFullscreenEditor(true);
-                      }}
-                      title="View in fullscreen (read-only)"
-                    >
-                      <Maximize2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
-                  <p className="text-sm text-yellow-800">
-                    ⚠️ Testing version is read-only and always uses the content from <code className="bg-yellow-100 px-1">/public/system_prompt.md</code>
-                  </p>
-                  <p className="text-sm text-yellow-800 mt-2">
-                    To modify the testing prompt, edit the file directly in your code editor.
-                  </p>
-                </div>
-                <MarkdownEditor
-                  value={testingContent}
-                  onChange={() => {}}
-                  readOnly
-                  placeholder="Content loaded from /public/system_prompt.md"
-                  label=""
-                  minHeight="400px"
-                  className="bg-gray-50"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    disabled
-                    className="opacity-50 cursor-not-allowed"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Testing (Disabled)
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleCopyPrompt('testing', 'production')}
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy to Production
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500">
+              {content.split('\n').length} rows • {content.length} characters
+            </div>
+            <MarkdownEditor
+              value={content}
+              onChange={setContent}
+              placeholder="Enter system prompt..."
+              label=""
+              minHeight="500px"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSavePrompt}
+              disabled={saving}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save New Version
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleViewHistory}
+            >
+              <History className="w-4 h-4 mr-2" />
+              View History
+            </Button>
+          </div>
 
           {/* Status Messages */}
           {message && (
@@ -457,44 +320,30 @@ export default function SystemPromptManager() {
         </CardContent>
       </Card>
 
-      {/* History Dialog */}
-      <PromptHistoryDialog
-        open={showHistoryDialog}
-        onOpenChange={setShowHistoryDialog}
-        version="production"
-        onRevert={loadPrompts}
-      />
-
       {/* Fullscreen Editor */}
       <FullscreenPromptEditor
         open={showFullscreenEditor}
         onOpenChange={setShowFullscreenEditor}
-        content={fullscreenEditVersion === 'production' ? productionContent : testingContent}
-        onChange={(content) => {
-          if (fullscreenEditVersion === 'production') {
-            setProductionContent(content);
-          } else {
-            setTestingContent(content);
-          }
-        }}
-        onSave={() => handleSavePrompt(fullscreenEditVersion)}
-        title={`${fullscreenEditVersion === 'production' ? 'Production' : 'Testing'} System Prompt`}
+        content={content}
+        onChange={setContent}
+        onSave={handleSavePrompt}
+        title="System Prompt"
         saving={saving}
       />
 
-      {/* Version Comment Dialog */}
-      <Dialog open={showVersionCommentDialog} onOpenChange={setShowVersionCommentDialog}>
+      {/* Description Dialog */}
+      <Dialog open={showDescriptionDialog} onOpenChange={setShowDescriptionDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Version Comment</DialogTitle>
+            <DialogTitle>Add Version Description</DialogTitle>
             <DialogDescription>
               Describe the changes you made in this version. This helps track the history of modifications.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <Textarea
-              value={versionComment}
-              onChange={(e) => setVersionComment(e.target.value)}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g., Updated supplier categories, Added new compliance requirements, Fixed formatting issues..."
               className="min-h-[100px]"
             />
@@ -503,20 +352,74 @@ export default function SystemPromptManager() {
             <Button
               variant="outline"
               onClick={() => {
-                setShowVersionCommentDialog(false);
-                setVersionComment('');
-                setPendingSaveVersion(null);
+                setShowDescriptionDialog(false);
+                setDescription('');
               }}
             >
               Cancel
             </Button>
             <Button
               onClick={performSave}
-              disabled={!versionComment.trim()}
+              disabled={!description.trim()}
             >
-              Save with Comment
+              Save with Description
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Prompt History</DialogTitle>
+            <DialogDescription>
+              View and revert to previous versions
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {history.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-8">No history available</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Saved By</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.map((prompt, idx) => (
+                    <TableRow key={prompt.id}>
+                      <TableCell className="text-xs">
+                        {formatDate(prompt.createdAt)}
+                        {idx === 0 && (
+                          <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] rounded">
+                            CURRENT
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">{prompt.createdByEmail || prompt.createdBy}</TableCell>
+                      <TableCell className="text-xs">{prompt.description || '-'}</TableCell>
+                      <TableCell className="text-right">
+                        {idx !== 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRevertToVersion(prompt)}
+                          >
+                            Revert
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

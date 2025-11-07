@@ -1,9 +1,9 @@
 {
-  "name": "massify",
+  "name": "socialwise",
   "private": true,
   "version": "1.0.0",
-  "description": "Mass Tailored Proposals with Sophisticated Price Calculations - Massify SAAS Platform",
-  "author": "Massify",
+  "description": "Sosiaalityön teknologiakumppani - AI-avusteinen SAAS-alusta sosiaalityöntekijöille",
+  "author": "SocialWise",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -24,7 +24,8 @@
     "migrate:stock:direct": "node dist/scripts/migrateStockData.js",
     "migrate:stock:auth": "powershell -ExecutionPolicy Bypass -File ./Data_preparation/migrate-with-auth.ps1",
     "migrate:stock:simple": "npx tsx Data_preparation/migrateWithUserAuth.ts",
-    "migrate:crm": "npx tsx Data_preparation/migrate-crm-data.ts"
+    "migrate:crm": "npx tsx Data_preparation/migrate-crm-data.ts",
+    "pdf:convert": "npx tsx data_preparation/pdf-to-markdown.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
@@ -61,6 +62,7 @@
     "next-themes": "^0.4.6",
     "openai": "^4.94.0",
     "papaparse": "^5.5.2",
+    "pdf-parse": "^2.4.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.3.8",

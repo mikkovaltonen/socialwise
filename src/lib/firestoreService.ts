@@ -1,7 +1,6 @@
 import { doc, setDoc, getDoc, collection, query, where, orderBy, limit, getDocs, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { PurchaseRequisition, PurchaseRequisitionStatus } from '@/types/purchaseRequisition';
 
 export interface SystemPromptVersion {
   id?: string;
@@ -119,7 +118,7 @@ export const savePromptVersion = async (
       technicalKey: technicalKey
     };
 
-    const docRef = await addDoc(collection(db, 'systemPromptVersions'), {
+    const docRef = await addDoc(collection(db, 'crm_systemPromptVersions'), {
       ...promptVersion,
       savedDate: serverTimestamp()
     });
@@ -152,7 +151,7 @@ const getNextVersionNumber = async (userId: string): Promise<number> => {
   }
 
   const q = query(
-    collection(db, 'systemPromptVersions'),
+    collection(db, 'crm_systemPromptVersions'),
     where('userId', '==', userId)
   );
   
@@ -182,7 +181,7 @@ export const loadLatestPrompt = async (userId: string): Promise<string | null> =
     }
 
     const q = query(
-      collection(db, 'systemPromptVersions'),
+      collection(db, 'crm_systemPromptVersions'),
       where('userId', '==', userId)
     );
     
@@ -232,7 +231,7 @@ export const getPromptHistory = async (userId: string): Promise<SystemPromptVers
     }
 
     const q = query(
-      collection(db, 'systemPromptVersions'),
+      collection(db, 'crm_systemPromptVersions'),
       where('userId', '==', userId)
     );
     
@@ -269,7 +268,7 @@ export const getPromptVersion = async (versionId: string): Promise<SystemPromptV
       return allVersions.find(v => v.id === versionId) || null;
     }
 
-    const docRef = doc(db, 'systemPromptVersions', versionId);
+    const docRef = doc(db, 'crm_systemPromptVersions', versionId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -302,7 +301,7 @@ export const updatePromptEvaluation = async (versionId: string, evaluation: stri
       return;
     }
 
-    const docRef = doc(db, 'systemPromptVersions', versionId);
+    const docRef = doc(db, 'crm_systemPromptVersions', versionId);
     await setDoc(docRef, { evaluation }, { merge: true });
   } catch (error) {
     console.warn('Firebase evaluation update failed, falling back to localStorage:', error);
@@ -346,7 +345,7 @@ export const createContinuousImprovementSession = async (
       lastUpdated: new Date()
     };
 
-    const docRef = await addDoc(collection(db, 'continuous_improvement'), {
+    const docRef = await addDoc(collection(db, 'crm_continuous_improvement'), {
       ...session,
       createdDate: serverTimestamp(),
       lastUpdated: serverTimestamp()
@@ -370,7 +369,7 @@ export const addTechnicalLog = async (
       return;
     }
 
-    const sessionRef = doc(db, 'continuous_improvement', sessionId);
+    const sessionRef = doc(db, 'crm_continuous_improvement', sessionId);
     const sessionDoc = await getDoc(sessionRef);
 
     if (sessionDoc.exists()) {
@@ -418,7 +417,7 @@ export const setUserFeedback = async (
       return;
     }
 
-    const sessionRef = doc(db, 'continuous_improvement', sessionId);
+    const sessionRef = doc(db, 'crm_continuous_improvement', sessionId);
     const updateData: any = {
       userFeedback: feedback,
       lastUpdated: serverTimestamp()
@@ -455,7 +454,7 @@ export const getContinuousImprovementSessions = async (
     }
 
     let q = query(
-      collection(db, 'continuous_improvement'),
+      collection(db, 'crm_continuous_improvement'),
       where('userId', '==', userId)
     );
 
@@ -490,7 +489,7 @@ export const getNegativeFeedbackSessions = async (
     }
 
     let q = query(
-      collection(db, 'continuous_improvement'),
+      collection(db, 'crm_continuous_improvement'),
       where('userFeedback', '==', 'thumbs_down')
     );
 
@@ -526,7 +525,7 @@ export const updateIssueStatus = async (
       return;
     }
 
-    const sessionRef = doc(db, 'continuous_improvement', sessionId);
+    const sessionRef = doc(db, 'crm_continuous_improvement', sessionId);
     const updateData: Record<string, unknown> = {
       issueStatus: status,
       lastUpdated: serverTimestamp()
@@ -552,59 +551,4 @@ export const updateIssueStatus = async (
   }
 };
 
-// =============================
-// Purchase Requisition Firestore
-// =============================
-
-const PR_COLLECTION = 'purchase_requisitions';
-
-export const createPurchaseRequisition = async (
-  userId: string,
-  requisition: Omit<PurchaseRequisition, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
-): Promise<string> => {
-  if (!db) throw new Error('Firebase not initialized');
-  const payload = {
-    ...requisition,
-    userId,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-  const docRef = await addDoc(collection(db, PR_COLLECTION), payload);
-  return docRef.id;
-};
-
-export const listPurchaseRequisitions = async (userId: string): Promise<PurchaseRequisition[]> => {
-  if (!db) return [];
-  const q = query(collection(db, PR_COLLECTION), where('userId', '==', userId));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.() || new Date(), updatedAt: d.data().updatedAt?.toDate?.() || new Date() })) as PurchaseRequisition[];
-};
-
-export const getPurchaseRequisition = async (id: string): Promise<PurchaseRequisition | null> => {
-  if (!db) return null;
-  const ref = doc(db, PR_COLLECTION, id);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return null;
-  const data = snap.data();
-  return { id: snap.id, ...data, createdAt: data.createdAt?.toDate?.() || new Date(), updatedAt: data.updatedAt?.toDate?.() || new Date() } as PurchaseRequisition;
-};
-
-export const updatePurchaseRequisition = async (id: string, update: Partial<PurchaseRequisition>): Promise<void> => {
-  if (!db) throw new Error('Firebase not initialized');
-  const ref = doc(db, PR_COLLECTION, id);
-  const payload = { ...update, updatedAt: serverTimestamp() } as Record<string, unknown>;
-  await setDoc(ref, payload, { merge: true });
-};
-
-export const setPurchaseRequisitionStatus = async (id: string, status: PurchaseRequisitionStatus): Promise<void> => {
-  if (!db) throw new Error('Firebase not initialized');
-  const ref = doc(db, PR_COLLECTION, id);
-  await updateDoc(ref, { status, updatedAt: serverTimestamp() });
-};
-
-export const deletePurchaseRequisition = async (id: string): Promise<void> => {
-  if (!db) throw new Error('Firebase not initialized');
-  const ref = doc(db, PR_COLLECTION, id);
-  await deleteDoc(ref);
-};
 

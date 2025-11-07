@@ -1,39 +1,46 @@
 # Claude Code Instructions
 
 ## Project Overview
-This is Massify - a SAAS platform for creating mass tailored proposals with sophisticated price calculations. Built with React, TypeScript, and Vite, it helps businesses personalize each proposal for every recipient with intelligent pricing automation.
+This is SocialWise - Sosiaalityön teknologiakumppani (Social Work Technology Partner). An AI-powered SAAS platform built with React, TypeScript, and Vite that assists social workers with documentation, case management, and professional guidance. The platform combines human expertise with AI to improve service delivery, reduce documentation burden, and strengthen legal protection and equality in social work.
 
 ## Core Features
 
-### 1. Mass Proposal Generation
-- **Database**: Recipient data and proposal templates in Firestore collections
-- **Personalization**: AI-driven content tailoring for each recipient
-- **Generation**: Batch create customized proposals at scale
-- **Data Fields**:
-  - Recipient information (name, company, industry)
-  - Pricing parameters and calculation rules
-  - Proposal template selection
-  - Customization preferences
-- **Export**: Batch export personalized proposals in multiple formats
-
-### 2. AI Proposal Assistant
+### 1. AI-Powered Social Work Assistant
 - **Model**: Multiple LLM options via OpenRouter (Grok, Gemini)
-- **Context**: Recipient data and proposal templates
-- **Purpose**: Create personalized proposals and optimize pricing strategies
+- **Context**: Client data, service history, and social work legislation
+- **Purpose**:
+  - Assist with professional social work documentation (80% reduction in writing burden)
+  - Support onboarding and legal compliance
+  - Provide guidance on case management decisions
+  - Ensure equal treatment and legal protection
 - **Languages**: Finnish and English support
+- **Values**: Security, User-centricity, Reliability, Ethics, Innovation
 
-### 3. Sophisticated Pricing Engine
-- **Database**: Pricing rules and calculation templates in Firestore
-- **Price Calculation**: Dynamic pricing based on recipient data and business rules
-- **Context Initialization**: Load recipient data, pricing rules applied automatically
-- **Price Optimization**: AI-driven pricing recommendations
-- **Price Visibility**: View base price, adjustments, discounts, and final price
-- **Interactive Table**: Sort, filter, and view all pricing data with responsive design
+### 2. Client Data Management (CRM)
+- **Database**: Client information and service history in Firestore collections
+- **Data Fields**:
+  - Client identification (tampuurinumero, Y-tunnus)
+  - Contact information and demographics
+  - Service history with timestamps and status
+  - Property/housing manager information
+  - Building and apartment details
+- **Search & Filter**: Real-time full-text search across all client fields
+- **Service History Viewer**: Hover cards displaying complete service history
+- **Click to Load**: Load client data directly into AI chat context
 
-### 4. Document Analysis
-- **Supported Formats**: PDF, Excel (.xlsx, .xls), CSV, Word (.doc, .docx)
-- **Processing**: Extract and analyze recipient data and proposal templates
-- **Integration**: Works with proposal generation for comprehensive automation
+### 3. Documentation Support
+- **AI-Assisted Writing**: Reduce documentation time by 80%
+- **Legal Compliance**: Ensure documentation meets social work legislation
+- **Case Notes**: Structured templates for different case types
+- **Decision Support**: AI-powered recommendations with legal references
+- **Quality Assurance**: Automated checks for completeness and accuracy
+
+### 4. System Prompt Management
+- **Versioning**: Timestamp-based system prompt versions
+- **History**: View and revert to previous prompt versions
+- **Model Selection**: Choose between Grok-4-Fast, Gemini 2.5 Flash, Gemini 2.5 Pro
+- **User Preferences**: Individual LLM model preferences per user
+- **Default Initialization**: Bootstrap from `/public/system_prompt.md`
 
 ## Development Commands
 
@@ -77,97 +84,132 @@ npm run preview
 ```
 src/
 ├── components/
-│   ├── ValmetSupplierSearchSimple.tsx  # Main supplier search interface
-│   ├── ChatInitViewer.tsx              # Policy document viewer
-│   ├── DocumentAnalysis.tsx            # Document upload and analysis
-│   ├── InteractiveMarkdownTable.tsx    # Interactive table parser for Markdown
-│   └── ui/                             # shadcn/ui components
+│   ├── MarketingPlannerChat.tsx        # AI-avustettu chat-käyttöliittymä
+│   ├── StockManagementTable.tsx        # Asiakastietojen hallinta ja näkymä
+│   ├── SystemPromptManager.tsx         # Järjestelmäpromptien hallinta
+│   ├── DocumentAnalysis.tsx            # Dokumenttien analysointi
+│   ├── InteractiveMarkdownTable.tsx    # Interaktiivinen taulukkoparseri
+│   └── ui/                             # shadcn/ui komponentit
 ├── lib/
-│   ├── valmetSupplierSearch.ts         # Supplier search functions
-│   ├── firebase.ts                     # Firebase configuration
-│   └── utils.ts                        # Utility functions
+│   ├── chatContextConfigService.ts     # Chat-kontekstin konfiguraatio
+│   ├── systemPromptService.ts          # Järjestelmäpromptien hallinta
+│   ├── firestoreService.ts             # Firestore-tietokantapalvelut
+│   ├── sessionService.ts               # Istunnon hallinta
+│   ├── firebase.ts                     # Firebase-konfiguraatio
+│   └── utils.ts                        # Apufunktiot
 ├── pages/
-│   ├── Admin.tsx                       # Admin panel with supplier search
-│   └── Index.tsx                       # Landing page
-└── types/                              # TypeScript definitions
+│   ├── Admin.tsx                       # Admin-paneeli
+│   ├── Workbench.tsx                   # Pääsovellus
+│   └── Index.tsx                       # Landing-sivu
+└── types/                              # TypeScript-määrittelyt
 ```
 
-## Database Structure
+## Tietokannan Rakenne
 
-### `suppliers_complete` Collection (~400 documents)
-```javascript
-{
-  documentId: string,           // Unique identifier
-  importIndex: number,          // Import order
-  importedAt: string,          // ISO timestamp
-  sourceFile: string,          // Data source
-  original: {                  // All supplier fields
-    'Company': string,
-    'Branch': string,
-    'Corporation': string,
-    'Supplier Main Category': string,
-    'Supplier Categories': string,
-    'Country/Region (Street Address)': string,
-    'City (Street Address)': string,
-    'Supplier Main Contact': string,
-    'Supplier Main Contact eMail': string,
-    'Preferred Supplier': 'X' | null,
-    'Valmet Supplier Code of Conduct signed': 'X' | null,
-    // ... 30+ more fields
-  }
-}
-```
-
-### `stock_management` Collection
-Stock management data organized by substrate families (keyword field). Each document represents a material/width combination within a substrate family.
+### `crm_asikkaat_ja_palveluhistoria` Kokoelma (6,446 dokumenttia)
+Pääasiallinen CRM-kokoelma, joka sisältää asiakastiedot yhdistettynä palveluhistoriaan.
 
 ```javascript
 {
-  id: string,                   // Firestore document ID
-  material_id: string,          // Material identifier (e.g., "100906")
-  supplier_keyword: string,     // Supplier name (e.g., "AVERY DENN")
-  keyword: string,              // Substrate family identifier (e.g., "_MAD_GR_0209")
-  width: string,                // Material width (e.g., "50 mm")
-  length: string,               // Material length (e.g., "—" for not applicable)
-  ref_at_supplier: string,      // Reference at supplier (e.g., "Slit by Gravic")
-  description: string,          // Full material description
-  lead_time: string,            // Lead time in days (e.g., "20" or "n/a")
-  safety_stock: number,         // Safety stock level
-  current_stock: number,        // Current stock level
-  reservations: number,         // Reserved stock quantity
-  final_stock: number,          // Available stock after reservations
-  expected_date: string,        // Expected delivery date (e.g., "5.12.2025")
-  historical_slit: string       // Slit history note (e.g., "Slit target", "No slit")
+  tampuurinumero: string,       // Primary identifier
+  customerInfo: {
+    tampuuri_tunnus: string,
+    account_name: string,
+    ytunnus: string,            // Business ID
+    katuosoite: string,         // Street address
+    postal_code: string,
+    city: string,
+    isannoitsija: string,       // Property manager
+    primary_email_isannoitsija_user: string,
+    huoneistojen_lukumaara: number,    // Number of apartments
+    rakennusten_lukumaara: number,      // Number of buildings
+    kayttoonottoppaiva: string,         // Date of commissioning
+    asiakkuus_alkanut: string,          // Customer relationship start
+    // ... additional customer fields
+  },
+  serviceHistory: {
+    [recordId]: {
+      service_date: string,
+      service_type: string,
+      description: string,
+      status: 'completed' | 'pending' | string,
+      // ... additional service record fields
+    }
+  },
+  mergedAt: string,             // ISO timestamp
 }
 ```
 
 **Key Features:**
-- **Substrate Families**: Materials are grouped by `keyword` field (e.g., "_MAD_GR_0209", "_3M_ADH_1102")
-- **Stock Tracking**: Tracks safety stock, total stock, reservations, and final available stock
-- **Supplier Integration**: Links to supplier via `supplier_keyword` field
-- **Material Variants**: Same substrate family can have multiple widths and configurations
-- **Context Initialization**: Users select a substrate family from dropdown, all materials with that keyword are loaded into chat context
+- **Merged Data**: Customer data combined with complete service history
+- **Service History on Hover**: Y-tunnus field shows service history in hover card
+- **Full-Text Search**: Search across customer name, Y-tunnus, city, property manager
+- **Click to Load**: Click tampuurinumero to load customer data into chat context
+- **100% Link Rate**: All 4,043 service history records successfully linked
 
-## Important Implementation Details
+### `crm_system_prompts` Kokoelma
+Tallentaa järjestelmäpromptien eri versiot aikaleimalla.
 
-### Fuzzy Search Implementation
-The supplier search uses client-side fuzzy matching for maximum flexibility:
-```typescript
-// All searches are case-insensitive partial matches
-fuzzyMatch(text: string, searchTerm: string): boolean {
-  return text.toLowerCase().includes(searchTerm.toLowerCase());
+```javascript
+{
+  content: string,           // Promptin sisältö
+  createdAt: Timestamp,      // Automaattinen aikaleima
+  createdBy: string,         // Käyttäjän ID
+  createdByEmail: string,    // Käyttäjän sähköposti
+  description: string        // Version kuvaus
 }
 ```
 
-### Data Optimization
-- Removed redundant fields (60% storage reduction)
-- All supplier data stored in `original` map
-- No duplicate data between root and nested fields
+### `crm_user_preferences` Kokoelma
+Tallentaa käyttäjien LLM-mallivalinnat.
 
-### Search Performance
-- Loads all documents into memory for fuzzy matching
-- No Firestore indexes required
-- Typical search completes in <1 second
+```javascript
+{
+  llmModel: string,          // Esim. 'google/gemini-2.5-pro'
+  updatedAt: Timestamp       // Päivitysaika
+}
+```
+
+### `crm_continuous_improvement` Kokoelma
+Seuraa chat-istuntoja, käyttäjäpalautetta ja teknisiä lokeja analytiikkaa varten.
+
+```javascript
+{
+  id: string,
+  promptKey: string,
+  chatSessionKey: string,
+  userId: string,
+  userFeedback: 'thumbs_up' | 'thumbs_down' | null,
+  userComment: string,
+  technicalLogs: TechnicalLog[],
+  createdDate: Date,
+  lastUpdated: Date,
+}
+```
+
+## Tärkeät Toteutusdetaljit
+
+### CRM-Asiakastaulukon Ominaisuudet
+- **Reaaliaikainen Haku**: Suodata asiakkaita nimen, Y-tunnuksen, kaupungin tai isännöitsijän mukaan
+- **Palveluhistorian Hover-kortit**: Vie hiiri Y-tunnuksen päälle nähdäksesi täydellisen palveluhistorian
+  - Visuaalinen indikaattori (sininen alleviivaus + määrämerkki) asiakkaille, joilla on historiaa
+  - Näyttää palvelupäivämäärät, tyypit, kuvaukset ja tilan värikoodattuna
+- **Klikkaa Ladataksesi**: Klikkaa tampuurinumeroa ladataksesi asiakkaan tiedot AI-chat-kontekstiin
+- **Lajiteltavat Sarakkeet**: Klikkaa sarakeotsikoita lajitellaksesi nousevaan/laskevaan järjestykseen
+- **Responsiivinen Suunnittelu**: Vaakasuuntainen vieritys pienemmille näytöille
+
+### Migration Script
+The `Data_preparation/migrate-crm-data.ts` script:
+- Reads customer and service history Excel files
+- Merges data by tampuurinumero (using Code field from history)
+- Normalizes field names (lowercase, special char replacement)
+- Uploads to Firestore with batch processing
+- Generates detailed markdown reports with statistics
+
+### Data Quality Metrics
+- 6,446 customers successfully migrated
+- 4,043 service history records (100% link rate)
+- Only 26 customers skipped (missing tampuurinumero)
 
 ## Environment Variables
 ```env
@@ -184,11 +226,62 @@ VITE_GEMINI_API_KEY=your-gemini-key
 VITE_GEMINI_MODEL=gemini-2.5-flash-preview-04-17
 ```
 
-## Simplified Architecture (October 2025)
-- Single `suppliers_complete` collection with ~400 suppliers
-- No document context loading (removed internal knowledge and policy documents)
-- System prompts only (Production/Testing versions)
-- Streamlined session initialization
+## Nykyinen Arkkitehtuuri (Marraskuu 2025)
+
+### Yleiskatsaus
+- Sosiaalityöhön keskittyvä CRM-sovellus
+- Pääkokoelma: `crm_asikkaat_ja_palveluhistoria` (6,446 asiakasta)
+- AI-avusteinen chat-käyttöliittymä sosiaalityöntekijöille
+- Palveluhistorian integraatio hover-korteilla
+- Yksinkertaistettu järjestelmäpromptien hallinta aikaleimalla
+
+### Järjestelmäpromptien Hallinta (Yksinkertaistettu)
+**Arkkitehtuuri**: Yksi kokoelma aikaleima-pohjaisella versioinnilla
+
+**Kokoelmat**:
+- `crm_system_prompts`: Kaikki promptien versiot aikaLeimalla
+- `crm_user_preferences`: Käyttäjien LLM-mallivalinnat
+
+**Rakenne**:
+```typescript
+// crm_system_prompts dokumentti
+{
+  content: string,           // Promptin teksti
+  createdAt: Timestamp,      // Automaattinen aikaleima
+  createdBy: string,         // Käyttäjä-ID
+  createdByEmail: string,    // Käyttäjän sähköposti
+  description: string        // Version kuvaus
+}
+
+// crm_user_preferences dokumentti
+{
+  llmModel: string,          // Esim. 'google/gemini-2.5-pro'
+  updatedAt: Timestamp       // Päivitysaika
+}
+```
+
+**Keskeiset Ominaisuudet**:
+- Jokainen tallennus luo uuden dokumentin automaattisesti luodulla ID:llä
+- Käytä aina viimeisintä: `orderBy('createdAt', 'desc'), limit(1)`
+- Täysi historia saatavilla katselua ja palautusta varten
+- Ei tuotanto/testiversioita - yksinkertaistettu yhteen virtaan
+- Käyttäjien mallivalinnat tallennetaan erikseen
+
+**Funktiot** (`systemPromptService.ts`):
+- `getLatestSystemPrompt()` - Hae viimeisin prompti
+- `saveSystemPrompt()` - Luo uusi versio
+- `getPromptHistory()` - Näytä historiaversiot
+- `getSystemPromptForUser()` - Hae sisältö chat-alustukseen
+- `getUserLLMModel()` - Hae käyttäjän mallivalinta
+- `setUserLLMModel()` - Aseta käyttäjän mallivalinta
+- `initializeSystemPrompts()` - Alusta oletuksella `/public/system_prompt.md`:stä
+
+**Käyttöliittymä** (`SystemPromptManager.tsx`):
+- Yksi editori (ei tuotanto/testivälilehtiä)
+- Mallin valinta (Grok-4-Fast, Gemini 2.5 Flash, Gemini 2.5 Pro)
+- Historiakatselu palautusmahdollisuudella
+- Koko näytön muokkaustila
+- Version kuvaukset muutosten seuraamiseen
 
 ## Component Usage
 
@@ -226,59 +319,58 @@ Features:
 - Export functions should include all original fields
 
 ## Known Limitations
-- Search loads all documents (okay for 520 records, may need optimization for larger datasets)
-- No real-time updates (requires page refresh for new data)
-- Fuzzy search is substring-based (no advanced algorithms like Levenshtein distance)
+- Table loads all 6,446 customers into memory (acceptable for this dataset size)
+- No real-time updates (requires page refresh or manual table refresh)
+- Service history hover requires mouse (not available on touch devices)
 
 ## Testing Checklist
-- [ ] Supplier search returns results with partial matches
-- [ ] Case-insensitive search works correctly
-- [ ] CSV export includes all supplier fields
-- [ ] Statistics dashboard shows correct counts (~400 total)
-- [ ] Policy document viewer pages correctly
-- [ ] AI chat loads context successfully
+- [ ] Customer search filters correctly by name, Y-tunnus, city, property manager
+- [ ] Service history hover cards display on Y-tunnus
+- [ ] Customer click loads data into chat context
+- [ ] Migration script completes with 100% service history link rate
+- [ ] Migration report generates with correct statistics
 
 ## Common Issues & Solutions
 
-### Empty Search Results
-- Check if data exists in `original` map (not at root level)
-- Verify field names match exactly (e.g., 'Supplier Main Category' not 'Main Category')
+### No Service History Displayed
+- Verify customer has `serviceHistory` object in Firestore
+- Check that Y-tunnus field has value (not dash)
+- Ensure HoverCard component is properly imported
 
 ### Firebase Permission Errors
-- Ensure user is authenticated
-- Check Firestore rules allow read access
+- Ensure user is authenticated via Firebase Auth
+- Check Firestore rules allow read access to `crm_asikkaat_ja_palveluhistoria`
 
-### Fuzzy Search Not Working
-- Confirm search is using `fuzzyMatch` function
-- Check for typos in field names from `original` map
-- Verify collection name is `suppliers_complete`
+### Migration Failures
+- Verify Excel files exist in `Data_preparation/` folder
+- Check that history records have `Code` field for tampuurinumero
+- Ensure Firebase credentials are set in environment variables
 
-## Recent Updates (October 2025)
+## Recent Updates (November 2025)
 
-### Supplier Management
-- Unified all suppliers into single `suppliers_complete` collection
-- Database contains ~400 suppliers (131 Business consulting, 100 Training, 52 R&D, 45 Legal, 26 Certification, 26 Patent, 14 Leased workforce, 2 Testing, 1 Facility)
-- Updated UI to reflect simplified database structure
-- Complete fuzzy search with case-insensitive matching
-- Simplified search UI with only 4 search fields
-
-### Stock Management (Latest)
-- **Replaced Excel Upload**: Removed Excel file upload, replaced with dropdown substrate family selector
-- **Database Integration**: Direct selection from `stock_management` collection via `keyword` field
-- **Context Initialization**: Select substrate family (e.g., "_MAD_GR_0209"), all materials with that keyword loaded into AI context
-- **Interactive Table View**: Added StockManagementTable component with 14 columns:
-  - Material ID, Description, Supplier, Substrate Family
-  - Width, Length, Ref at Supplier, Lead Time
-  - Safety Stock, Current Stock, To Be Delivered, Reservations, Final Stock
-  - Expected Date, Historical Slit
-- **Removed CSV Export**: Simplified table view (removed export functionality)
-- **Workbench Integration**: Stock management table visible via "Show stock management" toggle in workbench
+### CRM Data Migration & Integration
+- **Component Rename**: `ProfessionalBuyerChat` → `MarketingPlannerChat` to reflect marketing focus
+- **CRM Migration Script**: Complete TypeScript migration tool (`migrate-crm-data.ts`)
+  - Merges customer data with service history by tampuurinumero
+  - 100% service history link rate (4,043 records)
+  - Generates comprehensive markdown reports with statistics
+- **Service History Viewer**: Hover cards on Y-tunnus field
+  - Display service dates, types, descriptions, and status
+  - Visual indicators (blue underline + count badge)
+  - Color-coded status badges (completed, pending)
+- **CRM Customer Table**: Replaced stock management with customer table
+  - Search across 6,446 customers by name, Y-tunnus, city, property manager
+  - Click tampuurinumero to load customer into AI chat
+  - Sortable columns with ascending/descending order
+- **Documentation**: Updated README and CLAUDE.md to reflect CRM architecture
 
 ### UI Components
-- Added InteractiveMarkdownTable component for dynamic table rendering
-- Added SubstrateFamilySelector component for substrate family selection
-- Implemented paged document viewer for policies
+- **InteractiveMarkdownTable**: Dynamic table rendering with sorting and filtering
+- **HoverCard Integration**: Service history viewer on Y-tunnus hover
+- **DataPreparationViewer**: Displays migration reports and documentation
 
 ### LLM Configuration
 - Models: x-ai/grok-4-fast:free, google/gemini-2.5-flash, google/gemini-2.5-pro
-- Model selection is solution-wide via production prompt configuration
+- Model selection via production prompt configuration
+- OpenRouter API integration for model access
+- tässä projektissa kaikki on suomeksi

@@ -31,7 +31,7 @@ export interface ChatContextConfig {
 }
 
 // Firestore document path
-const CHAT_CONTEXT_CONFIG_DOC = 'system_prompts/chat_context_config';
+const CHAT_CONTEXT_CONFIG_DOC = 'crm_system_prompts/chat_context_config';
 
 // Default configuration for chat initialization documents
 export const DEFAULT_CHAT_CONTEXT_DOCUMENTS: ChatContextDocument[] = [
