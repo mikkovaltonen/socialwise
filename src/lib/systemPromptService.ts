@@ -2,7 +2,7 @@
  * Simplified System Prompt Management Service
  *
  * Structure:
- * - Collection: crm_system_prompts
+ * - Collection: botin_ohjeet
  * - Each save creates a new document with timestamp
  * - Always use the latest document (orderBy createdAt desc)
  */
@@ -31,7 +31,7 @@ export interface SystemPrompt {
   description?: string;
 }
 
-const PROMPTS_COLLECTION = 'crm_system_prompts';
+const PROMPTS_COLLECTION = 'botin_ohjeet';
 
 /**
  * Get default system prompt from /public/system_prompt.md
@@ -153,19 +153,51 @@ export async function getPromptHistory(limitCount: number = 50): Promise<SystemP
 }
 
 /**
+ * User preferences interface
+ */
+export interface UserPreferences {
+  llmModel: string;
+  temperature: number;  // Default: 0.05
+  updatedAt?: any;
+}
+
+/**
+ * Get user's preferences (LLM model and temperature)
+ */
+export async function getUserPreferences(userId: string): Promise<UserPreferences> {
+  try {
+    const userDoc = await getDoc(doc(db, 'kayttaja_preferenssit', userId));
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      return {
+        llmModel: data.llmModel || 'google/gemini-2.5-pro',
+        temperature: data.temperature ?? 0.05,
+        updatedAt: data.updatedAt
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching user preferences:', error);
+  }
+  return {
+    llmModel: 'google/gemini-2.5-pro',
+    temperature: 0.05
+  };
+}
+
+/**
  * Get user's LLM model preference
  */
 export async function getUserLLMModel(userId: string): Promise<string> {
-  try {
-    const userDoc = await getDoc(doc(db, 'crm_user_preferences', userId));
-    if (userDoc.exists()) {
-      const data = userDoc.data();
-      return data.llmModel || 'google/gemini-2.5-pro';
-    }
-  } catch (error) {
-    console.error('Error fetching user LLM model:', error);
-  }
-  return 'google/gemini-2.5-pro';
+  const prefs = await getUserPreferences(userId);
+  return prefs.llmModel;
+}
+
+/**
+ * Get user's temperature preference
+ */
+export async function getUserTemperature(userId: string): Promise<number> {
+  const prefs = await getUserPreferences(userId);
+  return prefs.temperature;
 }
 
 /**
@@ -173,7 +205,7 @@ export async function getUserLLMModel(userId: string): Promise<string> {
  */
 export async function setUserLLMModel(userId: string, model: string): Promise<boolean> {
   try {
-    await setDoc(doc(db, 'crm_user_preferences', userId), {
+    await setDoc(doc(db, 'kayttaja_preferenssit', userId), {
       llmModel: model,
       updatedAt: serverTimestamp()
     }, { merge: true });
@@ -181,6 +213,23 @@ export async function setUserLLMModel(userId: string, model: string): Promise<bo
     return true;
   } catch (error) {
     console.error('Error setting user LLM model:', error);
+    return false;
+  }
+}
+
+/**
+ * Set user's temperature preference
+ */
+export async function setUserTemperature(userId: string, temperature: number): Promise<boolean> {
+  try {
+    await setDoc(doc(db, 'kayttaja_preferenssit', userId), {
+      temperature,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    console.log(`✅ User temperature updated to: ${temperature}`);
+    return true;
+  } catch (error) {
+    console.error('Error setting user temperature:', error);
     return false;
   }
 }

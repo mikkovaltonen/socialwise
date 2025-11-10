@@ -20,7 +20,12 @@
       "Bash(npm cache clean:*)",
       "Bash(npm install:*)",
       "WebFetch(domain:www.zealsourcing.fi)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(npm run process-ls-data:*)",
+      "Bash(timeout 10s npm run dev:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

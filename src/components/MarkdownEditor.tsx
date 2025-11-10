@@ -1,5 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Label } from "@/components/ui/label";
+import ReactMarkdown from 'react-markdown';
 
 interface MarkdownEditorProps {
   value: string;
@@ -34,45 +35,34 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
   };
 
-  // Simplified rendering that preserves exact text positioning
+  // Safe rendering using react-markdown
   const renderFormattedText = (text: string) => {
     if (!text && !isFocused) return <span className="text-gray-400">{placeholder}</span>;
     if (!text) return <span>&nbsp;</span>;
 
-    // Process the text with regex to add formatting
-    let processedText = text;
-
-    // Store replacements to apply
-    const replacements: Array<{pattern: RegExp, replacement: string}> = [
-      // Headers
-      {pattern: /^(#{1,3}\s+)(.*)$/gm, replacement: '<span class="text-blue-600 font-bold">$1$2</span>'},
-      // Bold
-      {pattern: /\*\*([^*]+)\*\*/g, replacement: '<span class="text-gray-400">**</span><span class="font-bold">$1</span><span class="text-gray-400">**</span>'},
-      // Italic (avoid matching bold markers)
-      {pattern: /(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, replacement: '<span class="text-gray-400">*</span><span class="italic">$1</span><span class="text-gray-400">*</span>'},
-      // Code
-      {pattern: /`([^`]+)`/g, replacement: '<span class="text-gray-400">`</span><span class="bg-gray-100 px-0.5">$1</span><span class="text-gray-400">`</span>'},
-      // Links
-      {pattern: /\[([^\]]+)\]\(([^)]+)\)/g, replacement: '<span class="text-gray-400">[</span><span class="text-blue-600 underline">$1</span><span class="text-gray-400">](</span><span class="text-blue-600 underline">$2</span><span class="text-gray-400">)</span>'},
-      // Blockquotes
-      {pattern: /^(&gt;\s+)(.*)$/gm, replacement: '<span class="text-gray-500 italic">$1$2</span>'}
-    ];
-
-    // Apply HTML encoding first
-    processedText = processedText
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-
-    // Apply markdown formatting
-    replacements.forEach(({pattern, replacement}) => {
-      processedText = processedText.replace(pattern, replacement);
-    });
-
-    // Convert newlines to <br/> tags
-    processedText = processedText.replace(/\n/g, '<br/>');
-
-    return <div dangerouslySetInnerHTML={{ __html: processedText }} />;
+    return (
+      <div className="prose prose-sm max-w-none">
+        <ReactMarkdown
+          components={{
+            // Style markdown elements to match the editor's design
+            h1: ({children}) => <h1 className="text-blue-600 font-bold text-xl">{children}</h1>,
+            h2: ({children}) => <h2 className="text-blue-600 font-bold text-lg">{children}</h2>,
+            h3: ({children}) => <h3 className="text-blue-600 font-bold text-base">{children}</h3>,
+            strong: ({children}) => <strong className="font-bold">{children}</strong>,
+            em: ({children}) => <em className="italic">{children}</em>,
+            code: ({children}) => <code className="bg-gray-100 px-1 rounded">{children}</code>,
+            a: ({children, href}) => <a href={href} className="text-blue-600 underline">{children}</a>,
+            blockquote: ({children}) => <blockquote className="text-gray-500 italic border-l-4 border-gray-300 pl-4">{children}</blockquote>,
+            p: ({children}) => <p className="mb-2">{children}</p>,
+            ul: ({children}) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+            ol: ({children}) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+            li: ({children}) => <li className="mb-1">{children}</li>,
+          }}
+        >
+          {text}
+        </ReactMarkdown>
+      </div>
+    );
   };
 
   return (

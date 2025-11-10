@@ -1,5 +1,3 @@
-import { db } from './firebase';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { getSystemPromptForUser } from './systemPromptService';
 
 export interface ChatSession {
@@ -10,53 +8,7 @@ export interface ChatSession {
   createdAt: Date;
 }
 
-export interface SystemPromptVersion {
-  id: string;
-  version: number;
-  systemPrompt: string;
-  evaluation: string;
-  savedDate: Date;
-  aiModel: string;
-  userId: string;
-}
-
 export class SessionService {
-  /**
-   * Get the latest system prompt for a user
-   */
-  async getLatestSystemPrompt(userId: string): Promise<SystemPromptVersion | null> {
-    try {
-      const q = query(
-        collection(db, 'crm_systemPromptVersions'),
-        where('userId', '==', userId)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        return null;
-      }
-      
-      // Sort by version on client side until index is created
-      const docs = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as SystemPromptVersion[];
-      
-      // Find the highest version number
-      const latestDoc = docs.reduce((latest, current) => 
-        current.version > latest.version ? current : latest
-      );
-      
-      return latestDoc;
-    } catch (error) {
-      console.error('Failed to fetch latest system prompt:', error);
-      return null;
-    }
-  }
-
-
-
   /**
    * Initialize a new chat session with full context
    */

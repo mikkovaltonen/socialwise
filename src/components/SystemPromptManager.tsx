@@ -11,6 +11,8 @@ import {
   getPromptHistory,
   getUserLLMModel,
   setUserLLMModel,
+  getUserTemperature,
+  setUserTemperature,
   initializeSystemPrompts,
   SystemPrompt
 } from '@/lib/systemPromptService';
@@ -53,6 +55,7 @@ export default function SystemPromptManager() {
   const [currentPrompt, setCurrentPrompt] = useState<SystemPrompt | null>(null);
   const [content, setContent] = useState('');
   const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.5-pro');
+  const [temperature, setTemperature] = useState<number>(0.05);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [showDescriptionDialog, setShowDescriptionDialog] = useState(false);
@@ -93,7 +96,9 @@ export default function SystemPromptManager() {
 
     try {
       const modelPref = await getUserLLMModel(user.uid);
+      const tempPref = await getUserTemperature(user.uid);
       setSelectedModel(modelPref);
+      setTemperature(tempPref);
     } catch (error) {
       console.error('Error loading user preferences:', error);
     }
@@ -166,6 +171,29 @@ export default function SystemPromptManager() {
     } catch (error) {
       console.error('Error updating model:', error);
       setError('Error updating model');
+    }
+  };
+
+  const handleTemperatureChange = async (temp: string) => {
+    if (!user) return;
+
+    setMessage('');
+    setError('');
+
+    const tempValue = parseFloat(temp);
+
+    try {
+      const success = await setUserTemperature(user.uid, tempValue);
+
+      if (success) {
+        setTemperature(tempValue);
+        setMessage(`Temperature updated to ${tempValue}`);
+      } else {
+        setError('Failed to update temperature');
+      }
+    } catch (error) {
+      console.error('Error updating temperature:', error);
+      setError('Error updating temperature');
     }
   };
 
@@ -248,7 +276,23 @@ export default function SystemPromptManager() {
               <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
             </SelectContent>
           </Select>
-          <span className="text-xs text-gray-500">Temp: 0</span>
+          <div className="flex items-center gap-2">
+            <Label className="text-sm font-medium">Temperature</Label>
+            <Select value={temperature.toString()} onValueChange={handleTemperatureChange}>
+              <SelectTrigger className="w-24">
+                <SelectValue>{temperature}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">0</SelectItem>
+                <SelectItem value="0.05">0.05</SelectItem>
+                <SelectItem value="0.1">0.1</SelectItem>
+                <SelectItem value="0.2">0.2</SelectItem>
+                <SelectItem value="0.4">0.4</SelectItem>
+                <SelectItem value="0.7">0.7</SelectItem>
+                <SelectItem value="1">1</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </Card>
 

@@ -313,7 +313,7 @@ export class FirebaseDiagnostic {
       });
 
       // Try to read a simple document
-      const testDoc = doc(db, 'crm_system_prompts/production');
+      const testDoc = doc(db, 'botin_ohjeet/production');
       console.log('🔍 Attempting to read document: system_prompts/production');
 
       const docSnap = await Promise.race([
@@ -328,7 +328,7 @@ export class FirebaseDiagnostic {
           message: 'Successfully read from Firestore',
           details: {
             exists: docSnap.exists(),
-            path: 'crm_system_prompts/production',
+            path: 'botin_ohjeet/production',
             id: docSnap.id
           }
         });

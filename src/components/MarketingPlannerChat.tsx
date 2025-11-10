@@ -1,7 +1,7 @@
 import React, { useState, useRef, useImperativeHandle, forwardRef } from 'react';
 // Using OpenRouter API instead of Google Generative AI
 type Part = { text: string };
-import { Loader2, Send, RotateCcw, Paperclip, Bot, LogOut, Settings, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Upload, FileSpreadsheet, Package } from "lucide-react";
+import { Loader2, Send, RotateCcw, Paperclip, Bot, LogOut, Settings, ThumbsUp, ThumbsDown, AlertTriangle, RefreshCw, Upload, FileSpreadsheet, MessageSquare, PanelRightClose } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { loadLatestPrompt, createContinuousImprovementSession, addTechnicalLog, setUserFeedback } from '../lib/firestoreService';
+import { createContinuousImprovementSession, addTechnicalLog, setUserFeedback } from '../lib/firestoreService';
 import { sessionService, ChatSession } from '../lib/sessionService';
 import * as XLSX from 'xlsx';
 import { getSystemPromptForUser, getUserLLMModel } from '../lib/systemPromptService';
@@ -21,7 +21,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { InteractiveJsonTable } from './InteractiveJsonTable';
 import { MrpDecisionTable } from './MrpDecisionTable';
 import FunctionUsageIndicator from './FunctionUsageIndicator';
-import { SubstrateFamilySelector } from './SubstrateFamilySelector';
 
 interface MarketingPlannerChatProps {
   onLogout?: () => void;
@@ -33,7 +32,7 @@ interface MarketingPlannerChatProps {
 }
 
 export interface MarketingPlannerChatRef {
-  loadSubstrateFamily: (keyword: string, records: any[]) => Promise<void>;
+  // Empty interface - methods can be added as needed
 }
 
 const openRouterApiKey = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
@@ -54,7 +53,7 @@ console.log('🔧 MarketingPlannerChat v3.8-fixed-aiRequestId - Fixed undefined 
 console.log('OpenRouter API config:', {
   apiKey: openRouterApiKey ? `${openRouterApiKey.substring(0, 10)}...` : 'undefined',
   model: 'x-ai/grok-4-fast (default)',  // Will be dynamically selected based on user preference
-  temperature: 0,  // Deterministic mode for procurement use case
+  temperature: 'User-specific (0-1)',  // Dynamically loaded from user preferences
   timestamp: new Date().toISOString(),
   toolSupport: true
 });
@@ -108,8 +107,6 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
   const [sessionActive, setSessionActive] = useState(false);
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   const [sessionInitializing, setSessionInitializing] = useState(false);
-  const [substrateData, setSubstrateData] = useState<any>(null);
-  const [selectedKeyword, setSelectedKeyword] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
   const sessionIdRef = useRef<string | null>(null);
   const hasReceivedResponseRef = useRef<boolean>(false);
@@ -137,26 +134,18 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
   });
 
   // Expose methods via ref for external components
-  useImperativeHandle(ref, () => ({
-    loadSubstrateFamily: async (keyword: string, records: any[]) => {
-      await handleSubstrateFamilySelected(keyword, records);
-    }
-  }));
+  useImperativeHandle(ref, () => ({}));
 
   React.useEffect(() => {
     const checkStatus = async () => {
       if (!user) return;
       setStatusLoading(true);
       try {
-        const [systemPrompt, knowledge, erp] = await Promise.all([
-          getSystemPromptForUser(user),
-          storageService.getUserDocuments(user.uid).catch(() => []),
-          storageService.getUserERPDocuments(user.uid).catch(() => [])
-        ]);
+        const systemPrompt = await getSystemPromptForUser(user);
         setInitStatus({
           hasPrompt: !!systemPrompt,
-          knowledgeCount: Array.isArray(knowledge) ? knowledge.length : 0,
-          erpCount: Array.isArray(erp) ? erp.length : 0
+          knowledgeCount: 0,
+          erpCount: 0
         });
       } finally {
         setStatusLoading(false);
@@ -173,7 +162,6 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
     console.log('🔄 COMPONENT MOUNTED - Checking session state');
     console.log('Current messages count:', messages.length);
     console.log('Session active:', sessionActive);
-    console.log('Substrate data loaded:', !!substrateData);
 
     const initializeSession = async () => {
       if (!mounted) return;
@@ -184,26 +172,15 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
         return;
       }
 
-      // Don't auto-initialize if no substrate data - wait for user to select
-      if (!substrateData) {
-        console.log('⏸️ Waiting for substrate family selection before initializing chat');
-        // Show selection prompt message
-        if (messages.length === 0) {
-          const promptMessage: Message = {
-            role: 'model',
-            parts: [{
-              text: `👋 Welcome to the Stock Management Assistant!\n\n**Please select a substrate family** from the dropdown below to begin.\n\nOnce you select a family, I'll help you make correct purchase/transfer wait decision for that substrate family.`
-            }]
-          };
-          setMessages([promptMessage]);
-        }
-        return;
-      }
-
-      if (!sessionActive && user && !sessionInitializing && substrateData) {
-        // Substrate data is already loaded, session will be initialized by initializeChatWithSubstrateContext
-        console.log('📊 Substrate data exists, session should be initialized via initializeChatWithSubstrateContext');
-        return;
+      // Show welcome prompt when chat is first loaded
+      if (messages.length === 0) {
+        const promptMessage: Message = {
+          role: 'model',
+          parts: [{
+            text: `👋 Tervetuloa SocialWise-työpöytään!\n\n**Valitse asiakas** vasemmalta päästäksesi alkuun.\n\nKun valitset asiakkaan, voin auttaa sinua dokumentoinnissa, päätöksenteossa ja palvelun suunnittelussa.`
+          }]
+        };
+        setMessages([promptMessage]);
       }
     };
 
@@ -222,7 +199,7 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
       }
       console.log('🔚 Component unmounting - cleanup performed');
     };
-  }, [sessionActive, user, substrateData]); // Added substrateData to deps
+  }, [sessionActive, user]); // Removed substrateData dependency
 
   // Reset session when user changes
   React.useEffect(() => {
@@ -259,12 +236,14 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
 
     // OpenRouter API helper function with retry logic
     const callOpenRouterAPI = async (messages: any[], systemPrompt: string, tools?: any[], retryCount: number = 0) => {
-      // Get user's selected model
+      // Get user's selected model and temperature
       const selectedModel = user ? await getUserLLMModel(user.uid) : 'google/gemini-2.5-pro';
+      const userTemperature = user ? await getUserTemperature(user.uid) : 0.05;
 
       // DEBUG: Log what's being sent to OpenRouter
       console.log('🚀 OPENROUTER API CALL DEBUG:', {
         model: selectedModel,
+        temperature: userTemperature,
         hasTools: !!tools,
         toolCount: tools?.length || 0,
         toolNames: tools?.map(t => t.function?.name || 'unknown') || [],
@@ -291,7 +270,7 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
                   content: typeof msg.parts[0] === 'object' ? msg.parts[0].text : msg.parts[0]
                 }))
               ],
-              temperature: 0,
+              temperature: userTemperature,
               ...(tools && tools.length > 0 ? { tools, tool_choice: 'auto' } : {})
             };
 
@@ -449,26 +428,7 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
           }
         } catch (error) {
           console.error('Error loading versioned prompt:', error);
-
-          // Fallback: try to load latest prompt for this user (legacy)
-          if (user?.uid) {
-            try {
-              const latestPrompt = await loadLatestPrompt(user.uid);
-              if (latestPrompt) {
-                console.warn('⚠️ USING LEGACY PROMPT FROM FIRESTORE - MAY CONTAIN OLD DATA');
-                console.log('Legacy prompt preview:', latestPrompt.substring(0, 200));
-                // Check if it contains old functions
-                if (latestPrompt.includes('Training Invoices') || latestPrompt.includes('iPRO')) {
-                  console.error('🚨 LEGACY PROMPT CONTAINS REMOVED FUNCTIONS - NOT USING IT');
-                  // Don't use this prompt
-                } else {
-                  systemPrompt = latestPrompt;
-                }
-              }
-            } catch (error) {
-              console.error('Error loading latest prompt:', error);
-            }
-          }
+          // Legacy loadLatestPrompt removed - using only getSystemPromptForUser
         }
 
         // No fallback - if no prompt available, show error
@@ -651,81 +611,7 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
     navigate('/admin');
   };
 
-  // Handle substrate family selection for stock management
-  const handleSubstrateFamilySelected = async (keyword: string, records: any[]) => {
-    setSelectedKeyword(keyword);
-
-    // Store the substrate data
-    const substrateContent = {
-      keyword: keyword,
-      data: records,
-      recordCount: records.length,
-      loadedAt: new Date().toISOString()
-    };
-
-    setSubstrateData(substrateContent);
-
-    console.log('📊 Substrate family loaded:', {
-      keyword: keyword,
-      records: records.length,
-      firstRecord: records[0]
-    });
-
-    // Initialize chat with substrate context
-    await initializeChatWithSubstrateContext(substrateContent);
-  };
-
-  // Initialize chat with Substrate Family context
-  const initializeChatWithSubstrateContext = async (substrateContent: any) => {
-    if (!user) return;
-
-    setSessionInitializing(true);
-    try {
-      // Get user's name from email (part before @)
-      const userName = user.email?.split('@')[0] || 'User';
-
-      // Create context with user info and JSON data
-      const substrateContext = `User: ${userName}\n\nSubstrate Family: ${substrateContent.keyword}\n\n\`\`\`json
-${JSON.stringify(substrateContent.data, null, 2)}
-\`\`\``;
-
-      // Initialize session with substrate context
-      const session = await sessionService.initializeChatSession(user.uid);
-
-      // Append substrate context to the session
-      if (session) {
-        const originalContextLength = session.fullContext.length;
-        session.fullContext = session.fullContext + '\n\n' + substrateContext;
-        setChatSession(session);
-
-        console.log('✅ Chat initialized with substrate family context', {
-          keyword: substrateContent.keyword,
-          recordCount: substrateContent.recordCount,
-          originalContextLength,
-          newContextLength: session.fullContext.length,
-          addedLength: session.fullContext.length - originalContextLength
-        });
-
-        // Let the LLM generate a welcome message based on the loaded data
-        setMessages([]);
-        setSessionActive(true);
-
-        // Send an initial prompt to the LLM to generate a welcome message
-        const initialPrompt = `Substrate family "${substrateContent.keyword}" with ${substrateContent.recordCount} material records has been loaded for user ${userName}. Please greet ${userName} by name and explain what you can help with regarding this stock management data for substrate family "${substrateContent.keyword}".`;
-
-        // Trigger the LLM to generate welcome message (hidden from UI)
-        // Pass the session directly to ensure substrate context is included
-        setTimeout(() => {
-          handleSendMessage(initialPrompt, true, session);  // Pass session with substrate context
-        }, 100);
-      }
-    } catch (error) {
-      console.error('Failed to initialize chat with substrate context:', error);
-      toast.error('Failed to initialize chat with substrate family data');
-    } finally {
-      setSessionInitializing(false);
-    }
-  };
+  // Substrate family handling removed - not needed for LS Portal demo
 
   // Initialize continuous improvement session when user starts chatting
   const initializeContinuousImprovement = async () => {
@@ -847,10 +733,10 @@ ${JSON.stringify(substrateContent.data, null, 2)}
       setPendingMessageIndex(null);
       setFeedbackComment('');
 
-      toast.success(pendingFeedback === 'thumbs_up' ? '👍 Thanks for the positive feedback!' : '👎 Thanks for the feedback - we\'ll improve!');
+      toast.success(pendingFeedback === 'thumbs_up' ? '👍 Kiitos positiivisesta palautteesta!' : '👎 Kiitos palautteesta - parannamme!');
     } catch (error) {
       console.error('❌ Failed to save feedback:', error);
-      toast.error('Failed to save feedback');
+      toast.error('Palautteen tallentaminen epäonnistui');
     }
   };
 
@@ -863,105 +749,51 @@ ${JSON.stringify(substrateContent.data, null, 2)}
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 text-center relative">
-        {/* User info top left */}
-        {user && (
-          <div className="absolute top-4 left-4 text-sm text-gray-300">
-            <span className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              Logged in as: <span className="text-white font-medium">{user.email}</span>
-            </span>
-          </div>
-        )}
-        
-        {/* Action buttons top right */}
-        <div className="absolute top-4 right-4 flex gap-2">
-          <Button
-            variant="ghost"
-            onClick={handleOpenAdmin}
-            className="text-white hover:bg-white/20"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Admin
-          </Button>
-          {onLogout && (
-            <Button
-              variant="ghost"
-              onClick={onLogout}
-              className="text-white hover:bg-white/20"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          )}
-        </div>
-        <div className="flex items-center justify-center mb-4">
-          <img src="/logo.png" alt="Gravic" className="h-10 w-10 mr-3" />
-          <h1 className="text-3xl font-bold">Marketing Agent</h1>
-        </div>
-        <p className="text-gray-100 text-lg mx-auto">
-          Run, monitor and verify marketing campaigns - create mass tailored proposals with intelligent automation
-        </p>
-      </div>
-      
+    <div className="flex flex-col h-screen bg-[#1A2332] relative">
+      {/* Toggle Chat Button - VS Code style (floating when hidden) */}
+      {!chatVisible && onChatVisibleChange && (
+        <button
+          onClick={() => onChatVisibleChange(true)}
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-50
+                     bg-[#4A90E2] hover:bg-[#357ABD]
+                     text-white p-2 rounded-l-lg shadow-lg
+                     transition-all duration-200"
+          title="Näytä AI-chat"
+        >
+          <MessageSquare className="w-5 h-5" />
+        </button>
+      )}
 
-      {/* Main Content under header with optional left panel */}
+      {/* Main Content with optional left panel */}
       {/* Controls row under header */}
       <div className="mx-auto px-4 mt-4 flex justify-between w-full">
         {topRightControls}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="chat-toggle" className="text-xs text-gray-500">Show chat</Label>
-            <Switch
-              id="chat-toggle"
-              checked={chatVisible}
-              onCheckedChange={onChatVisibleChange}
-            />
-          </div>
-        </div>
       </div>
 
       <div className="mx-auto px-2 pb-6 w-full">
         {leftPanelVisible && chatVisible ? (
           // Both panels visible - use resizable layout
           <ResizablePanelGroup direction="horizontal" className="h-full min-h-[60vh]">
-            <ResizablePanel defaultSize={35} minSize={20} maxSize={60} className="pr-2">
+            <ResizablePanel defaultSize={80} minSize={60} maxSize={90} className="pr-2">
               {leftPanel}
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={65} minSize={40} className="pl-2">
+            <ResizablePanel defaultSize={20} minSize={10} maxSize={40} className="pl-2 relative">
               {chatVisible && (
               <div className={"flex flex-col items-stretch"}>
-
-
-            {/* Substrate Family Selector Section */}
-            {!substrateData && (
-              <div className="mb-4">
-                <SubstrateFamilySelector
-                  onFamilySelected={handleSubstrateFamilySelected}
-                  disabled={isLoading || sessionInitializing}
-                />
-              </div>
-            )}
-
-            {/* Show loaded substrate family info */}
-            {substrateData && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Package className="h-6 w-6 text-green-600" />
-                    <div>
-                      <p className="font-medium text-gray-800">Substrate Family: {selectedKeyword}</p>
-                      <p className="text-sm text-gray-600">
-                        {substrateData.recordCount} material records loaded
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+                {/* Close Chat Button */}
+                {onChatVisibleChange && (
+                  <button
+                    onClick={() => onChatVisibleChange(false)}
+                    className="absolute right-2 top-2 z-10
+                               bg-gray-700 hover:bg-gray-600
+                               text-white p-1.5 rounded
+                               transition-colors duration-200"
+                    title="Piilota AI-chat"
+                  >
+                    <PanelRightClose className="w-4 h-4" />
+                  </button>
+                )}
 
             {/* Chat Messages */}
             <div className="p-2 space-y-6">
@@ -996,7 +828,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                   <div
                     className={`px-6 py-4 rounded-2xl ${
                       message.role === 'user'
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white ml-auto max-w-lg'
+                        ? 'bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white ml-auto max-w-lg'
                         : 'bg-white shadow-sm border'
                     }`}
                   >
@@ -1059,7 +891,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                             <div className="mt-4">
                               <MrpDecisionTable
                                 data={mrpTable}
-                                substrateFamilyKeyword={substrateData?.keyword}
+                                substrateFamilyKeyword={undefined}
                                 compact={true}
                                 enableSort={true}
                               />
@@ -1078,7 +910,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                   {/* Feedback buttons for AI responses only */}
                   {message.role === 'model' && (
                     <div className="flex items-center space-x-2 ml-2">
-                      <span className="text-xs text-gray-500">Was this helpful?</span>
+                      <span className="text-xs text-gray-500">Oliko tästä apua?</span>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1127,18 +959,18 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                     <Input
                       ref={inputRef}
                       type="text"
-                      placeholder={substrateData ? "Ask about the stock management data..." : "Please select a substrate family first"}
+                      placeholder="Kysy asiakkaasta tai pyydä apua dokumentointiin..."
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      disabled={isLoading || !substrateData}
+                      disabled={isLoading}
                       className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                     />
                   </div>
                   <Button
                     onClick={() => handleSendMessage()}
-                    disabled={!input.trim() || isLoading || !substrateData}
-                    className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl"
+                    disabled={!input.trim() || isLoading}
+                    className="h-12 px-6 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D2FDE] hover:to-[#7C3AED] text-white rounded-xl"
                   >
                     <Send className="h-5 w-5" />
                   </Button>
@@ -1163,35 +995,21 @@ ${JSON.stringify(substrateContent.data, null, 2)}
             {leftPanel}
           </div>
         ) : chatVisible ? (
-          <div>
+          <div className="relative">
             {/* When no left panel, show full-width chat */}
             <div className={"flex flex-col items-stretch"}>
-
-              {/* Substrate Family Selector Section */}
-              {!substrateData && (
-                <div className="mb-4">
-                  <SubstrateFamilySelector
-                    onFamilySelected={handleSubstrateFamilySelected}
-                    disabled={isLoading || sessionInitializing}
-                  />
-                </div>
-              )}
-
-              {/* Show loaded substrate family info */}
-              {substrateData && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Package className="h-6 w-6 text-green-600" />
-                      <div>
-                        <p className="font-medium text-gray-800">Substrate Family: {selectedKeyword}</p>
-                        <p className="text-sm text-gray-600">
-                          {substrateData.recordCount} material records loaded
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {/* Close Chat Button */}
+              {onChatVisibleChange && (
+                <button
+                  onClick={() => onChatVisibleChange(false)}
+                  className="absolute right-2 top-2 z-10
+                             bg-gray-700 hover:bg-gray-600
+                             text-white p-1.5 rounded
+                             transition-colors duration-200"
+                  title="Piilota AI-chat"
+                >
+                  <PanelRightClose className="w-4 h-4" />
+                </button>
               )}
 
               <div className="p-2 space-y-6">
@@ -1218,7 +1036,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                           </div>
                         )}
                         <div className="flex flex-col space-y-2 flex-1">
-                          <div className={`px-6 py-4 rounded-2xl ${message.role === 'user' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white ml-auto max-w-lg' : 'bg-white shadow-sm border'}`}>
+                          <div className={`px-6 py-4 rounded-2xl ${message.role === 'user' ? 'bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white ml-auto max-w-lg' : 'bg-white shadow-sm border'}`}>
                             {message.parts.map((part, partIndex) => {
                               // Try to detect JSON tables (both supplier comparison and MRP decision tables)
                               let jsonTable = null;
@@ -1275,7 +1093,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                                     <div className="mt-4">
                                       <MrpDecisionTable
                                         data={mrpTable}
-                                        substrateFamilyKeyword={substrateData?.keyword}
+                                        substrateFamilyKeyword={undefined}
                                         compact={true}
                                         enableSort={true}
                                       />
@@ -1292,7 +1110,7 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                           </div>
                           {message.role === 'model' && (
                             <div className="flex items-center space-x-2 ml-2">
-                              <span className="text-xs text-gray-500">Was this helpful?</span>
+                              <span className="text-xs text-gray-500">Oliko tästä apua?</span>
                               <Button variant="ghost" size="sm" onClick={() => handleFeedback('thumbs_up', index)} className="text-gray-500 hover:text-green-600 hover:bg-green-50 p-1 h-auto" title="Good response">
                                 <ThumbsUp className="h-3 w-3" />
                               </Button>
@@ -1324,9 +1142,9 @@ ${JSON.stringify(substrateContent.data, null, 2)}
                 <div className="max-w-full mx-auto">
                   <div className="flex space-x-4 items-end">
                     <div className="flex-1">
-                      <Input ref={inputRef} type="text" placeholder={substrateData ? "Ask about the stock management data..." : "Please select a substrate family first"} value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading || !substrateData} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent" />
+                      <Input ref={inputRef} type="text" placeholder="Kysy asiakkaasta tai pyydä apua dokumentointiin..." value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent" />
                     </div>
-                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading || !substrateData} className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl">
+                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading} className="h-12 px-6 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D2FDE] hover:to-[#7C3AED] text-white rounded-xl">
                       <Send className="h-5 w-5" />
                     </Button>
                     <Button
@@ -1360,25 +1178,25 @@ ${JSON.stringify(substrateContent.data, null, 2)}
               ) : (
                 <ThumbsDown className="h-5 w-5 text-red-600" />
               )}
-              {pendingFeedback === 'thumbs_up' ? 'Positive feedback' : 'Feedback for improvement'}
+              {pendingFeedback === 'thumbs_up' ? 'Positiivinen palaute' : 'Kehityspalaute'}
             </DialogTitle>
             <DialogDescription>
-              {pendingFeedback === 'thumbs_up' 
-                ? 'Great! What did you like about this response?' 
-                : 'Help us improve! What could be better about this response?'
+              {pendingFeedback === 'thumbs_up'
+                ? 'Hienoa! Mikä vastauksessa oli hyvää?'
+                : 'Auta meitä parantamaan! Mikä voisi olla paremmin?'
               }
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
-            
+
             <div className="space-y-2">
-              <Label htmlFor="feedback-comment">Comment (optional)</Label>
+              <Label htmlFor="feedback-comment">Kommentti (valinnainen)</Label>
               <Textarea
                 id="feedback-comment"
-                placeholder={pendingFeedback === 'thumbs_up' 
-                  ? 'What worked well? Any specific aspects you found helpful?'
-                  : 'What was missing or incorrect? How could we improve?'
+                placeholder={pendingFeedback === 'thumbs_up'
+                  ? 'Mikä toimi hyvin? Mitkä osa-alueet olivat erityisen hyödyllisiä?'
+                  : 'Mikä puuttui tai oli virheellistä? Miten voimme parantaa?'
                 }
                 value={feedbackComment}
                 onChange={(e) => setFeedbackComment(e.target.value)}
@@ -1392,13 +1210,13 @@ ${JSON.stringify(substrateContent.data, null, 2)}
               variant="outline"
               onClick={cancelFeedback}
             >
-              Skip
+              Ohita
             </Button>
             <Button
               onClick={submitFeedback}
-              className={pendingFeedback === 'thumbs_up' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}
+              className={pendingFeedback === 'thumbs_up' ? 'bg-green-600 hover:bg-green-700' : 'bg-[#7C3AED] hover:bg-[#6D2FDE]'}
             >
-              Submit Feedback
+              Lähetä palaute
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, Database, Zap, Cpu } from "lucide-react";
+import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, Database, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
@@ -33,27 +33,35 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-green-100 font-sans">
+    <div className="min-h-screen bg-[#1A2332] font-sans">
       {/* Header */}
-      <nav className="bg-white/80 backdrop-blur-md shadow-sm fixed w-full top-0 z-50">
+      <nav className="bg-[#1A2332]/95 backdrop-blur-md shadow-lg fixed w-full top-0 z-50 border-b border-gray-700/50">
         <div className="container mx-auto px-8 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-6">
               <Button
                 variant="ghost"
                 onClick={handleBackToWorkbench}
-                className="text-gray-600 hover:text-gray-900 font-medium"
+                className="text-gray-300 hover:text-[#FFB3A8] font-medium"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Chat
+                Takaisin työpöytään
               </Button>
               <Link to="/" className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                  <Cpu className="h-6 w-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] rounded-full flex items-center justify-center shadow-lg">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6 text-white" fill="currentColor">
+                    <circle cx="12" cy="8" r="2"/>
+                    <circle cx="8" cy="14" r="2"/>
+                    <circle cx="16" cy="14" r="2"/>
+                    <circle cx="12" cy="20" r="2"/>
+                    <line x1="12" y1="10" x2="12" y2="18" stroke="currentColor" strokeWidth="2"/>
+                    <line x1="10" y1="9" x2="8" y2="12" stroke="currentColor" strokeWidth="2"/>
+                    <line x1="14" y1="9" x2="16" y2="12" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xl font-semibold tracking-tight text-gray-900">Massify</span>
-                  <span className="text-xs text-gray-500">Admin Panel</span>
+                  <span className="text-xl font-bold tracking-tight text-[#FFB3A8]">SocialWise</span>
+                  <span className="text-xs text-gray-400">Ylläpitopaneeli</span>
                 </div>
               </Link>
             </div>
@@ -63,17 +71,17 @@ const Admin = () => {
                 <div className="text-sm">
                   <span className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-gray-900 font-medium">{user.email}</span>
+                    <span className="text-gray-300 font-medium">{user.email}</span>
                   </span>
                 </div>
               )}
               <Button
                 variant="ghost"
                 onClick={handleLogout}
-                className="text-gray-600 hover:text-gray-900 font-medium"
+                className="text-gray-300 hover:text-[#FFB3A8] font-medium"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Logout
+                Kirjaudu ulos
               </Button>
             </div>
           </div>
@@ -85,39 +93,39 @@ const Admin = () => {
         {/* AI Prompt Management - Featured */}
         <div className="mb-8">
           <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-            <CardHeader className="bg-gradient-to-br from-gray-700 to-gray-900 text-white p-8">
+            <CardHeader className="bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] text-white p-8">
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <Settings className="h-8 w-8 text-white" />
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-bold mb-2">
-                    AI Prompt Version Management
+                    AI Järjestelmäpromptien hallinta
                   </CardTitle>
-                  <p className="text-gray-300 text-lg">
-                    Manage production and testing versions of AI prompts
+                  <p className="text-purple-100 text-lg">
+                    Hallitse AI-järjestelmän ohjeistuksia ja versioita
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 bg-white">
               <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Manage two versions of the system prompt: Production (stable, default for all users) and Testing (experimental features). Each user can select which version they want to use. Changes to production affect all users using the default setting.
+                Hallitse järjestelmäpromptin versioita. Jokainen käyttäjä voi valita haluamansa LLM-mallin (Gemini 2.5 Pro / Flash). Muutokset tallentuvat versiohistoriaan ja voidaan palauttaa tarvittaessa.
               </p>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
-                    className="w-full bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black py-6 text-lg font-medium shadow-lg shadow-gray-500/25"
+                    className="w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D2FDE] hover:to-[#7C3AED] py-6 text-lg font-medium shadow-lg shadow-[#7C3AED]/25"
                   >
                     <Settings className="mr-2 h-5 w-5" />
-                    Open Prompt Manager
+                    Avaa prompttienhallinta
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>System Prompt Version Manager</DialogTitle>
+                    <DialogTitle>Järjestelmäpromptien hallinta</DialogTitle>
                     <DialogDescription>
-                      Manage production and testing versions of the AI system prompt. Each user can select which version to use.
+                      Hallitse AI-järjestelmän ohjeistuksia ja mallivalintoja. Kaikki muutokset tallentuvat versiohistoriaan.
                     </DialogDescription>
                   </DialogHeader>
                   <SystemPromptManager />
@@ -130,39 +138,39 @@ const Admin = () => {
         {/* User Management Section */}
         <div className="mb-8">
           <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-            <CardHeader className="bg-gradient-to-br from-blue-600 to-purple-600 text-white p-8">
+            <CardHeader className="bg-gradient-to-br from-[#FFB3A8] to-[#F4A89F] text-gray-900 p-8">
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                  <UserPlus className="h-8 w-8 text-white" />
+                <div className="w-16 h-16 bg-white/30 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <UserPlus className="h-8 w-8 text-gray-900" />
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-bold mb-2">
-                    User Management
+                    Käyttäjähallinta
                   </CardTitle>
-                  <p className="text-blue-100 text-lg">
-                    Register new users and manage account access
+                  <p className="text-gray-800 text-lg">
+                    Rekisteröi uusia käyttäjiä ja hallitse käyttöoikeuksia
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 bg-white">
               <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Create new user accounts with email authentication and assign roles. Users will receive login credentials to access the Professional Demand Manager AI Assistant.
+                Luo uusia käyttäjätilejä sähköpostiautentikoinnilla. Käyttäjät saavat kirjautumistiedot päästäkseen SocialWise-työpöytään.
               </p>
               <Dialog open={showUserRegistration} onOpenChange={setShowUserRegistration}>
                 <DialogTrigger asChild>
                   <Button
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-6 text-lg font-medium shadow-lg shadow-blue-600/25"
+                    className="w-full bg-gradient-to-r from-[#FFB3A8] to-[#F4A89F] hover:from-[#FFA89D] hover:to-[#F39E8E] text-gray-900 py-6 text-lg font-medium shadow-lg shadow-[#FFB3A8]/25 border-0"
                   >
                     <UserPlus className="mr-2 h-5 w-5" />
-                    Manage Users
+                    Hallitse käyttäjiä
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl">
                   <DialogHeader className="sr-only">
-                    <DialogTitle>User Management</DialogTitle>
+                    <DialogTitle>Käyttäjähallinta</DialogTitle>
                     <DialogDescription>
-                      Create new users and manage existing user accounts
+                      Luo uusia käyttäjiä ja hallitse olemassa olevia käyttäjätilejä
                     </DialogDescription>
                   </DialogHeader>
                   <UserRegistration />
@@ -175,39 +183,39 @@ const Admin = () => {
         {/* Data Preparation Section */}
         <div className="mb-8">
           <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-            <CardHeader className="bg-gradient-to-br from-green-600 to-emerald-600 text-white p-8">
+            <CardHeader className="bg-gradient-to-br from-gray-700 to-gray-900 text-white p-8">
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <Database className="h-8 w-8 text-white" />
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-bold mb-2">
-                    Data Preparation Pipeline
+                    Datan valmistelu
                   </CardTitle>
-                  <p className="text-green-100 text-lg">
-                    View ETL pipeline documentation and execution history
+                  <p className="text-gray-300 text-lg">
+                    Tarkastele ETL-putken dokumentaatiota ja suoritushistoriaa
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 bg-white">
               <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Monitor the MRP data preparation pipeline that processes material stock movements and uploads to Firestore. View specifications and latest execution summary.
+                Seuraa CRM-datan valmisteluprosessia, joka prosessoi asiakastietoja ja palveluhistoriaa Firestoreen. Näytä spesifikaatiot ja viimeisin suoritusraportti.
               </p>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
-                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-6 text-lg font-medium shadow-lg shadow-green-600/25"
+                    className="w-full bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black py-6 text-lg font-medium shadow-lg shadow-gray-500/25"
                   >
                     <Database className="mr-2 h-5 w-5" />
-                    View Pipeline Documentation
+                    Näytä prosessidokumentaatio
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Data Preparation Pipeline</DialogTitle>
+                    <DialogTitle>Datan valmisteluprosessi</DialogTitle>
                     <DialogDescription>
-                      ETL pipeline specifications and execution history
+                      ETL-putken spesifikaatiot ja suoritushistoria
                     </DialogDescription>
                   </DialogHeader>
                   <DataPreparationViewer />
@@ -220,39 +228,39 @@ const Admin = () => {
         {/* Mass Processing Section */}
         <div className="mb-8">
           <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-            <CardHeader className="bg-gradient-to-br from-purple-600 to-pink-600 text-white p-8">
+            <CardHeader className="bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] text-white p-8">
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <Zap className="h-8 w-8 text-white" />
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-bold mb-2">
-                    Mass Processing
+                    Massaprosessointi
                   </CardTitle>
                   <p className="text-purple-100 text-lg">
-                    Batch processing system for analyzing all substrate families
+                    Eräkäsittelyjärjestelmä asiakastietojen analysointiin
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 bg-white">
               <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Process 1000+ substrate families through AI and rule-based logic. Single-material families use automatic rule-based decisions, while multi-material families get AI analysis via OpenRouter API.
+                Prosessoi suuria määriä asiakastietoja AI- ja sääntöpohjaisen logiikan avulla. Yksinkertaiset tapaukset käsitellään automaattisesti, kun taas monimutkaisemmat tapaukset analysoidaan AI:n avulla.
               </p>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-6 text-lg font-medium shadow-lg shadow-purple-600/25"
+                    className="w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D2FDE] hover:to-[#7C3AED] py-6 text-lg font-medium shadow-lg shadow-[#7C3AED]/25"
                   >
                     <Zap className="mr-2 h-5 w-5" />
-                    View Processing Logic
+                    Näytä prosessointilogiikka
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Mass Processing Logic</DialogTitle>
+                    <DialogTitle>Massaprosessoinnin logiikka</DialogTitle>
                     <DialogDescription>
-                      How the batch processing system analyzes substrate families
+                      Miten eräkäsittelyjärjestelmä analysoi asiakastietoja
                     </DialogDescription>
                   </DialogHeader>
                   <div className="mt-4 space-y-4">

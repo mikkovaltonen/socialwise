@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Cpu, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -26,8 +26,8 @@ const LoginForm = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-green-100 font-sans flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading...</div>
+      <div className="min-h-screen bg-[#1A2332] font-sans flex items-center justify-center">
+        <div className="text-lg text-gray-400">Loading...</div>
       </div>
     );
   }
@@ -56,62 +56,70 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-green-100 font-sans flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#1A2332] font-sans flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-0 shadow-2xl bg-white">
         <CardHeader className="space-y-4 text-center p-8 bg-white rounded-t-lg">
           <Link to="/" className="flex flex-col items-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
-              <Cpu className="h-10 w-10 text-white" />
+            <div className="w-16 h-16 bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] rounded-full flex items-center justify-center mb-4 shadow-lg">
+              <svg viewBox="0 0 24 24" className="h-9 w-9 text-white" fill="currentColor">
+                <circle cx="12" cy="8" r="2"/>
+                <circle cx="8" cy="14" r="2"/>
+                <circle cx="16" cy="14" r="2"/>
+                <circle cx="12" cy="20" r="2"/>
+                <line x1="12" y1="10" x2="12" y2="18" stroke="currentColor" strokeWidth="2"/>
+                <line x1="10" y1="9" x2="8" y2="12" stroke="currentColor" strokeWidth="2"/>
+                <line x1="14" y1="9" x2="16" y2="12" stroke="currentColor" strokeWidth="2"/>
+              </svg>
             </div>
             <div className="space-y-1">
-              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Massify</h1>
-              <p className="text-sm text-gray-500">Mass Tailored Proposals Platform</p>
+              <h1 className="text-2xl font-bold tracking-tight text-[#7C3AED]">SocialWise</h1>
+              <p className="text-sm text-gray-500">Sosiaalityön teknologiakumppanisi</p>
             </div>
           </Link>
           <div className="space-y-2 pt-4">
-            <CardTitle className="text-3xl font-bold text-gray-900">Welcome Back</CardTitle>
-            <p className="text-gray-600">Enter your credentials to access your dashboard</p>
+            <CardTitle className="text-3xl font-bold text-gray-900">Tervetuloa takaisin</CardTitle>
+            <p className="text-gray-600">Kirjaudu sisään päästäksesi työpöytään</p>
           </div>
         </CardHeader>
         <CardContent className="p-8 pt-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Sähköposti</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="name@company.com"
+                placeholder="nimi@organisaatio.fi"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                className="w-full h-11 px-4 border-gray-300 focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Salasana</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Syötä salasanasi"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                className="w-full h-11 px-4 border-gray-300 focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
               />
             </div>
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                {error}
+                {error === 'Invalid credentials' ? 'Virheelliset kirjautumistiedot' : error}
               </div>
             )}
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-12 font-medium shadow-lg shadow-blue-600/25 transition-all group"
+              className="w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D2FDE] hover:to-[#7C3AED] text-white h-12 font-medium shadow-lg shadow-[#7C3AED]/25 transition-all group"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : (
+              {isLoading ? 'Kirjaudutaan...' : (
                 <>
-                  Sign In
+                  Kirjaudu sisään
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
@@ -119,9 +127,9 @@ const LoginForm = () => {
             <div className="text-center pt-4 border-t border-gray-100">
               <Link
                 to="/"
-                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="text-sm text-gray-600 hover:text-[#7C3AED] transition-colors"
               >
-                ← Back to homepage
+                ← Takaisin etusivulle
               </Link>
             </div>
           </form>

@@ -1,0 +1,232 @@
+/**
+ * TypeScript types for Lastensuojelu (Child Welfare) Portal
+ * Generated from Aineisto markdown files
+ */
+
+// ============================================================================
+// LS-ilmoitus (Child Welfare Notification)
+// ============================================================================
+
+export interface LSNotification {
+  id: string;
+  date: string; // ISO date string
+  filename: string;
+  reporter: {
+    name: string;
+    profession: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    isOfficial: boolean; // Onko viranomainen
+  };
+  child: {
+    name: string;
+    socialSecurityNumber: string;
+    address: string;
+    school?: string;
+  };
+  guardians: {
+    mother?: {
+      name: string;
+      socialSecurityNumber?: string;
+      address?: string;
+      phone?: string;
+      email?: string;
+    };
+    father?: {
+      name: string;
+      socialSecurityNumber?: string;
+      address?: string;
+      phone?: string;
+      email?: string;
+    };
+  };
+  reason: string; // Main reason/description
+  urgency: 'low' | 'medium' | 'high' | 'critical';
+  highlights: string[]; // Key concerns highlighted in original doc
+  summary: string; // Short summary for list view
+  fullText: string; // Complete markdown content
+}
+
+// ============================================================================
+// Asiakaskirjaukset (Case Notes)
+// ============================================================================
+
+export interface CaseNote {
+  id: string;
+  date: string; // ISO date string
+  keywords: string[]; // e.g., ['alkoholi', 'karannut', 'poliisi']
+  notificationGround: string; // ilmoitusperuste category
+  fullText: string;
+}
+
+// ============================================================================
+// PTA kirjaukset (Service Plan Records)
+// ============================================================================
+
+export interface PTARecord {
+  id: string;
+  date: string; // ISO date string
+  eventType: 'kotikäynti' | 'puhelu' | 'tapaaminen' | 'neuvottelu' | 'päätös' | 'muu';
+  participants: string[]; // e.g., ['isä', 'sosiaaliohjaaja']
+  summary: string; // Brief summary
+  actions: string[]; // Actions taken
+  aiGuidance?: string; // AI guidance if present
+  fullText: string;
+  colorCoding?: {
+    symptoms?: string[]; // Pink highlights
+    actions?: string[]; // Green highlights
+    aiGuidance?: string[]; // Yellow highlights
+  };
+}
+
+// ============================================================================
+// Päätökset (Decisions)
+// ============================================================================
+
+export interface Decision {
+  id: string;
+  date: string; // ISO date string
+  decisionType: 'asiakkuuden_avaaminen' | 'kiireellinen_sijoitus' | 'avohuollon_tukitoimi' | 'muu';
+  summary: string;
+  legalBasis: string; // e.g., "Lastensuojelulaki § 38"
+  fullText: string;
+}
+
+// ============================================================================
+// Yhteystiedot (Contact Information)
+// ============================================================================
+
+export interface ContactInfo {
+  child: {
+    name: string;
+    socialSecurityNumber: string;
+    address: string;
+    school?: string;
+  };
+  guardians: {
+    mother?: {
+      name: string;
+      socialSecurityNumber?: string;
+      address?: string;
+      phone?: string;
+      email?: string;
+    };
+    father?: {
+      name: string;
+      socialSecurityNumber?: string;
+      address?: string;
+      phone?: string;
+      email?: string;
+    };
+  };
+  reporters: Array<{
+    name: string;
+    profession: string;
+    phone?: string;
+    email?: string;
+    workplace?: string;
+  }>;
+  professionals: {
+    socialWorker?: {
+      name: string;
+      phone?: string;
+      email?: string;
+    };
+    socialGuide?: {
+      name: string;
+      phone?: string;
+      email?: string;
+    };
+    teacher?: {
+      name: string;
+      phone?: string;
+      email?: string;
+      school?: string;
+    };
+  };
+}
+
+// ============================================================================
+// Asiakassuunnitelma (Service Plan)
+// ============================================================================
+
+export interface ServicePlan {
+  id: string;
+  serviceType: string; // e.g., 'perhetyö', 'viikoittaiset tapaamiset'
+  startDate: string;
+  endDate?: string;
+  status: 'active' | 'completed' | 'cancelled';
+  description: string;
+  goals?: string[];
+  outcomes?: string;
+}
+
+// ============================================================================
+// Main Problem / Paaongelma
+// ============================================================================
+
+export interface MainProblem {
+  category: string; // e.g., 'lapsen psyykkinen vointi'
+  subcategories: string[]; // e.g., ['päihteiden käyttö', 'perheväkivalta']
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+}
+
+// ============================================================================
+// Complete Client Data (Lapsi 1)
+// ============================================================================
+
+export interface LSClientData {
+  clientId: string;
+  clientName: string;
+  mainProblem: MainProblem;
+  notifications: LSNotification[];
+  caseNotes: CaseNote[];
+  decisions: Decision[];
+  contactInfo: ContactInfo;
+  ptaRecords: PTARecord[];
+  servicePlans: ServicePlan[];
+  timeline: TimelineEvent[]; // Chronological view of all events
+}
+
+// ============================================================================
+// Timeline Event (for chronological view)
+// ============================================================================
+
+export interface TimelineEvent {
+  id: string;
+  date: string;
+  type: 'notification' | 'case_note' | 'decision' | 'pta_record' | 'service_plan';
+  title: string;
+  summary: string;
+  relatedId: string; // ID of the related notification, case note, etc.
+}
+
+// ============================================================================
+// Summary Data for UI Components
+// ============================================================================
+
+export interface LSSummaries {
+  notificationsSummary: Array<{
+    date: string;
+    reporter: string;
+    mainConcern: string;
+    urgency: string;
+  }>;
+  recentCaseNotes: Array<{
+    date: string;
+    ground: string;
+    keywords: string[];
+  }>;
+  activeServicePlans: Array<{
+    service: string;
+    startDate: string;
+    status: string;
+  }>;
+  decisionsSummary: Array<{
+    date: string;
+    type: string;
+    summary: string;
+  }>;
+}

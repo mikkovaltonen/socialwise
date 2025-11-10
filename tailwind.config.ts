@@ -24,6 +24,15 @@ export default {
 				mono: ['Fira Code', 'Monaco', 'Consolas', 'Courier New', 'monospace'],
 			},
 			colors: {
+				// LS-portaali colors
+				'ls-blue': {
+					DEFAULT: '#4A90E2',      // Primary blue
+					dark: '#357ABD',         // Darker blue for gradients
+					text: '#1E40AF',         // Text blue
+					light: '#EFF6FF',        // Light blue background
+					active: '#DBEAFE',       // Active state blue
+				},
+				'ls-coral': '#FF6B6B',       // Logout button
 				// Gravic Group inspired professional colors
 				gravic: {
 					primary: '#1e3a5f',      // Deep professional blue
