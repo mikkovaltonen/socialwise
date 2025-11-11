@@ -4,10 +4,12 @@
  * This script uploads all documents from /public/Aineisto to Firebase Storage
  * while preserving the folder structure.
  *
- * Usage: npx tsx data_preparation/migrate-aineisto-to-storage.ts
+ * Usage: npx tsx Data_preparation/migrate-aineisto-to-storage.ts
  */
 
-import * as admin from 'firebase-admin';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getStorage, ref, uploadBytes } from 'firebase/storage';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -39,14 +41,11 @@ if (!userEmail || !userPassword) {
   process.exit(1);
 }
 
-// Initialize Firebase Admin SDK
-console.log('🔧 Initializing Firebase Admin SDK...');
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  storageBucket: firebaseConfig.storageBucket,
-});
-
-const bucket = admin.storage().bucket();
+// Initialize Firebase
+console.log('🔧 Initializing Firebase...');
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const storage = getStorage(app);
 
 // Source directory
 const SOURCE_DIR = path.join(process.cwd(), 'public', 'Aineisto');
@@ -105,16 +104,16 @@ async function uploadFile(filePath: string): Promise<void> {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = ext === '.md' ? 'text/markdown' : 'application/octet-stream';
 
+    // Create storage reference
+    const storageRef = ref(storage, destinationPath);
+
     // Upload to Firebase Storage
-    const file = bucket.file(destinationPath);
-    await file.save(fileContent, {
-      metadata: {
-        contentType,
-        metadata: {
-          originalPath: relativePath,
-          uploadedAt: new Date().toISOString(),
-          uploadedBy: userEmail,
-        },
+    await uploadBytes(storageRef, fileContent, {
+      contentType,
+      customMetadata: {
+        originalPath: relativePath,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: userEmail || 'unknown',
       },
     });
 
@@ -138,6 +137,17 @@ async function migrateAineisto() {
   console.log(`📁 Source directory: ${SOURCE_DIR}`);
   console.log(`🪣 Storage bucket: ${firebaseConfig.storageBucket}`);
   console.log('');
+
+  // Authenticate with Firebase
+  try {
+    console.log('🔐 Authenticating with Firebase...');
+    await signInWithEmailAndPassword(auth, userEmail!, userPassword!);
+    console.log(`✅ Authenticated as: ${userEmail}`);
+    console.log('');
+  } catch (error) {
+    console.error('❌ Authentication failed:', error);
+    process.exit(1);
+  }
 
   // Check if source directory exists
   if (!fs.existsSync(SOURCE_DIR)) {
@@ -177,7 +187,7 @@ async function migrateAineisto() {
   }
 
   // Generate report file
-  const reportPath = path.join(process.cwd(), 'data_preparation', 'aineisto-migration-report.md');
+  const reportPath = path.join(process.cwd(), 'Data_preparation', 'aineisto-migration-report.md');
   const report = generateReport();
   fs.writeFileSync(reportPath, report);
   console.log(`📄 Report saved to: ${reportPath}`);

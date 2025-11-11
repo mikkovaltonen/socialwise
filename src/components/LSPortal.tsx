@@ -88,21 +88,34 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
         if (data) {
           setClientData(data);
 
+          // Stop main loading - show the page
+          setIsLoading(false);
+
           // Notify parent component
           if (onClientLoad) {
             onClientLoad(data);
           }
 
-          // Generate client summary using LLM
+          // Generate client summary using LLM (non-blocking)
           setClientSummary(prev => ({ ...prev, isLoading: true }));
-          const summary = await generateClientSummary(data);
-          setClientSummary(summary);
+          try {
+            const summary = await generateClientSummary(data);
+            setClientSummary(summary);
+          } catch (summaryError) {
+            console.error('Error generating summary:', summaryError);
+            setClientSummary({
+              mainProblems: '',
+              timePeriod: '',
+              isLoading: false,
+              error: 'Tiivistelmän generointi epäonnistui',
+            });
+          }
         } else {
           console.warn('No client data found');
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Error loading client data:', error);
-      } finally {
         setIsLoading(false);
       }
     };

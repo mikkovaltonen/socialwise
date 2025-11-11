@@ -50,91 +50,47 @@ const AineistoParsingDocumentation = () => {
   }
 
   return (
-    <div className="prose prose-sm max-w-none">
+    <div className="font-mono text-sm text-gray-800 whitespace-pre-wrap">
       <ReactMarkdown
         components={{
-          // Customized heading styles
+          // Headings: Bold and yellow (like prompt style)
           h1: ({ children }) => (
-            <h1 className="text-3xl font-bold text-gray-900 mb-4 mt-8 pb-2 border-b-2 border-blue-600">
+            <h1 className="font-bold text-yellow-600 text-lg my-2">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-2xl font-semibold text-gray-800 mb-3 mt-6">
+            <h2 className="font-bold text-yellow-600 text-base my-2">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-xl font-semibold text-gray-700 mb-2 mt-4">
+            <h3 className="font-bold text-yellow-600 text-sm my-1">
               {children}
             </h3>
           ),
-          // Code blocks with syntax highlighting
-          code: ({ inline, children }) => {
-            if (inline) {
-              return (
-                <code className="bg-gray-100 text-red-600 px-2 py-0.5 rounded text-sm font-mono">
-                  {children}
-                </code>
-              );
-            }
-            return (
-              <code className="block bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono">
-                {children}
-              </code>
-            );
-          },
-          // Tables with better styling
-          table: ({ children }) => (
-            <div className="overflow-x-auto my-4">
-              <table className="min-w-full divide-y divide-gray-300 border border-gray-300">
-                {children}
-              </table>
-            </div>
-          ),
-          thead: ({ children }) => (
-            <thead className="bg-gray-50">{children}</thead>
-          ),
-          th: ({ children }) => (
-            <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900 border-b border-gray-300">
+          // Bold text
+          strong: ({ children }) => (
+            <strong className="font-bold">
               {children}
-            </th>
+            </strong>
           ),
-          td: ({ children }) => (
-            <td className="px-4 py-2 text-sm text-gray-700 border-b border-gray-200">
-              {children}
-            </td>
-          ),
-          // Blockquotes
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-blue-50 italic text-gray-700">
-              {children}
-            </blockquote>
-          ),
-          // Lists
-          ul: ({ children }) => (
-            <ul className="list-disc list-inside space-y-1 my-3 text-gray-700">
-              {children}
-            </ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="list-decimal list-inside space-y-1 my-3 text-gray-700">
-              {children}
-            </ol>
-          ),
-          // Links
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              className="text-blue-600 hover:text-blue-800 underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {children}
-            </a>
-          ),
-          // Horizontal rule
-          hr: () => <hr className="my-8 border-t-2 border-gray-300" />,
+          // Remove all other rich formatting - render as plain text
+          code: ({ children }) => <span>{children}</span>,
+          pre: ({ children }) => <div className="my-2">{children}</div>,
+          p: ({ children }) => <p className="my-1">{children}</p>,
+          ul: ({ children }) => <div className="ml-4">{children}</div>,
+          ol: ({ children }) => <div className="ml-4">{children}</div>,
+          li: ({ children }) => <div className="my-0.5">• {children}</div>,
+          blockquote: ({ children }) => <div className="ml-4 my-1">{children}</div>,
+          table: ({ children }) => <div className="my-2">{children}</div>,
+          thead: ({ children }) => <div>{children}</div>,
+          tbody: ({ children }) => <div>{children}</div>,
+          tr: ({ children }) => <div>{children}</div>,
+          th: ({ children }) => <span className="font-bold mr-4">{children}</span>,
+          td: ({ children }) => <span className="mr-4">{children}</span>,
+          a: ({ href, children }) => <span>{children}</span>,
+          hr: () => <div className="my-2">{'─'.repeat(80)}</div>,
         }}
       >
         {content}
