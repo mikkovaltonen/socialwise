@@ -1,4 +1,5 @@
 import { getSystemPromptForUser } from './systemPromptService';
+import { loadAineistoContext } from './aineistoLoader';
 
 export interface ChatSession {
   sessionId: string;
@@ -33,9 +34,13 @@ export class SessionService {
         }
       }
 
-      // Simplified solution - no documents or policy context
-      // Just use the system prompt directly
-      const fullContext = systemPrompt;
+      // Load Aineisto context (full client data from markdown files)
+      console.log('📁 Loading Aineisto context for chat session...');
+      const aineistoContext = await loadAineistoContext();
+      console.log(`✅ Loaded ${aineistoContext.fileCount} files from Aineisto`);
+
+      // Combine system prompt with Aineisto context
+      const fullContext = `${systemPrompt}\n\n---\n\n${aineistoContext.content}`;
 
       // Generate unique session ID
       const sessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

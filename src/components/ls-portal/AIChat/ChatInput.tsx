@@ -36,29 +36,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-2">
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         placeholder={placeholder}
-        rows={3}
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg
-                   focus:outline-none focus:ring-2 focus:ring-ls-blue focus:border-transparent
-                   disabled:bg-gray-100 disabled:cursor-not-allowed
-                   resize-none text-sm"
+        rows={2}
+        className="w-full px-3 py-2 border border-white/30 rounded-lg
+                   bg-white/10 text-white placeholder-white/50
+                   focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent
+                   disabled:bg-white/5 disabled:cursor-not-allowed
+                   resize-none text-xs"
       />
       <button
         type="submit"
         disabled={disabled || !message.trim()}
         className="w-full flex items-center justify-center gap-2
-                   bg-ls-blue hover:bg-ls-blue-dark
-                   disabled:bg-gray-300 disabled:cursor-not-allowed
-                   text-white font-medium py-3 px-4 rounded-lg
+                   bg-white/20 hover:bg-white/30
+                   disabled:bg-white/5 disabled:cursor-not-allowed
+                   text-white font-medium py-2 px-3 rounded-lg text-xs
                    transition-colors duration-200"
       >
-        <Send className="w-4 h-4" />
+        <Send className="w-3 h-3" />
         <span>Lähetä</span>
       </button>
     </form>

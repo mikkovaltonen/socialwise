@@ -1,15 +1,15 @@
 {
-  "name": "Massify - Mass Tailored Proposals Platform",
-  "short_name": "Massify",
-  "description": "No-code SAAS platform for AI-powered mass marketing campaigns with personalized pricing",
+  "name": "SocialWise - Sosiaalityön Teknologiakumppani",
+  "short_name": "SocialWise",
+  "description": "AI-avusteinen SAAS-alusta sosiaalityöntekijöille. Vähennä kirjaamistyötä 80%, vahvista oikeusturvaa ja yhdenvertaisuutta.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "theme_color": "#7c3aed",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/placeholder.svg",
+      "src": "/socialwise-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
@@ -17,8 +17,9 @@
   ],
   "categories": [
     "business",
-    "productivity"
+    "productivity",
+    "healthcare"
   ],
   "scope": "/",
-  "lang": "en-US"
+  "lang": "fi-FI"
 }

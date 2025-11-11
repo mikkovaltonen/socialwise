@@ -18,6 +18,13 @@ interface LeftSidebarProps {
   onShowChat?: () => void;
   isChatVisible?: boolean;
   onToggle?: () => void;
+  clientName?: string;
+  clientSummary?: {
+    mainProblems: string;
+    timePeriod: string;
+    isLoading: boolean;
+    error?: string;
+  };
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -26,6 +33,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onShowChat,
   isChatVisible = false,
   onToggle,
+  clientName,
+  clientSummary,
 }) => {
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-ls-blue to-ls-blue-dark text-white relative">

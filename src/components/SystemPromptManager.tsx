@@ -13,12 +13,13 @@ import {
   setUserLLMModel,
   getUserTemperature,
   setUserTemperature,
+  getUserPromptVersion,
+  setUserPromptVersion,
   initializeSystemPrompts,
   SystemPrompt
 } from '@/lib/systemPromptService';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import MarkdownEditor from './MarkdownEditor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
@@ -54,8 +55,9 @@ export default function SystemPromptManager() {
   const [saving, setSaving] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState<SystemPrompt | null>(null);
   const [content, setContent] = useState('');
-  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.5-pro');
+  const [selectedModel, setSelectedModel] = useState<string>('x-ai/grok-4-fast');
   const [temperature, setTemperature] = useState<number>(0.05);
+  const [promptVersion, setPromptVersionState] = useState<'test' | 'production'>('production');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [showDescriptionDialog, setShowDescriptionDialog] = useState(false);
@@ -66,23 +68,38 @@ export default function SystemPromptManager() {
 
   useEffect(() => {
     if (user) {
-      loadPrompt();
       loadUserPreferences();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadPrompt();
+    }
+  }, [user, promptVersion]);
 
   const loadPrompt = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      // Initialize if needed
-      await initializeSystemPrompts(user.uid);
-
-      // Load latest prompt
-      const latest = await getLatestSystemPrompt();
-      setCurrentPrompt(latest);
-      setContent(latest?.content || '');
+      if (promptVersion === 'test') {
+        // Load from file
+        const response = await fetch('/chatbot_prompt.md');
+        if (response.ok) {
+          const fileContent = await response.text();
+          setContent(fileContent);
+          setCurrentPrompt(null);
+        } else {
+          throw new Error('Could not load test prompt file');
+        }
+      } else {
+        // Load from Firestore (production)
+        await initializeSystemPrompts(user.uid);
+        const latest = await getLatestSystemPrompt();
+        setCurrentPrompt(latest);
+        setContent(latest?.content || '');
+      }
     } catch (error) {
       console.error('Error loading prompt:', error);
       setError('Failed to load system prompt');
@@ -97,8 +114,10 @@ export default function SystemPromptManager() {
     try {
       const modelPref = await getUserLLMModel(user.uid);
       const tempPref = await getUserTemperature(user.uid);
+      const versionPref = await getUserPromptVersion(user.uid);
       setSelectedModel(modelPref);
       setTemperature(tempPref);
+      setPromptVersionState(versionPref);
     } catch (error) {
       console.error('Error loading user preferences:', error);
     }
@@ -197,6 +216,27 @@ export default function SystemPromptManager() {
     }
   };
 
+  const handlePromptVersionChange = async (version: 'test' | 'production') => {
+    if (!user) return;
+
+    setMessage('');
+    setError('');
+
+    try {
+      const success = await setUserPromptVersion(user.uid, version);
+
+      if (success) {
+        setPromptVersionState(version);
+        setMessage(`Prompt version changed to ${version === 'test' ? 'Test (file)' : 'Production (Firestore)'}`);
+      } else {
+        setError('Failed to update prompt version');
+      }
+    } catch (error) {
+      console.error('Error updating prompt version:', error);
+      setError('Error updating prompt version');
+    }
+  };
+
   const handleViewHistory = async () => {
     await loadHistory();
     setShowHistoryDialog(true);
@@ -253,13 +293,30 @@ export default function SystemPromptManager() {
   return (
     <div className="space-y-6">
       {/* Configuration Card - LLM Model Selection */}
-      <Card className="p-4">
+      <Card className="p-4 bg-purple-50 border-purple-200">
         <div className="flex items-center gap-2 mb-2">
-          <Bot className="w-4 h-4 text-gray-600" />
-          <Label className="text-sm font-medium">Language Model</Label>
-          <span className="text-xs text-gray-500">(OpenRouter BYOK)</span>
+          <Bot className="w-4 h-4 text-purple-600" />
+          <Label className="text-sm font-medium">AI-Asetukset (Chatbot + Tiivistelmä)</Label>
+          <span className="text-xs text-gray-500">(OpenRouter)</span>
         </div>
-        <div className="flex items-center gap-3">
+        <p className="text-xs text-gray-600 mb-3">
+          Nämä asetukset käytetään sekä chatbotissa että tiivistelmän luomisessa.
+        </p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Label className="text-sm font-medium">Prompt Versio</Label>
+            <Select value={promptVersion} onValueChange={handlePromptVersionChange}>
+              <SelectTrigger className="w-36">
+                <SelectValue>
+                  {promptVersion === 'test' ? 'Test (File)' : 'Production (DB)'}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="test">Test (File)</SelectItem>
+                <SelectItem value="production">Production (DB)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Select value={selectedModel} onValueChange={handleModelChange}>
             <SelectTrigger className="w-48">
               <SelectValue>
@@ -301,9 +358,9 @@ export default function SystemPromptManager() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>System Prompt Editor</CardTitle>
+              <CardTitle>Chatbot Järjestelmäprompt</CardTitle>
               <CardDescription>
-                Latest version • {currentPrompt ? formatDate(currentPrompt.createdAt) : 'No prompt saved'}
+                Viimeisin versio • {currentPrompt ? formatDate(currentPrompt.createdAt) : 'Ei tallennettua promptia'}
                 {currentPrompt?.createdByEmail && ` • ${currentPrompt.createdByEmail}`}
               </CardDescription>
             </div>
@@ -318,16 +375,26 @@ export default function SystemPromptManager() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {promptVersion === 'test' && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Test Mode:</strong> Näytetään prompti tiedostosta <code>/public/chatbot_prompt.md</code>.
+                Muokkaa tiedostoa suoraan tallentaaksesi muutokset. Tallennus tästä editorista tallentaa Production-versioon.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-2">
             <div className="text-xs text-gray-500">
-              {content.split('\n').length} rows • {content.length} characters
+              {content.split('\n').length} riviä • {content.length} merkkiä
             </div>
-            <MarkdownEditor
+            <Textarea
               value={content}
-              onChange={setContent}
-              placeholder="Enter system prompt..."
-              label=""
-              minHeight="500px"
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Kirjoita järjestelmäprompt..."
+              className="min-h-[500px] font-mono text-sm"
+              id="system-prompt-editor"
             />
           </div>
           <div className="flex gap-2">

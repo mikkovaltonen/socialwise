@@ -42,7 +42,6 @@ export interface LSNotification {
     };
   };
   reason: string; // Main reason/description
-  urgency: 'low' | 'medium' | 'high' | 'critical';
   highlights: string[]; // Key concerns highlighted in original doc
   summary: string; // Short summary for list view
   fullText: string; // Complete markdown content
@@ -87,9 +86,16 @@ export interface PTARecord {
 export interface Decision {
   id: string;
   date: string; // ISO date string
-  decisionType: 'asiakkuuden_avaaminen' | 'kiireellinen_sijoitus' | 'avohuollon_tukitoimi' | 'muu';
+  decisionType:
+    | 'asiakkuuden_avaaminen'      // Asiakkuus alkaa
+    | 'asiakkuuden_paattyminen'    // Asiakkuus päättyy
+    | 'selvitys_aloitetaan'        // Selvitys käynnistyy
+    | 'kiireellinen_sijoitus'
+    | 'avohuollon_tukitoimi'
+    | 'muu';
   summary: string;
   legalBasis: string; // e.g., "Lastensuojelulaki § 38"
+  highlights?: string[];  // Korostetut kohdat ([oleellinen], [päätös peruste])
   fullText: string;
 }
 
@@ -212,7 +218,6 @@ export interface LSSummaries {
     date: string;
     reporter: string;
     mainConcern: string;
-    urgency: string;
   }>;
   recentCaseNotes: Array<{
     date: string;

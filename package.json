@@ -25,8 +25,7 @@
     "migrate:stock:auth": "powershell -ExecutionPolicy Bypass -File ./Data_preparation/migrate-with-auth.ps1",
     "migrate:stock:simple": "npx tsx Data_preparation/migrateWithUserAuth.ts",
     "migrate:crm": "npx tsx Data_preparation/migrate-crm-data.ts",
-    "pdf:convert": "npx tsx data_preparation/pdf-to-markdown-final.ts",
-    "process-ls-data": "npx tsx data_preparation/process-ls-data.ts"
+    "pdf:convert": "npx tsx data_preparation/pdf-to-markdown-final.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",

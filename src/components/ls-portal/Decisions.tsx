@@ -22,6 +22,8 @@ interface DecisionsProps {
 
 const decisionTypeLabels: Record<Decision['decisionType'], string> = {
   asiakkuuden_avaaminen: 'Asiakkuuden avaaminen',
+  asiakkuuden_paattyminen: 'Asiakkuus päättyy',
+  selvitys_aloitetaan: 'Selvitys aloitetaan',
   kiireellinen_sijoitus: 'Kiireellinen sijoitus',
   avohuollon_tukitoimi: 'Avohuollon tukitoimi',
   muu: 'Muu päätös',
@@ -29,6 +31,8 @@ const decisionTypeLabels: Record<Decision['decisionType'], string> = {
 
 const decisionTypeColors: Record<Decision['decisionType'], string> = {
   asiakkuuden_avaaminen: 'bg-blue-100 text-blue-800 border-blue-300',
+  asiakkuuden_paattyminen: 'bg-orange-100 text-orange-800 border-orange-300',
+  selvitys_aloitetaan: 'bg-cyan-100 text-cyan-800 border-cyan-300',
   kiireellinen_sijoitus: 'bg-red-100 text-red-800 border-red-300',
   avohuollon_tukitoimi: 'bg-green-100 text-green-800 border-green-300',
   muu: 'bg-gray-100 text-gray-800 border-gray-300',
@@ -72,24 +76,15 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions }) => {
                     className={`border rounded-lg p-3 cursor-pointer hover:shadow-md transition-all ${typeColor}`}
                     onClick={() => setSelectedDecision(decision)}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-semibold">
-                            {formatDate(decision.date)}
-                          </span>
-                          <span className="text-xs px-2 py-0.5 bg-white/60 rounded border border-current">
-                            {typeLabel}
-                          </span>
-                        </div>
-                        <p className="text-sm font-medium mb-1">
-                          {decision.summary}
-                        </p>
-                        {decision.legalBasis && (
-                          <p className="text-xs opacity-80">
-                            {decision.legalBasis}
-                          </p>
-                        )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold">
+                          {formatDate(decision.date)}
+                        </span>
+                        <span className="text-sm">-</span>
+                        <span className="text-sm font-bold">
+                          {typeLabel}
+                        </span>
                       </div>
                       <ChevronRight className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                     </div>

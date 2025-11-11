@@ -33,8 +33,8 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
   if (messages.length === 0 && !isLoading) {
     return (
       <div className="flex items-center justify-center h-full text-center">
-        <div className="text-gray-400">
-          <p className="text-sm">Ei viestejä vielä.</p>
+        <div className="text-white/60">
+          <p className="text-xs">Ei viestejä vielä.</p>
           <p className="text-xs mt-2">
             Valitse valmis kysymys tai kirjoita oma kysymyksesi.
           </p>
@@ -44,7 +44,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {messages.map((message) => (
         <div
           key={message.id}
@@ -53,16 +53,16 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
           }`}
         >
           <div
-            className={`max-w-[80%] rounded-lg px-4 py-3 ${
+            className={`max-w-[80%] rounded-lg px-3 py-2 ${
               message.role === 'user'
-                ? 'bg-ls-blue text-white'
-                : 'bg-gray-100 text-gray-800'
+                ? 'bg-white/20 text-white'
+                : 'bg-white/10 text-white'
             }`}
           >
-            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+            <p className="text-xs whitespace-pre-wrap">{message.content}</p>
             <p
               className={`text-xs mt-1 ${
-                message.role === 'user' ? 'text-white/70' : 'text-gray-500'
+                message.role === 'user' ? 'text-white/60' : 'text-white/50'
               }`}
             >
               {message.timestamp.toLocaleTimeString('fi-FI', {
@@ -77,8 +77,8 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
       {/* Loading indicator */}
       {isLoading && (
         <div className="flex justify-start">
-          <div className="bg-gray-100 rounded-lg px-4 py-3">
-            <Loader2 className="w-5 h-5 text-ls-blue animate-spin" />
+          <div className="bg-white/10 rounded-lg px-3 py-2">
+            <Loader2 className="w-4 h-4 text-white animate-spin" />
           </div>
         </div>
       )}

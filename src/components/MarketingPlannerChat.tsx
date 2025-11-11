@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { createContinuousImprovementSession, addTechnicalLog, setUserFeedback } from '../lib/firestoreService';
 import { sessionService, ChatSession } from '../lib/sessionService';
 import * as XLSX from 'xlsx';
-import { getSystemPromptForUser, getUserLLMModel } from '../lib/systemPromptService';
+import { getSystemPromptForUser, getUserLLMModel, getUserTemperature } from '../lib/systemPromptService';
 import { useQueryClient } from '@tanstack/react-query';
 import { InteractiveJsonTable } from './InteractiveJsonTable';
 import { MrpDecisionTable } from './MrpDecisionTable';
@@ -53,7 +53,7 @@ console.log('🔧 MarketingPlannerChat v3.8-fixed-aiRequestId - Fixed undefined 
 console.log('OpenRouter API config:', {
   apiKey: openRouterApiKey ? `${openRouterApiKey.substring(0, 10)}...` : 'undefined',
   model: 'x-ai/grok-4-fast (default)',  // Will be dynamically selected based on user preference
-  temperature: 'User-specific (0-1)',  // Dynamically loaded from user preferences
+  temperature: '0.05 (default)',  // Dynamically loaded from user preferences
   timestamp: new Date().toISOString(),
   toolSupport: true
 });
@@ -237,7 +237,7 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
     // OpenRouter API helper function with retry logic
     const callOpenRouterAPI = async (messages: any[], systemPrompt: string, tools?: any[], retryCount: number = 0) => {
       // Get user's selected model and temperature
-      const selectedModel = user ? await getUserLLMModel(user.uid) : 'google/gemini-2.5-pro';
+      const selectedModel = user ? await getUserLLMModel(user.uid) : 'x-ai/grok-4-fast';
       const userTemperature = user ? await getUserTemperature(user.uid) : 0.05;
 
       // DEBUG: Log what's being sent to OpenRouter
@@ -538,7 +538,7 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
         userId: user?.uid,
         chatSessionKey,
         sessionId: continuousImprovementSessionId,
-        model: user ? await getUserLLMModel(user.uid) : 'google/gemini-2.5-flash',
+        model: user ? await getUserLLMModel(user.uid) : 'x-ai/grok-4-fast',
         messageText: textToSend.slice(0, 100) // First 100 chars only for privacy
       });
 
@@ -627,7 +627,7 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
 
 
       // Get system LLM model for logging
-      const systemModel = user ? await getUserLLMModel(user.uid) : 'google/gemini-2.5-flash';
+      const systemModel = user ? await getUserLLMModel(user.uid) : 'x-ai/grok-4-fast';
 
       // Log session start info
       console.log('🎯 Console logging enabled for session', {
@@ -780,34 +780,31 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={20} minSize={10} maxSize={40} className="pl-2 relative">
               {chatVisible && (
-              <div className={"flex flex-col items-stretch"}>
-                {/* Close Chat Button */}
-                {onChatVisibleChange && (
-                  <button
-                    onClick={() => onChatVisibleChange(false)}
-                    className="absolute right-2 top-2 z-10
-                               bg-gray-700 hover:bg-gray-600
-                               text-white p-1.5 rounded
-                               transition-colors duration-200"
-                    title="Piilota AI-chat"
-                  >
-                    <PanelRightClose className="w-4 h-4" />
-                  </button>
-                )}
+              <div className="flex flex-col items-stretch h-full bg-gradient-to-b from-[#4A7EBF] to-[#5B8FD0] rounded-lg">
+                {/* Chat Header */}
+                <div className="bg-[#5B8FD0] text-white px-4 py-3 rounded-t-lg flex justify-between items-center">
+                  <h2 className="text-lg font-semibold">Kysy AI:lta</h2>
+                  {onChatVisibleChange && (
+                    <button
+                      onClick={() => onChatVisibleChange(false)}
+                      className="hover:bg-white/10 text-white p-1.5 rounded transition-colors duration-200"
+                      title="Piilota AI-chat"
+                    >
+                      <PanelRightClose className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
 
             {/* Chat Messages */}
-            <div className="p-2 space-y-6">
-              <div className="max-w-full ml-0 mr-auto space-y-6">
+            <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+              <div className="max-w-full space-y-4">
                 
           {sessionInitializing && (
             <div className="flex justify-start">
-              <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <Bot className="h-5 w-5 text-gray-700" />
-                </div>
-                <div className="bg-white shadow-sm border rounded-2xl px-6 py-4 flex items-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
-                  <span className="text-sm text-gray-600">Initializing AI with your knowledge base...</span>
+              <div className="bg-white/95 rounded-xl px-4 py-3 shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm text-gray-700">Alustetaan AI...</span>
                 </div>
               </div>
             </div>
@@ -818,20 +815,14 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
               key={index}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className="flex items-start space-x-3 max-w-full w-full">
-                {message.role === 'model' && (
-                  <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                    <Bot className="h-5 w-5 text-gray-700" />
-                  </div>
-                )}
-                <div className="flex flex-col space-y-2 flex-1">
-                  <div
-                    className={`px-6 py-4 rounded-2xl ${
-                      message.role === 'user'
-                        ? 'bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white ml-auto max-w-lg'
-                        : 'bg-white shadow-sm border'
-                    }`}
-                  >
+              <div className="flex flex-col space-y-2 w-full">
+                <div
+                  className={`px-4 py-3 rounded-xl ${
+                    message.role === 'user'
+                      ? 'bg-[#5B8FD0] text-white ml-auto max-w-[85%]'
+                      : 'bg-white/95 shadow-sm text-gray-800'
+                  }`}
+                >
                     {message.parts.map((part, partIndex) => {
                       // Try to detect JSON tables (both supplier comparison and MRP decision tables)
                       let jsonTable = null;
@@ -864,7 +855,7 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
                       return (
                         <div key={partIndex}>
                           {textWithoutJson && (
-                            <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none markdown-content`}>
+                            <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} max-w-none markdown-content`}>
                               <ReactMarkdown>
                                 {(() => {
                                   const { originalText, formattedSources } = processTextWithCitations(
@@ -907,43 +898,39 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
                     )}
                   </div>
 
-                  {/* Feedback buttons for AI responses only */}
-                  {message.role === 'model' && (
-                    <div className="flex items-center space-x-2 ml-2">
-                      <span className="text-xs text-gray-500">Oliko tästä apua?</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleFeedback('thumbs_up', index)}
-                        className="text-gray-500 hover:text-green-600 hover:bg-green-50 p-1 h-auto"
-                        title="Good response"
-                      >
-                        <ThumbsUp className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleFeedback('thumbs_down', index)}
-                        className="text-gray-500 hover:text-red-600 hover:bg-red-50 p-1 h-auto"
-                        title="Poor response"
-                      >
-                        <ThumbsDown className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                {/* Feedback buttons for AI responses only */}
+                {message.role === 'model' && (
+                  <div className="flex items-center space-x-2 ml-2">
+                    <span className="text-xs text-white/80">Oliko tästä apua?</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleFeedback('thumbs_up', index)}
+                      className="text-white/70 hover:text-white hover:bg-white/10 p-1 h-auto"
+                      title="Good response"
+                    >
+                      <ThumbsUp className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleFeedback('thumbs_down', index)}
+                      className="text-white/70 hover:text-white hover:bg-white/10 p-1 h-auto"
+                      title="Poor response"
+                    >
+                      <ThumbsDown className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <Bot className="h-5 w-5 text-gray-700" />
-                </div>
-                <div className="bg-white shadow-sm border rounded-2xl px-6 py-4 flex items-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
-                  <span className="text-sm text-gray-600">AI is thinking...</span>
+              <div className="bg-white/95 rounded-xl px-4 py-3 shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm text-gray-700">AI miettii...</span>
                 </div>
               </div>
             </div>
@@ -952,37 +939,33 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
             </div>
 
             {/* Input Area */}
-            <div className="bg-white border rounded-md p-6">
-              <div className="max-w-full mx-auto">
-                <div className="flex space-x-4 items-end">
-                  <div className="flex-1">
-                    <Input
-                      ref={inputRef}
-                      type="text"
-                      placeholder="Kysy asiakkaasta tai pyydä apua dokumentointiin..."
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      disabled={isLoading}
-                      className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                    />
-                  </div>
-                  <Button
-                    onClick={() => handleSendMessage()}
-                    disabled={!input.trim() || isLoading}
-                    className="h-12 px-6 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D2FDE] hover:to-[#7C3AED] text-white rounded-xl"
-                  >
-                    <Send className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.location.reload()}
-                    className="h-12 px-6 text-red-600 border-red-200 hover:bg-red-50 rounded-xl"
-                  >
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Reset Chat
-                  </Button>
-                </div>
+            <div className="bg-white/95 border-t border-white/20 rounded-b-lg p-4">
+              <div className="flex space-x-2 items-center">
+                <Input
+                  ref={inputRef}
+                  type="text"
+                  placeholder="Kirjoita kysymys..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  disabled={isLoading}
+                  className="flex-1 h-10 px-3 text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                />
+                <Button
+                  onClick={() => handleSendMessage()}
+                  disabled={!input.trim() || isLoading}
+                  className="h-10 px-4 bg-[#5B8FD0] hover:bg-[#4A7EBF] text-white rounded-lg"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => window.location.reload()}
+                  className="h-10 px-3 text-red-600 border-red-200 hover:bg-red-50 rounded-lg"
+                  title="Nollaa keskustelu"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
               </div>
             </div>
               </div>
@@ -995,48 +978,39 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
             {leftPanel}
           </div>
         ) : chatVisible ? (
-          <div className="relative">
+          <div className="relative h-full">
             {/* When no left panel, show full-width chat */}
-            <div className={"flex flex-col items-stretch"}>
-              {/* Close Chat Button */}
-              {onChatVisibleChange && (
-                <button
-                  onClick={() => onChatVisibleChange(false)}
-                  className="absolute right-2 top-2 z-10
-                             bg-gray-700 hover:bg-gray-600
-                             text-white p-1.5 rounded
-                             transition-colors duration-200"
-                  title="Piilota AI-chat"
-                >
-                  <PanelRightClose className="w-4 h-4" />
-                </button>
-              )}
+            <div className="flex flex-col items-stretch h-full bg-gradient-to-b from-[#4A7EBF] to-[#5B8FD0] rounded-lg">
+              {/* Chat Header */}
+              <div className="bg-[#5B8FD0] text-white px-4 py-3 rounded-t-lg flex justify-between items-center">
+                <h2 className="text-lg font-semibold">Kysy AI:lta</h2>
+                {onChatVisibleChange && (
+                  <button
+                    onClick={() => onChatVisibleChange(false)}
+                    className="hover:bg-white/10 text-white p-1.5 rounded transition-colors duration-200"
+                    title="Piilota AI-chat"
+                  >
+                    <PanelRightClose className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
 
-              <div className="p-2 space-y-6">
-                <div className="max-w-full mx-auto space-y-6">
+              <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+                <div className="max-w-full space-y-4">
                   {sessionInitializing && (
                     <div className="flex justify-start">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <Bot className="h-5 w-5 text-gray-700" />
-                        </div>
-                        <div className="bg-white shadow-sm border rounded-2xl px-6 py-4 flex items-center space-x-2">
-                          <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
-                          <span className="text-sm text-gray-600">Initializing AI with your knowledge base...</span>
+                      <div className="bg-white/95 rounded-xl px-4 py-3 shadow-sm">
+                        <div className="flex items-center space-x-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                          <span className="text-sm text-gray-700">Alustetaan AI...</span>
                         </div>
                       </div>
                     </div>
                   )}
                   {messages.map((message, index) => (
                     <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className="flex items-start space-x-3 max-w-full w-full">
-                        {message.role === 'model' && (
-                          <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <Bot className="h-5 w-5 text-gray-700" />
-                          </div>
-                        )}
-                        <div className="flex flex-col space-y-2 flex-1">
-                          <div className={`px-6 py-4 rounded-2xl ${message.role === 'user' ? 'bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white ml-auto max-w-lg' : 'bg-white shadow-sm border'}`}>
+                      <div className="flex flex-col space-y-2 w-full">
+                        <div className={`px-4 py-3 rounded-xl ${message.role === 'user' ? 'bg-[#5B8FD0] text-white ml-auto max-w-[85%]' : 'bg-white/95 shadow-sm text-gray-800'}`}>
                             {message.parts.map((part, partIndex) => {
                               // Try to detect JSON tables (both supplier comparison and MRP decision tables)
                               let jsonTable = null;
@@ -1069,7 +1043,7 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
                               return (
                                 <div key={partIndex}>
                                   {textWithoutJson && (
-                                    <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} prose-sm max-w-none markdown-content`}>
+                                    <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} max-w-none markdown-content`}>
                                       <ReactMarkdown>
                                         {(() => {
                                           const { originalText, formattedSources } = processTextWithCitations(textWithoutJson, message.citationMetadata?.citationSources);
@@ -1108,54 +1082,59 @@ const MarketingPlannerChat = forwardRef<MarketingPlannerChatRef, MarketingPlanne
                               <FunctionUsageIndicator functionsUsed={message.functionsUsed} />
                             )}
                           </div>
-                          {message.role === 'model' && (
-                            <div className="flex items-center space-x-2 ml-2">
-                              <span className="text-xs text-gray-500">Oliko tästä apua?</span>
-                              <Button variant="ghost" size="sm" onClick={() => handleFeedback('thumbs_up', index)} className="text-gray-500 hover:text-green-600 hover:bg-green-50 p-1 h-auto" title="Good response">
-                                <ThumbsUp className="h-3 w-3" />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleFeedback('thumbs_down', index)} className="text-gray-500 hover:text-red-600 hover:bg-red-50 p-1 h-auto" title="Poor response">
-                                <ThumbsDown className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
+                        {message.role === 'model' && (
+                          <div className="flex items-center space-x-2 ml-2">
+                            <span className="text-xs text-white/80">Oliko tästä apua?</span>
+                            <Button variant="ghost" size="sm" onClick={() => handleFeedback('thumbs_up', index)} className="text-white/70 hover:text-white hover:bg-white/10 p-1 h-auto" title="Good response">
+                              <ThumbsUp className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleFeedback('thumbs_down', index)} className="text-white/70 hover:text-white hover:bg-white/10 p-1 h-auto" title="Poor response">
+                              <ThumbsDown className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
                   {isLoading && (
                     <div className="flex justify-start">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <Bot className="h-5 w-5 text-gray-700" />
-                        </div>
-                        <div className="bg-white shadow-sm border rounded-2xl px-6 py-4 flex items-center space-x-2">
-                          <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
-                          <span className="text-sm text-gray-600">AI is thinking...</span>
+                      <div className="bg-white/95 rounded-xl px-4 py-3 shadow-sm">
+                        <div className="flex items-center space-x-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                          <span className="text-sm text-gray-700">AI miettii...</span>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-              <div className="bg-white border rounded-md p-6">
-                <div className="max-w-full mx-auto">
-                  <div className="flex space-x-4 items-end">
-                    <div className="flex-1">
-                      <Input ref={inputRef} type="text" placeholder="Kysy asiakkaasta tai pyydä apua dokumentointiin..." value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading} className="w-full h-12 px-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent" />
-                    </div>
-                    <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading} className="h-12 px-6 bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D2FDE] hover:to-[#7C3AED] text-white rounded-xl">
-                      <Send className="h-5 w-5" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => window.location.reload()}
-                      className="h-12 px-6 text-red-600 border-red-200 hover:bg-red-50 rounded-xl"
-                    >
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Reset Chat
-                    </Button>
-                  </div>
+              <div className="bg-white/95 border-t border-white/20 rounded-b-lg p-4">
+                <div className="flex space-x-2 items-center">
+                  <Input
+                    ref={inputRef}
+                    type="text"
+                    placeholder="Kirjoita kysymys..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    disabled={isLoading}
+                    className="flex-1 h-10 px-3 text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  />
+                  <Button
+                    onClick={() => handleSendMessage()}
+                    disabled={!input.trim() || isLoading}
+                    className="h-10 px-4 bg-[#5B8FD0] hover:bg-[#4A7EBF] text-white rounded-lg"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.location.reload()}
+                    className="h-10 px-3 text-red-600 border-red-200 hover:bg-red-50 rounded-lg"
+                    title="Nollaa keskustelu"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, Database, Zap } from "lucide-react";
+import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, FileText, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import PromptEditor from "../components/PromptEditor";
 import SystemPromptManager from "../components/SystemPromptManager";
+import SummaryPromptManager from "../components/SummaryPromptManager";
 import UserRegistration from "@/components/UserRegistration";
-import DataPreparationViewer from "@/components/DataPreparationViewer";
+import AineistoParsingDocumentation from "@/components/AineistoParsingDocumentation";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -100,17 +101,17 @@ const Admin = () => {
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-bold mb-2">
-                    AI Järjestelmäpromptien hallinta
+                    AI Promptin ja Mallin hallinta
                   </CardTitle>
                   <p className="text-purple-100 text-lg">
-                    Hallitse AI-järjestelmän ohjeistuksia ja versioita
+                    Hallitse chatbotin järjestelmäpromptia ja LLM-asetuksia (käytetään myös tiivistelmään)
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 bg-white">
               <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Hallitse järjestelmäpromptin versioita. Jokainen käyttäjä voi valita haluamansa LLM-mallin (Gemini 2.5 Pro / Flash). Muutokset tallentuvat versiohistoriaan ja voidaan palauttaa tarvittaessa.
+                Hallitse chatbotin järjestelmäpromptin versioita. <strong>Valittu LLM-malli ja temperature käytetään sekä chatbotissa että tiivistelmän luomisessa.</strong> Muutokset tallentuvat versiohistoriaan ja voidaan palauttaa tarvittaessa.
               </p>
               <Dialog>
                 <DialogTrigger asChild>
@@ -118,17 +119,62 @@ const Admin = () => {
                     className="w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D2FDE] hover:to-[#7C3AED] py-6 text-lg font-medium shadow-lg shadow-[#7C3AED]/25"
                   >
                     <Settings className="mr-2 h-5 w-5" />
-                    Avaa prompttienhallinta
+                    Avaa promptin ja mallin hallinta
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Järjestelmäpromptien hallinta</DialogTitle>
+                    <DialogTitle>AI Promptin ja Mallin hallinta</DialogTitle>
                     <DialogDescription>
-                      Hallitse AI-järjestelmän ohjeistuksia ja mallivalintoja. Kaikki muutokset tallentuvat versiohistoriaan.
+                      Hallitse chatbotin järjestelmäpromptia ja mallivalintoja. Valitut asetukset käytetään sekä chatissa että tiivistelmän luomisessa. Kaikki muutokset tallentuvat versiohistoriaan.
                     </DialogDescription>
                   </DialogHeader>
                   <SystemPromptManager />
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Summary Prompt Management - Featured */}
+        <div className="mb-8">
+          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-purple-600 to-pink-600 text-white p-8">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold mb-2">
+                    Tiivistelmän Promptin hallinta
+                  </CardTitle>
+                  <p className="text-purple-100 text-lg">
+                    Hallitse asiakastiivistelmän luomisen ohjeistusta
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 bg-white">
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                Hallitse tiivistelmän luomisen järjestelmäpromptin versioita. Tiivistelmä käyttää samaa LLM-mallia ja temperature-asetusta kuin chatbot (voit vaihtaa mallin yllä olevasta osiosta). Muutokset tallentuvat versiohistoriaan.
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-6 text-lg font-medium shadow-lg shadow-purple-600/25"
+                  >
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Avaa tiivistelmän promptin hallinta
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Tiivistelmän Promptin hallinta</DialogTitle>
+                    <DialogDescription>
+                      Hallitse tiivistelmän luomisen järjestelmäpromptia. Tiivistelmä käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <SummaryPromptManager />
                 </DialogContent>
               </Dialog>
             </CardContent>
@@ -180,167 +226,46 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Data Preparation Section */}
+        {/* Aineisto Parsing Documentation Section */}
         <div className="mb-8">
           <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-            <CardHeader className="bg-gradient-to-br from-gray-700 to-gray-900 text-white p-8">
+            <CardHeader className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-8">
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                  <Database className="h-8 w-8 text-white" />
+                  <FileText className="h-8 w-8 text-white" />
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-bold mb-2">
-                    Datan valmistelu
+                    Aineisto Data Parsing
                   </CardTitle>
-                  <p className="text-gray-300 text-lg">
-                    Tarkastele ETL-putken dokumentaatiota ja suoritushistoriaa
+                  <p className="text-blue-100 text-lg">
+                    Tekninen dokumentaatio parsing-logiikasta
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 bg-white">
               <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Seuraa CRM-datan valmisteluprosessia, joka prosessoi asiakastietoja ja palveluhistoriaa Firestoreen. Näytä spesifikaatiot ja viimeisin suoritusraportti.
+                Katso miten lastensuojelun asiakastiedot parsitaan dynaamisesti markdown-tiedostoista runtime-aikana.
+                Sisältää yksityiskohtaiset parsing-säännöt, tiedostoformaatit ja esimerkkikoodit jokaiselle highlight boxille.
               </p>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
-                    className="w-full bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black py-6 text-lg font-medium shadow-lg shadow-gray-500/25"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-6 text-lg font-medium shadow-lg shadow-blue-500/25"
                   >
-                    <Database className="mr-2 h-5 w-5" />
-                    Näytä prosessidokumentaatio
+                    <FileText className="mr-2 h-5 w-5" />
+                    Näytä parsing-dokumentaatio
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Datan valmisteluprosessi</DialogTitle>
+                    <DialogTitle>Aineisto Data Parsing - Tekninen Dokumentaatio</DialogTitle>
                     <DialogDescription>
-                      ETL-putken spesifikaatiot ja suoritushistoria
+                      Runtime parsing-logiikka, tiedostoformaatit ja apufunktiot
                     </DialogDescription>
                   </DialogHeader>
-                  <DataPreparationViewer />
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Mass Processing Section */}
-        <div className="mb-8">
-          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-            <CardHeader className="bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] text-white p-8">
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                  <Zap className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-2xl font-bold mb-2">
-                    Massaprosessointi
-                  </CardTitle>
-                  <p className="text-purple-100 text-lg">
-                    Eräkäsittelyjärjestelmä asiakastietojen analysointiin
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-8 bg-white">
-              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Prosessoi suuria määriä asiakastietoja AI- ja sääntöpohjaisen logiikan avulla. Yksinkertaiset tapaukset käsitellään automaattisesti, kun taas monimutkaisemmat tapaukset analysoidaan AI:n avulla.
-              </p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    className="w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#6D2FDE] hover:to-[#7C3AED] py-6 text-lg font-medium shadow-lg shadow-[#7C3AED]/25"
-                  >
-                    <Zap className="mr-2 h-5 w-5" />
-                    Näytä prosessointilogiikka
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Massaprosessoinnin logiikka</DialogTitle>
-                    <DialogDescription>
-                      Miten eräkäsittelyjärjestelmä analysoi asiakastietoja
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="mt-4 space-y-4">
-                    <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                      <h3 className="text-lg font-semibold mb-4 text-gray-900">Processing Flow</h3>
-                      <pre className="bg-white p-4 rounded border border-gray-300 text-sm font-mono overflow-x-auto whitespace-pre">
-{`For each substrate family:
-  ├─ Load materials from stock_management collection
-  ├─ Check material count
-  │  ├─ If 1 material → Rule-based decision
-  │  │   └─ Compare final_stock vs safety_stock
-  │  │      ├─ final_stock < safety_stock → YES
-  │  │      └─ final_stock >= safety_stock → NO
-  │  │
-  │  └─ If 2+ materials → AI analysis
-  │      ├─ Load system_prompt.md
-  │      ├─ Build JSON context
-  │      ├─ Call OpenRouter API
-  │      └─ Parse Conclusion from JSON response
-  │
-  └─ Update Firestore with results`}
-                      </pre>
-                    </div>
-
-                    <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                      <h3 className="text-lg font-semibold mb-3 text-blue-900">Key Features</h3>
-                      <ul className="space-y-2 text-gray-700">
-                        <li className="flex items-start">
-                          <span className="mr-2">✅</span>
-                          <span><strong>Intelligent Processing:</strong> Single-material families use rule-based logic, multi-material families get AI analysis</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">✅</span>
-                          <span><strong>Robust Error Handling:</strong> Automatic retry on API failures (3 attempts), resume from last saved progress</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">✅</span>
-                          <span><strong>Progress Tracking:</strong> Real-time updates, saved progress state every 10 batches, duration tracking and ETA</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">✅</span>
-                          <span><strong>Shared Business Logic:</strong> Uses same system_prompt.md and AI processing logic as Chat UI</span>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <div className="bg-amber-50 p-6 rounded-lg border border-amber-200">
-                      <h3 className="text-lg font-semibold mb-3 text-amber-900">Database Updates</h3>
-                      <p className="text-gray-700 mb-3">Each material document receives these new fields:</p>
-                      <pre className="bg-white p-4 rounded border border-gray-300 text-sm font-mono overflow-x-auto">
-{`{
-  ai_conclusion: "YES" | "NO" | "SLIT",
-  ai_output_text: string,
-  ai_processed_at: "2025-10-30T...",
-  ai_model: string,
-  processing_method: "ai" | "rule-based"
-}`}
-                      </pre>
-                    </div>
-
-                    <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                      <h3 className="text-lg font-semibold mb-3 text-green-900">Performance</h3>
-                      <p className="text-gray-700 mb-3">Estimated processing time for 1000 families:</p>
-                      <ul className="space-y-1 text-gray-700 ml-4">
-                        <li>• Rule-based (1 material): ~100ms per family → ~2 minutes total</li>
-                        <li>• AI analysis (2-5 materials): ~2-4s per family → ~45-75 minutes total</li>
-                        <li>• AI analysis (6+ materials): ~5-10s per family → ~90-180 minutes total</li>
-                      </ul>
-                      <p className="text-gray-600 mt-3 text-sm italic">Mixed workload estimate: 1.5 - 3 hours for 1000 families</p>
-                    </div>
-
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm text-gray-600">
-                      <p className="mb-2">
-                        <strong>Location:</strong> <code className="bg-white px-2 py-1 rounded">/mass_processing/</code>
-                      </p>
-                      <p>
-                        <strong>Documentation:</strong> See <code className="bg-white px-2 py-1 rounded">mass_processing/README.md</code> for full instructions
-                      </p>
-                    </div>
-                  </div>
+                  <AineistoParsingDocumentation />
                 </DialogContent>
               </Dialog>
             </CardContent>

@@ -33,24 +33,24 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   isLoading = false,
 }) => {
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-gradient-to-b from-ls-blue to-ls-blue-dark">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-ls-blue-text">Kysy AI:lta</h2>
+      <div className="p-4 border-b border-white/20">
+        <h2 className="text-lg font-bold text-white">Kysy AI:lta</h2>
       </div>
 
       {/* Quick Questions Section */}
-      <div className="px-6 pt-6 pb-4">
+      <div className="px-4 pt-4 pb-3">
         <QuickQuestions onQuestionClick={onQuickQuestionClick} />
       </div>
 
       {/* Chat Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-4 py-3">
         <ChatMessages messages={messages} isLoading={isLoading} />
       </div>
 
       {/* Chat Input - Fixed at Bottom */}
-      <div className="p-6 border-t border-gray-200 bg-white">
+      <div className="p-4 border-t border-white/20">
         <ChatInput onSendMessage={onSendMessage} disabled={isLoading} />
       </div>
     </div>

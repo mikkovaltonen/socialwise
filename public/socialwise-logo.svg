@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#7c3aed"/>
+
+  <!-- Icon: Combined people and heart (social work symbol) -->
+  <!-- Left person -->
+  <circle cx="75" cy="80" r="12" fill="#ffffff"/>
+  <path d="M 75 95 Q 60 95 60 110 L 60 130 Q 60 135 65 135 L 85 135 Q 90 135 90 130 L 90 110 Q 90 95 75 95 Z" fill="#ffffff"/>
+
+  <!-- Right person -->
+  <circle cx="125" cy="80" r="12" fill="#ffffff"/>
+  <path d="M 125 95 Q 110 95 110 110 L 110 130 Q 110 135 115 135 L 135 135 Q 140 135 140 130 L 140 110 Q 140 95 125 95 Z" fill="#ffffff"/>
+
+  <!-- Heart symbol (care/support) -->
+  <path d="M 100 150 C 100 150 80 135 80 120 C 80 110 87 105 93 105 C 97 105 100 108 100 108 C 100 108 103 105 107 105 C 113 105 120 110 120 120 C 120 135 100 150 100 150 Z" fill="#fbbf24"/>
+
+  <!-- Connecting line (collaboration) -->
+  <line x1="87" y1="100" x2="113" y2="100" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+</svg>

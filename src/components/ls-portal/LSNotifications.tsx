@@ -20,20 +20,6 @@ interface LSNotificationsProps {
   notifications: LSNotification[];
 }
 
-const urgencyColors = {
-  low: 'text-blue-600',
-  medium: 'text-yellow-600',
-  high: 'text-orange-600',
-  critical: 'text-red-600',
-};
-
-const urgencyLabels = {
-  low: 'Matala',
-  medium: 'Normaali',
-  high: 'Kiireellinen',
-  critical: 'Kriittinen',
-};
-
 export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications }) => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selectedNotification, setSelectedNotification] = useState<LSNotification | null>(null);
@@ -49,7 +35,7 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
         <CardHeader>
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            <CardTitle>LS-ilmoitukset</CardTitle>
+            <CardTitle>Lastensuojeluilmoitukset</CardTitle>
             <span className="ml-auto text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
               {notifications.length} kpl
             </span>
@@ -60,8 +46,6 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
             <div className="space-y-3">
               {notifications.map((notification) => {
                 const isExpanded = expanded === notification.id;
-                const urgencyColor = urgencyColors[notification.urgency];
-                const urgencyLabel = urgencyLabels[notification.urgency];
 
                 return (
                   <div
@@ -78,9 +62,6 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-semibold text-sm">
                               {formatDate(notification.date)}
-                            </span>
-                            <span className={`text-xs font-medium ${urgencyColor}`}>
-                              {urgencyLabel}
                             </span>
                           </div>
                           <p className="text-xs text-gray-600">

@@ -37,45 +37,18 @@ export const CaseNotes: React.FC<CaseNotesProps> = ({ caseNotes }) => {
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[280px] pr-4">
-          <div className="space-y-3">
+          <div className="space-y-2">
             {sortedNotes.map((note) => (
               <div
                 key={note.id}
-                className="border border-gray-200 rounded-lg p-3 hover:border-purple-300 transition-colors"
+                className="flex gap-2 text-sm text-gray-800 leading-relaxed"
               >
-                {/* Date */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-800">
-                    {formatDate(note.date)}
-                  </span>
-                </div>
-
-                {/* Notification Ground */}
-                <div className="mb-2">
-                  <p className="text-xs font-medium text-gray-600 mb-1">
-                    Ilmoitusperuste:
-                  </p>
-                  <p className="text-sm text-gray-800">{note.notificationGround}</p>
-                </div>
-
-                {/* Keywords */}
-                {note.keywords.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-600 mb-1">
-                      Avainsanat:
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {note.keywords.map((keyword, idx) => (
-                        <span
-                          key={idx}
-                          className="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200"
-                        >
-                          {keyword}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <span className="text-purple-600 font-bold">•</span>
+                <span>
+                  <span className="font-semibold">{formatDate(note.date)}</span>
+                  {' - '}
+                  {note.notificationGround}
+                </span>
               </div>
             ))}
           </div>

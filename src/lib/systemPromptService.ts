@@ -32,22 +32,35 @@ export interface SystemPrompt {
 }
 
 const PROMPTS_COLLECTION = 'botin_ohjeet';
+const USER_PREFERENCES_COLLECTION = 'crm_user_preferences';
 
 /**
- * Get default system prompt from /public/system_prompt.md
+ * Get default chatbot prompt from /public/chatbot_prompt.md
  */
 export async function getDefaultSystemPrompt(): Promise<string> {
   try {
-    const response = await fetch('/system_prompt.md');
+    const response = await fetch('/chatbot_prompt.md');
     if (response.ok) {
+      console.log('✅ Loaded chatbot prompt from /chatbot_prompt.md');
       return await response.text();
     }
   } catch (error) {
-    console.error('Error loading system_prompt.md:', error);
+    console.warn('⚠️ Could not load chatbot_prompt.md, trying fallback system_prompt.md');
   }
 
-  // Fallback
-  return `You are a marketing campaign assistant.`;
+  // Try old filename as fallback
+  try {
+    const response = await fetch('/system_prompt.md');
+    if (response.ok) {
+      console.log('✅ Loaded chatbot prompt from /system_prompt.md (fallback)');
+      return await response.text();
+    }
+  } catch (error) {
+    console.error('❌ Error loading system_prompt.md:', error);
+  }
+
+  // Last resort fallback
+  return `Olet SocialWise AI-avustaja, joka tukee sosiaalityöntekijöitä heidän päivittäisessä työssään.`;
 }
 
 /**
@@ -80,14 +93,74 @@ export async function getLatestSystemPrompt(): Promise<SystemPrompt | null> {
 }
 
 /**
+ * Get user's prompt version preference (test vs production)
+ */
+export async function getUserPromptVersion(userId: string): Promise<'test' | 'production'> {
+  try {
+    const docRef = doc(db, USER_PREFERENCES_COLLECTION, userId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data.promptVersion || 'production';
+    }
+
+    return 'production'; // Default
+  } catch (error) {
+    console.error('Error fetching prompt version:', error);
+    return 'production';
+  }
+}
+
+/**
+ * Set user's prompt version preference
+ */
+export async function setUserPromptVersion(userId: string, version: 'test' | 'production'): Promise<boolean> {
+  try {
+    const docRef = doc(db, USER_PREFERENCES_COLLECTION, userId);
+    await setDoc(
+      docRef,
+      {
+        promptVersion: version,
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true }
+    );
+
+    console.log(`✅ Prompt version updated to: ${version}`);
+    return true;
+  } catch (error) {
+    console.error('Error updating prompt version:', error);
+    return false;
+  }
+}
+
+/**
  * Get system prompt content for user
  */
 export async function getSystemPromptForUser(user: any): Promise<string> {
   try {
+    // Check user's version preference
+    const version = await getUserPromptVersion(user.uid);
+
+    if (version === 'test') {
+      // Load from file
+      console.log('📝 Using test prompt from /chatbot_prompt.md');
+      try {
+        const response = await fetch('/chatbot_prompt.md');
+        if (response.ok) {
+          return await response.text();
+        }
+      } catch (error) {
+        console.warn('Could not load test prompt file, falling back to production');
+      }
+    }
+
+    // Load from Firestore (production)
     const latest = await getLatestSystemPrompt();
 
     if (latest) {
-      console.log(`📝 Using prompt from ${latest.createdAt.toDate().toLocaleString()}`);
+      console.log(`📝 Using production prompt from ${latest.createdAt.toDate().toLocaleString()}`);
       return latest.content;
     }
 
@@ -170,7 +243,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     if (userDoc.exists()) {
       const data = userDoc.data();
       return {
-        llmModel: data.llmModel || 'google/gemini-2.5-pro',
+        llmModel: data.llmModel || 'x-ai/grok-4-fast',
         temperature: data.temperature ?? 0.05,
         updatedAt: data.updatedAt
       };
@@ -179,7 +252,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     console.error('Error fetching user preferences:', error);
   }
   return {
-    llmModel: 'google/gemini-2.5-pro',
+    llmModel: 'x-ai/grok-4-fast',
     temperature: 0.05
   };
 }

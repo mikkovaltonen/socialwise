@@ -374,3 +374,4 @@ Features:
 - Model selection via production prompt configuration
 - OpenRouter API integration for model access
 - tässä projektissa kaikki on suomeksi
+- älä koskaa generoi transation tai master dataa tähän kansioon '/mnt/c/Users/mikbu/Documents/SocialWise/public/Aineisto'

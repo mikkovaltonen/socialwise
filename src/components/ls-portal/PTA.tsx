@@ -57,7 +57,7 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5" />
-            <CardTitle>PTA</CardTitle>
+            <CardTitle>Palveluntarvearviointi</CardTitle>
             <span className="ml-auto text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded">
               {ptaRecords.length} kirjausta
             </span>
