@@ -243,7 +243,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     if (userDoc.exists()) {
       const data = userDoc.data();
       return {
-        llmModel: data.llmModel || 'google/gemini-flash-lite-1.5-8b',
+        llmModel: data.llmModel || 'x-ai/grok-4-fast',
         temperature: data.temperature ?? 0.05,
         updatedAt: data.updatedAt
       };
@@ -252,7 +252,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     console.error('Error fetching user preferences:', error);
   }
   return {
-    llmModel: 'google/gemini-flash-lite-1.5-8b',
+    llmModel: 'x-ai/grok-4-fast',
     temperature: 0.05
   };
 }

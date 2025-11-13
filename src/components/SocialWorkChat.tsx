@@ -82,6 +82,12 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
     const initializeSession = async () => {
       if (!user) return;
 
+      // Prevent re-initialization if session already exists
+      if (sessionContext) {
+        console.log('⏭️ Session already initialized, skipping re-initialization');
+        return;
+      }
+
       try {
         setSessionInitializing(true);
 
