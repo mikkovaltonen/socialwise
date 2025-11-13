@@ -1,7 +1,7 @@
 /**
  * Runtime Aineisto Parser
  *
- * Dynaamisesti lukee ja parsii markdown-tiedostot /public/Aineisto/ -kansioista.
+ * Dynaamisesti lukee ja parsii markdown-tiedostot Firebase Storage -palvelusta.
  * Korvaa staattisen build-time parserin (process-ls-data.ts) runtime-toiminnallisuudella.
  */
 
@@ -14,6 +14,9 @@ import type {
   ServicePlan,
   LSClientData
 } from '@/data/ls-types';
+import * as StorageService from './aineistoStorageService';
+import { getSummaryPromptForGeneration } from './summaryPromptService';
+import { getPTALLMModel, getSummaryTemperature } from './systemPromptService';
 
 // ============================================================================
 // Constants
@@ -64,20 +67,13 @@ async function fetchMarkdownFiles(category: string): Promise<string[]> {
 }
 
 /**
- * Hakee yksittäisen markdown-tiedoston
+ * Hakee yksittäisen markdown-tiedoston Firebase Storage -palvelusta
  */
 async function fetchMarkdownFile(category: string, filename: string): Promise<string | null> {
-  const path = `${AINEISTO_BASE_PATH}/${category}/${filename}`;
+  const path = `${category}/${filename}`;
 
   try {
-    const response = await fetch(path);
-
-    if (!response.ok) {
-      console.warn(`File not found: ${path}`);
-      return null;
-    }
-
-    return await response.text();
+    return await StorageService.fetchMarkdownFile(path);
   } catch (error) {
     console.error(`Error fetching file ${path}:`, error);
     return null;
@@ -298,48 +294,6 @@ function parseCaseNote(filename: string, markdown: string): CaseNote {
   };
 }
 
-/**
- * Parsii Palveluntarvearviointi-kirjauksen markdown-tiedostosta
- */
-function parsePTARecord(filename: string, markdown: string): PTARecord {
-  const { frontmatter, content } = parseFrontmatter(markdown);
-  const date = parseDateFromFilename(filename);
-
-  // Poimii tapahtuman tyypin
-  const eventTypeStr = extractFieldValue(content, 'Tapahtuman tyyppi') ||
-                      extractFieldValue(content, 'Tyyppi');
-  const eventType = (eventTypeStr.toLowerCase() as PTARecord['eventType']) || 'muu';
-
-  // Poimii osallistujat
-  const participantsStr = extractSection(content, 'Osallistujat');
-  const participants = participantsStr ?
-    participantsStr.split('\n').filter(p => p.trim()).map(p => p.replace(/^[-*]\s*/, '').trim()) :
-    [];
-
-  // Poimii yhteenvedon
-  const summary = extractSection(content, 'Yhteenveto') ||
-                 extractSection(content, 'Kuvaus');
-
-  // Poimii toimenpiteet
-  const actionsStr = extractSection(content, 'Toimenpiteet');
-  const actions = actionsStr ?
-    actionsStr.split('\n').filter(a => a.trim()).map(a => a.replace(/^[-*]\s*/, '').trim()) :
-    [];
-
-  // Poimii AI-ohjauksen
-  const aiGuidance = extractSection(content, 'AI-ohjaus');
-
-  return {
-    id: filename.replace('.md', ''),
-    date,
-    eventType,
-    participants,
-    summary,
-    actions,
-    aiGuidance: aiGuidance || undefined,
-    fullText: markdown
-  };
-}
 
 /**
  * Parsii päätöksen markdown-tiedostosta
@@ -634,11 +588,202 @@ export async function loadDecisions(): Promise<Decision[]> {
 }
 
 /**
- * Lataa ja parsii Palveluntarvearviointi-kirjaukset
+ * Parsii Palveluntarvearviointi-dokumentin markdown-tiedostosta
+ * YKSINKERTAISTETTU: Poimii vain päivämäärän ja raaka markdown.
+ * Yhteenveto tehdään LLM-kutsulla erikseen.
+ */
+function parsePTARecord(filename: string, markdown: string): PTARecord {
+  const { frontmatter, content } = parseFrontmatter(markdown);
+
+  // Poimii päivämäärän (yrittää ensin sisällöstä, sitten tiedostonimestä)
+  const dateMatch = content.match(/\*\*Päiväys:\*\*\s*(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  let date = parseDateFromFilename(filename);
+  if (dateMatch) {
+    const [, day, month, year] = dateMatch;
+    date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  return {
+    id: filename.replace('.md', ''),
+    date,
+    eventType: 'muu',
+    participants: [],
+    summary: '', // Täytetään LLM:llä erikseen
+    actions: [],
+    fullText: markdown,
+  };
+}
+
+/**
+ * Generoi yhden lauseen yhteenveto LLM:llä
+ * Käyttää summary_prompt.md tiedoston promptia
+ * Sisältää retry-logiikan rate limiting -virheiden käsittelyyn
+ */
+async function generateSummaryWithLLM(markdown: string): Promise<string> {
+  const MAX_RETRIES = 3;
+  const BASE_DELAY = 2000; // 2 seconds
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      // Hae OpenRouter API key ympäristömuuttujasta
+      const apiKey = import.meta.env.VITE_OPEN_ROUTER_API_KEY;
+
+      if (!apiKey) {
+        throw new Error('OpenRouter API key not found! Check .env file for VITE_OPEN_ROUTER_API_KEY');
+      }
+
+      // Hae summary prompt Firestoresta tai tiedostosta
+      const summaryPrompt = await getSummaryPromptForGeneration();
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin || 'https://valmet-buyer.firebaseapp.com',
+        },
+        body: JSON.stringify({
+          model: getPTALLMModel(), // Kiinteä malli PTA-yhteenvetoihin (ei käyttäjäkohtainen)
+          messages: [
+            {
+              role: 'system',
+              content: summaryPrompt
+            },
+            {
+              role: 'user',
+              content: `Dokumentti:\n${markdown.substring(0, 3000)}` // Rajoita 3000 merkkiin kustannusten säästämiseksi
+            }
+          ],
+          temperature: getSummaryTemperature(), // Matala lämpötila = tarkempi yhteenveto
+          max_tokens: 100
+        })
+      });
+
+      // Käsittele 429 Too Many Requests virhe
+      if (response.status === 429) {
+        const retryDelay = BASE_DELAY * Math.pow(2, attempt); // Exponential backoff: 2s, 4s, 8s
+        console.warn(`⏳ Rate limited (429). Retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+
+        if (attempt < MAX_RETRIES - 1) {
+          await delay(retryDelay);
+          continue; // Yritä uudelleen
+        } else {
+          console.error('❌ Rate limit exceeded after max retries');
+          return 'Palveluntarpeen arviointi (rate limit)';
+        }
+      }
+
+      if (!response.ok) {
+        console.error('LLM API error:', response.status, response.statusText);
+
+        // Jos tämä on viimeinen yritys, palauta fallback
+        if (attempt === MAX_RETRIES - 1) {
+          return 'Palveluntarpeen arviointi';
+        }
+
+        // Muuten yritä uudelleen
+        await delay(BASE_DELAY);
+        continue;
+      }
+
+      const data = await response.json();
+      const summary = data.choices?.[0]?.message?.content?.trim() || 'Palveluntarpeen arviointi';
+
+      return summary;
+    } catch (error) {
+      console.error(`Error generating summary with LLM (attempt ${attempt + 1}/${MAX_RETRIES}):`, error);
+
+      // Jos tämä on viimeinen yritys, palauta fallback
+      if (attempt === MAX_RETRIES - 1) {
+        return 'Palveluntarpeen arviointi';
+      }
+
+      // Muuten yritä uudelleen viiveen jälkeen
+      await delay(BASE_DELAY);
+    }
+  }
+
+  // Fallback (ei pitäisi koskaan päätyä tänne)
+  return 'Palveluntarpeen arviointi';
+}
+
+/**
+ * Lataa ja parsii Palveluntarvearviointi-kirjaukset Firebase Storagesta
+ * NOPEA: Palauttaa recordit ILMAN LLM-yhteenvetoja (placeholder summarylla)
  */
 export async function loadPTARecords(): Promise<PTARecord[]> {
-  // Tyhjä kansio - palauttaa tyhjä array
-  return [];
+  const category = AINEISTO_CATEGORIES.PTA;
+
+  // Tunnetut tiedostot Firebase Storagessa
+  const knownFiles = [
+    'PTA_malliasiakas.md'
+  ];
+
+  const records: PTARecord[] = [];
+
+  for (const filename of knownFiles) {
+    const markdown = await fetchMarkdownFile(category, filename);
+    if (markdown) {
+      try {
+        const record = parsePTARecord(filename, markdown);
+        // Ei generoi yhteenvetoa tässä - palauttaa placeholder
+        record.summary = 'Ladataan yhteenvetoa...';
+        records.push(record);
+      } catch (error) {
+        console.error(`Error parsing PTA ${filename}:`, error);
+      }
+    }
+  }
+
+  return records.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+/**
+ * Viive-funktio (utility)
+ * @param ms - Viive millisekunneissa
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Generoi yhteenvedot PTA-recordeille LLM:llä
+ * HIDAS: Käytetään taustalla kun recordit on jo ladattu
+ * @param records - PTA recordit joille generoidaan yhteenvedot
+ * @returns Promise joka päivittää recordien summaryt
+ */
+export async function generatePTASummaries(records: PTARecord[]): Promise<PTARecord[]> {
+  const updatedRecords: PTARecord[] = [];
+
+  // Käsittele recordit SARJASSA viiveellä (ei Promise.all)
+  for (let i = 0; i < records.length; i++) {
+    const record = records[i];
+
+    try {
+      // Käytä fullText joka on jo ladattu recordiin
+      if (record.fullText) {
+        // Generoi yhteenveto LLM:llä
+        record.summary = await generateSummaryWithLLM(record.fullText);
+      } else {
+        console.warn(`No fullText found for record ${record.id}`);
+        record.summary = 'Ei sisältöä yhteenvedon generointiin';
+      }
+    } catch (error) {
+      console.error(`Error generating summary for ${record.id}:`, error);
+      record.summary = 'Yhteenvedon generointi epäonnistui';
+    }
+
+    updatedRecords.push(record);
+
+    // Lisää 3.5 sekunnin viive ennen seuraavaa kutsua (paitsi viimeisen jälkeen)
+    // Kasvatettu 1.5s → 3.5s rate limiting -ongelmien välttämiseksi
+    if (i < records.length - 1) {
+      console.log(`⏳ Odotetaan 3.5s ennen seuraavaa PTA-yhteenvetoa (${i + 2}/${records.length})...`);
+      await delay(3500);
+    }
+  }
+
+  return updatedRecords;
 }
 
 /**
@@ -704,7 +849,7 @@ function parseContactInfo(markdown: string): ContactInfo {
   // Rakenna ContactInfo objekti (EI kovakoodattuja arvoja!)
   const contactInfo: ContactInfo = {
     child: {
-      name: childName || 'Ei nimeä',
+      name: childName!, // Required - no fallback!
       socialSecurityNumber: childSSN || '',
       address: childAddress || '',
       school: childSchool || undefined
@@ -735,7 +880,7 @@ function parseContactInfo(markdown: string): ContactInfo {
   // Lisää vastuusosiaalityöntekijä jos tiedot löytyy
   if (socialWorkerName || socialWorkerPhone) {
     contactInfo.professionals.socialWorker = {
-      name: socialWorkerName || 'Vastuusosiaalityöntekijä',
+      name: socialWorkerName!, // Required - no fallback!
       phone: socialWorkerPhone || undefined
     };
   }
@@ -743,7 +888,7 @@ function parseContactInfo(markdown: string): ContactInfo {
   // Lisää sosiaaliohjaaja jos tiedot löytyy
   if (socialGuideName || socialGuidePhone) {
     contactInfo.professionals.socialGuide = {
-      name: socialGuideName || 'Sosiaaliohjaaja',
+      name: socialGuideName!, // Required - no fallback!
       phone: socialGuidePhone || undefined
     };
   }
@@ -849,7 +994,7 @@ export async function loadClientData(clientId: string = 'lapsi-1'): Promise<LSCl
 
     return {
       clientId,
-      clientName: contactInfo?.child.name || 'Asiakas',
+      clientName: `Asiakas ${clientId}`, // Generic name - LLM will infer real name from documents
       mainProblem: {
         category: 'Lapsen hyvinvointi',
         subcategories: ['Hoivan laiminlyönti', 'Turvattomuus'],
@@ -859,7 +1004,7 @@ export async function loadClientData(clientId: string = 'lapsi-1'): Promise<LSCl
       notifications,
       caseNotes,
       decisions,
-      contactInfo: contactInfo!,
+      contactInfo: contactInfo || undefined,
       ptaRecords,
       servicePlans,
       timeline

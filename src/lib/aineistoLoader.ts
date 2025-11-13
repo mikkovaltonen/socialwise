@@ -1,9 +1,12 @@
 /**
  * Aineisto Context Loader
  *
- * Loads all markdown files from /public/Aineisto directory
- * and formats them as context for AI prompts
+ * Loads documentation from local /public/Aineisto directory
+ * Loads client data files from Firebase Storage
+ * Formats them as context for AI prompts
  */
+
+import * as StorageService from './aineistoStorageService';
 
 interface AineistoContext {
   content: string;
@@ -69,34 +72,26 @@ export async function loadAineistoContext(): Promise<AineistoContext> {
 }
 
 /**
- * Load files from a specific category
+ * Load files from a specific category (from Firebase Storage)
  * Note: This is a simplified version that tries known file patterns
  */
 async function loadCategoryFiles(category: string): Promise<Array<{ name: string; content: string }>> {
   const files: Array<{ name: string; content: string }> = [];
 
-  // Known file patterns for Lapsi_1 (based on actual files in Aineisto folder)
-  const filePatterns: Record<string, string[]> = {
-    'LS-ilmoitukset': [
-      'Lapsi_1_2016_08_03_Lastensuojeluilmoitus.md',
-      'Lapsi_1_2017_11_16_Lastensuojeluilmoitus.md',
-      'Lapsi_1_2018_04_26_Lastensuojeluilmoitus.md',
-    ],
-    'Päätökset': [
-      'Lapsi_1_2025_03_22_päätös.md',
-    ],
-    'Yhteystiedot': [
-      'Lapsi_1_yhteystiedot.md',
-    ],
-  };
+  // Get known file patterns from StorageService
+  const categoryFiles = StorageService.KNOWN_FILES[category as keyof typeof StorageService.KNOWN_FILES];
 
-  const patterns = filePatterns[category] || [];
+  if (!categoryFiles || categoryFiles.length === 0) {
+    return files;
+  }
 
-  for (const fileName of patterns) {
+  // Load files from Firebase Storage
+  for (const filePath of categoryFiles) {
     try {
-      const response = await fetch(`/Aineisto/${category}/${fileName}`);
-      if (response.ok) {
-        const content = await response.text();
+      const content = await StorageService.fetchMarkdownFile(filePath);
+      if (content) {
+        // Extract just the filename from the path
+        const fileName = filePath.split('/').pop() || filePath;
         files.push({
           name: fileName,
           content,
@@ -104,7 +99,7 @@ async function loadCategoryFiles(category: string): Promise<Array<{ name: string
       }
     } catch (error) {
       // File doesn't exist, skip
-      console.debug(`File not found: ${category}/${fileName}`);
+      console.debug(`File not found in Storage: ${filePath}`);
     }
   }
 
@@ -131,4 +126,160 @@ Voit viitata näihin tietoihin vastauksissasi käyttämällä tarkkoja päiväm�
 export async function loadAineistoContextSummary(): Promise<string> {
   const summary = await getAineistoSummary();
   return summary;
+}
+
+/**
+ * Format LSClientData as markdown context for AI chatbot
+ * This function takes structured client data and formats it into
+ * a comprehensive markdown string that AI can use as context
+ */
+export function formatClientContext(clientData: any): string {
+  let context = '\n\n---\n\n# ASIAKKAAN TIEDOT - TÄYDELLINEN KONTEKSTI\n\n';
+
+  // Perustiedot
+  context += `## Asiakkaan Perustiedot\n\n`;
+  context += `**Nimi:** ${clientData.clientName}\n`;
+
+  if (clientData.contactInfo?.child) {
+    const child = clientData.contactInfo.child;
+    if (child.socialSecurityNumber) {
+      context += `**Henkilötunnus:** ${child.socialSecurityNumber}\n`;
+    }
+    if (child.address) {
+      context += `**Osoite:** ${child.address}\n`;
+    }
+    if (child.school) {
+      context += `**Koulu:** ${child.school}\n`;
+    }
+  }
+  context += '\n';
+
+  // Lastensuojeluilmoitukset
+  if (clientData.notifications && clientData.notifications.length > 0) {
+    context += `## Lastensuojeluilmoitukset (${clientData.notifications.length} kpl)\n\n`;
+    clientData.notifications.forEach((notif: any) => {
+      context += `### ${notif.date}`;
+      if (notif.reporter?.profession) {
+        context += ` - ${notif.reporter.profession}`;
+      }
+      if (notif.reporter?.name) {
+        context += ` (${notif.reporter.name})`;
+      }
+      context += '\n\n';
+
+      if (notif.fullText) {
+        context += notif.fullText + '\n\n';
+      } else if (notif.summary) {
+        context += notif.summary + '\n\n';
+      }
+    });
+  }
+
+  // Päätökset
+  if (clientData.decisions && clientData.decisions.length > 0) {
+    context += `## Päätökset (${clientData.decisions.length} kpl)\n\n`;
+    clientData.decisions.forEach((decision: any) => {
+      context += `### ${decision.date}`;
+      if (decision.decisionType) {
+        context += ` - ${decision.decisionType}`;
+      }
+      context += '\n\n';
+
+      if (decision.fullText) {
+        context += decision.fullText + '\n\n';
+      } else if (decision.summary) {
+        context += decision.summary + '\n\n';
+      }
+    });
+  }
+
+  // PTA-kirjaukset
+  if (clientData.ptaRecords && clientData.ptaRecords.length > 0) {
+    context += `## Palveluntarvearviointi (${clientData.ptaRecords.length} kpl)\n\n`;
+    clientData.ptaRecords.forEach((pta: any) => {
+      context += `### ${pta.date}`;
+      if (pta.eventType) {
+        context += ` - ${pta.eventType}`;
+      }
+      context += '\n\n';
+
+      if (pta.fullText) {
+        context += pta.fullText + '\n\n';
+      } else if (pta.summary) {
+        context += `**Yhteenveto:** ${pta.summary}\n\n`;
+      }
+    });
+  }
+
+  // Asiakassuunnitelmat
+  if (clientData.servicePlans && clientData.servicePlans.length > 0) {
+    context += `## Asiakassuunnitelmat (${clientData.servicePlans.length} kpl)\n\n`;
+    clientData.servicePlans.forEach((plan: any) => {
+      context += `### ${plan.startDate}`;
+      if (plan.serviceType) {
+        context += ` - ${plan.serviceType}`;
+      }
+      context += '\n\n';
+
+      if (plan.description) {
+        context += `**Kuvaus:** ${plan.description}\n`;
+      }
+      if (plan.status) {
+        context += `**Tila:** ${plan.status}\n`;
+      }
+      if (plan.goals && plan.goals.length > 0) {
+        context += `**Tavoitteet:**\n`;
+        plan.goals.forEach((goal: string) => {
+          context += `- ${goal}\n`;
+        });
+      }
+      context += '\n';
+    });
+  }
+
+  // Yhteystiedot
+  if (clientData.contactInfo) {
+    context += `## Yhteystiedot\n\n`;
+
+    // Huoltajat
+    if (clientData.contactInfo.guardians) {
+      if (clientData.contactInfo.guardians.mother) {
+        const mother = clientData.contactInfo.guardians.mother;
+        context += `**Äiti:** ${mother.name || 'Ei tietoa'}`;
+        if (mother.phone) context += ` (puh. ${mother.phone})`;
+        if (mother.email) context += ` (email: ${mother.email})`;
+        context += '\n';
+      }
+      if (clientData.contactInfo.guardians.father) {
+        const father = clientData.contactInfo.guardians.father;
+        context += `**Isä:** ${father.name || 'Ei tietoa'}`;
+        if (father.phone) context += ` (puh. ${father.phone})`;
+        if (father.email) context += ` (email: ${father.email})`;
+        context += '\n';
+      }
+    }
+
+    // Ammattilaiset
+    if (clientData.contactInfo.professionals) {
+      if (clientData.contactInfo.professionals.socialWorker) {
+        const sw = clientData.contactInfo.professionals.socialWorker;
+        context += `**Vastuusosiaalityöntekijä:** ${sw.name || 'Ei määritelty'}`;
+        if (sw.phone) context += ` (puh. ${sw.phone})`;
+        context += '\n';
+      }
+      if (clientData.contactInfo.professionals.socialGuide) {
+        const sg = clientData.contactInfo.professionals.socialGuide;
+        context += `**Sosiaaliohjaaja:** ${sg.name || 'Ei määritelty'}`;
+        if (sg.phone) context += ` (puh. ${sg.phone})`;
+        context += '\n';
+      }
+    }
+    context += '\n';
+  }
+
+  context += '---\n\n';
+
+  console.log(`📄 Formatted client context: ${context.length} characters`);
+
+  return context;
 }

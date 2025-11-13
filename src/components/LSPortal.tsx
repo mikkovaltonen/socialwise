@@ -15,7 +15,6 @@ import type { LSClientData } from '@/data/ls-types';
 import { LSPortalLayout } from './ls-portal/LSPortalLayout';
 import { LeftSidebar } from './ls-portal/Sidebar/LeftSidebar';
 import { ContentArea } from './ls-portal/MainContent/ContentArea';
-import { RightSidebar } from './ls-portal/AIChat/RightSidebar';
 
 // Import content sub-components
 import { LSNotifications } from './ls-portal/LSNotifications';
@@ -64,11 +63,6 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
 
     // Panel visibility state
     const [isLeftVisible, setIsLeftVisible] = useState(true);
-    const [isChatVisible, setIsChatVisible] = useState(false);
-
-    // AI Chat state
-    const [chatMessages, setChatMessages] = useState<any[]>([]);
-    const [isChatLoading, setIsChatLoading] = useState(false);
 
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
@@ -110,6 +104,33 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
               error: 'Tiivistelmän generointi epäonnistui',
             });
           }
+
+          // Generate PTA summaries using LLM (non-blocking)
+          // PTA records are already loaded with placeholder summaries
+          // Now we generate real summaries in the background
+          if (data.ptaRecords && data.ptaRecords.length > 0) {
+            try {
+              // CRITICAL: Wait 3 seconds before starting PTA summaries
+              // This prevents rate limiting when client summary is still processing
+              console.log('⏳ Odotetaan 3s ennen PTA-yhteenvetojen generointia (rate limit prevention)...');
+              await new Promise(resolve => setTimeout(resolve, 3000));
+
+              console.log('🔄 Generoidaan PTA-yhteenvetoja taustalla...');
+              const updatedRecords = await AineistoParser.generatePTASummaries(data.ptaRecords);
+
+              // Update clientData with new summaries
+              setClientData(prevData => {
+                if (!prevData) return prevData;
+                return {
+                  ...prevData,
+                  ptaRecords: updatedRecords,
+                };
+              });
+              console.log('✅ PTA-yhteenvedot valmis!');
+            } catch (ptaError) {
+              console.error('❌ PTA-yhteenvetojen generointi epäonnistui:', ptaError);
+            }
+          }
         } else {
           console.warn('No client data found');
           setIsLoading(false);
@@ -124,36 +145,6 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
     useEffect(() => {
       loadClientData();
     }, []); // Only run once on mount - single client demo
-
-    // Handle AI chat messages
-    const handleSendMessage = async (message: string) => {
-      // Add user message
-      const userMessage = {
-        id: Date.now().toString(),
-        role: 'user' as const,
-        content: message,
-        timestamp: new Date(),
-      };
-      setChatMessages((prev) => [...prev, userMessage]);
-      setIsChatLoading(true);
-
-      // TODO: Integrate with OpenRouter API
-      // For now, just simulate a response
-      setTimeout(() => {
-        const assistantMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant' as const,
-          content: 'Tämä on demo-vastaus. AI-integraatio toteutetaan seuraavassa vaiheessa.',
-          timestamp: new Date(),
-        };
-        setChatMessages((prev) => [...prev, assistantMessage]);
-        setIsChatLoading(false);
-      }, 1000);
-    };
-
-    const handleQuickQuestion = (question: string) => {
-      handleSendMessage(question);
-    };
 
     // Show loading state
     if (isLoading) {
@@ -187,15 +178,11 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
     return (
       <LSPortalLayout
         isLeftVisible={isLeftVisible}
-        isChatVisible={isChatVisible}
         onToggleLeft={() => setIsLeftVisible(!isLeftVisible)}
-        onToggleChat={() => setIsChatVisible(!isChatVisible)}
         leftSidebar={
           <LeftSidebar
             currentView={currentView}
             onNavigate={setCurrentView}
-            onShowChat={() => setIsChatVisible(true)}
-            isChatVisible={isChatVisible}
             onToggle={() => setIsLeftVisible(false)}
             clientName={clientData?.clientName}
             clientSummary={clientSummary}
@@ -224,14 +211,6 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
               <ServicePlans servicePlans={clientData.servicePlans} />
             </div>
           </ContentArea>
-        }
-        rightSidebar={
-          <RightSidebar
-            messages={chatMessages}
-            onSendMessage={handleSendMessage}
-            onQuickQuestionClick={handleQuickQuestion}
-            isLoading={isChatLoading}
-          />
         }
       />
     );

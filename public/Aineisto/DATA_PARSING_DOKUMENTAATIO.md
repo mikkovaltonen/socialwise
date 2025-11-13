@@ -161,23 +161,107 @@ Yksinkertainen lista:
 
 ---
 
-## 5. Palveluntarvearviointi
+## 5. Palveluntarvearviointi (PTA)
 
 ### Mistä data tulee?
-- **Kansio:** `/public/Aineisto/Palveluntarvearviointi/`
-- **Tiedostot:** `Lapsi_1_2018_05_20_PTA_Kotikäynti.md`
+- **Firebase Storage:** `Aineisto/PTA/PTA_malliasiakas.md`
+- **Tallennustapa:** Ladataan Firebase Storagesta autentikoidusti
 
 ### Mitä poimitaan?
-1. **Päivämäärä** → Tiedoston nimestä
-2. **Tapahtuman tyyppi** → Kotikäynti, Puhelu, Neuvottelu...
-3. **Osallistujat** → Ketkä olivat paikalla
-4. **Yhteenveto** → Mitä tapaamisessa käsiteltiin
-5. **Toimenpiteet** → Mitä sovittiin tehtäväksi
+
+#### 1. **Päivämäärä**
+- Ensisijaisesti: **Päiväys:** kentästä (esim. "**Päiväys:** 7.3.2025")
+- Toissijaisesti: Tiedoston nimestä
+
+#### 2. **Osiot**
+Kaikki dokumentin pääosiot parsitaan erikseen:
+- PALVELUTARPEEN ARVIOINTI: YHTEENVETO
+- PERHE
+- TAUSTA
+- PALVELUT
+- YHTEISTYÖTAHOT JA VERKOSTO
+- LAPSEN TAPAAMISET ARVIOINNIN AIKANA
+- SOSIAALIHUOLLON AMMATTIHENKILÖN JOHTOPÄÄTÖKSET
+- ASIAKKAAN MIELIPIDE JA NÄKEMYS PALVELUTARPEESEEN
+- ARVIO OMATYÖNTEKIJÄN TARPEESTA
+- JAKELU JA ALLEKIRJOITUS
+
+#### 3. **Yhteenveto**
+- Ensimmäinen osio "PALVELUTARPEEN ARVIOINTI: YHTEENVETO" (max 200 merkkiä)
+- Fallback: "Palvelutarpeen arviointi"
+
+#### 4. **Osallistujat**
+Tunnistetaan automaattisesti "LAPSEN TAPAAMISET ARVIOINNIN AIKANA" osiosta:
+- Äiti
+- Isäpuoli
+- Isä
+- Lapsi
+
+#### 5. **Toimenpiteet/Palvelut**
+Poimii "PALVELUT" osiosta:
+```markdown
+- **Perhetyö:** perhetyöntekijä on käynyt perheessä
+- **Lapsen tapaamiset:** lasta on tavattu kahden kesken
+```
+→ Toimenpiteet: ["Perhetyö", "Lapsen tapaamiset"]
+
+#### 6. **Suositukset (AI Guidance)**
+"SOSIAALIHUOLLON AMMATTIHENKILÖN JOHTOPÄÄTÖKSET" osiosta:
+- **Suositellut palvelut ja tavoitteet** -kohta
+- Näytetään täydellisenä dialogi-ikkunassa
+
+#### 7. **Korostukset (Highlights)**
+PTA:ssa ei ole erillisiä merkintöjä kuten `[oleellinen]`, vaan highlights poimitaan automaattisesti:
+
+**Poiminta-logiikka:**
+1. **Kuormitustekijät:** "**Kuormitustekijät:**" kentän sisältö
+2. **Jatkotoimet:** "**Jatkotoimet terveydenhuollossa:**" kentän sisältö
+3. **Asiakkaan mielipide:** Ensimmäinen kohta "ASIAKKAAN MIELIPIDE" osiosta
+
+**Esimerkki:**
+```markdown
+**Kuormitustekijät:** alkava murrosikä sekä perheen kriisit ja muutokset ovat kuormittaneet lasta viime aikoina
+
+**Jatkotoimet terveydenhuollossa:** varattu lääkäriaika sekä lääkityksen että mahdollisen nuorisopsykiatrisen tuen tarpeen arvioimiseksi
+
+- Lapsi kokee, ettei tule perheessä riittävästi kuulluksi
+```
+
+→ Highlights:
+- "alkava murrosikä sekä perheen kriisit ja muutokset ovat kuormittaneet lasta viime aikoina"
+- "varattu lääkäriaika sekä lääkityksen että mahdollisen nuorisopsykiatrisen tuen tarpeen arvioimiseksi"
+- "Lapsi kokee, ettei tule perheessä riittävästi kuulluksi"
+
+UI:ssa näytetään maksimissaan 2 ensimmäistä korostusta, ja merkintä "+X muuta korostusta..." jos lisää löytyy.
 
 ### Miten näytetään?
-- Lista tapahtumista aikajärjestyksessä
-- Näkyy tapahtuman tyyppi ja osallistujat
-- Klikkaamalla voi lukea koko kirjauksen
+- Lista PTA-kirjauksista aikajärjestyksessä (uusin ensin)
+- Näkyy päivämäärä, yhteenveto ja korostukset
+- **Korostukset näytetään sinisellä taustavärillä** lightbulb-ikonilla
+- Klikkaamalla PTA:n voi lukea kokonaan dialogissa
+- Dialogissa näytetään kaikki osiot, palvelut, suositukset ja highlights
+
+**UI-esimerkki:**
+```
+┌─────────────────────────────────────┐
+│ Palveluntarvearviointi         1 kpl│
+├─────────────────────────────────────┤
+│ 07.03.2025 - Muu                   │
+│                                     │
+│ Lapsen äiti on ollut yhteydessä    │
+│ lapsiperheiden sosiaalityöhön...   │
+│                                     │
+│ 💡 alkava murrosikä sekä perheen...│
+│ 💡 varattu lääkäriaika sekä...    │
+│                                [→]  │
+└─────────────────────────────────────┘
+```
+
+### Parsing-logiikka
+- **Funktio:** `parsePTARecord()` tiedostossa `/src/lib/aineistoParser.ts`
+- **Highlights:** Poimii automaattisesti Kuormitustekijät, Jatkotoimet ja Asiakkaan mielipiteen
+- **Älykkäs tunnistus:** Osallistujat tunnistetaan automaattisesti tekstistä
+- **Storage-yhteensopiva:** Ladataan Firebase Storagesta autentikoidusti
 
 ---
 
@@ -205,12 +289,12 @@ Yksinkertainen lista:
 
 | Laatikko | Mistä? | Mitä näytetään? |
 |----------|--------|-----------------|
-| **Lastensuojeluilmoitukset** | `/LS-ilmoitukset/*.md` | Lista ilmoituksista, ilmoittajan ammatti, blockquote-korostukset |
+| **Lastensuojeluilmoitukset** | Firebase Storage `/LS-ilmoitukset/*.md` | Lista ilmoituksista, ilmoittajan ammatti, blockquote-korostukset |
 | **Asiakaskirjaukset** | Kaikista muista | Yhtenäinen aikajana kaikista tapahtumista |
-| **Päätökset** | `/Päätökset/*.md` | Lista päätöksistä, tyyppi, lakipykälä, `[oleellinen]` ja `[päätös peruste]` korostukset |
-| **Yhteystiedot** | `/Yhteystiedot/Lapsi_*.md` | Yhteystiedot ryhmiteltynä roolien mukaan |
-| **Palveluntarvearviointi** | `/PTA/*.md` | Lista tapaamisista, osallistujat, toimenpiteet |
-| **Asiakassuunnitelmat** | `/Asiakassuunnitelmat/*.md` | Lista palveluista, status, tavoitteet |
+| **Päätökset** | Firebase Storage `/Päätökset/*.md` | Lista päätöksistä, tyyppi, lakipykälä, `[oleellinen]` ja `[päätös peruste]` korostukset |
+| **Yhteystiedot** | Firebase Storage `/Yhteystiedot/Lapsi_*.md` | Yhteystiedot ryhmiteltynä roolien mukaan |
+| **Palveluntarvearviointi** | Firebase Storage `/PTA/*.md` | PTA-dokumentti, osiot, osallistujat, palvelut, automaattiset highlights |
+| **Asiakassuunnitelmat** | Firebase Storage `/Asiakassuunnitelmat/*.md` | Lista palveluista, status, tavoitteet |
 
 ---
 

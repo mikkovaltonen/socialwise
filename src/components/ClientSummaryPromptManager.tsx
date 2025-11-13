@@ -1,5 +1,5 @@
 /**
- * Summary Prompt Manager Component
+ * Client Summary Prompt Manager Component
  * Manages the AI prompt for generating client summaries
  * Includes LLM model and temperature selection
  */
@@ -7,12 +7,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  getLatestSummaryPrompt,
-  saveSummaryPrompt,
-  getSummaryPromptHistory,
-  initializeSummaryPrompts,
-  SummaryPrompt
-} from '@/lib/summaryPromptService';
+  getLatestClientSummaryPrompt,
+  saveClientSummaryPrompt,
+  getClientSummaryPromptHistory,
+  initializeClientSummaryPrompts,
+  ClientSummaryPrompt
+} from '@/lib/clientSummaryPromptService';
 import { getUserPromptVersion, setUserPromptVersion } from '@/lib/systemPromptService';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,11 +45,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-export default function SummaryPromptManager() {
+export default function ClientSummaryPromptManager() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [currentPrompt, setCurrentPrompt] = useState<SummaryPrompt | null>(null);
+  const [currentPrompt, setCurrentPrompt] = useState<ClientSummaryPrompt | null>(null);
   const [content, setContent] = useState('');
   const [promptVersion, setPromptVersionState] = useState<'test' | 'production'>('production');
   const [message, setMessage] = useState('');
@@ -57,7 +57,7 @@ export default function SummaryPromptManager() {
   const [showDescriptionDialog, setShowDescriptionDialog] = useState(false);
   const [description, setDescription] = useState('');
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
-  const [history, setHistory] = useState<SummaryPrompt[]>([]);
+  const [history, setHistory] = useState<ClientSummaryPrompt[]>([]);
   const [showFullscreenEditor, setShowFullscreenEditor] = useState(false);
 
   useEffect(() => {
@@ -90,18 +90,18 @@ export default function SummaryPromptManager() {
     try {
       if (promptVersion === 'test') {
         // Load from file
-        const response = await fetch('/PTA_prompt.md');
+        const response = await fetch('/client_summary_prompt.md');
         if (response.ok) {
           const fileContent = await response.text();
           setContent(fileContent);
           setCurrentPrompt(null);
         } else {
-          throw new Error('Could not load test PTA prompt file');
+          throw new Error('Could not load test client summary prompt file');
         }
       } else {
         // Load from Firestore (production)
-        await initializeSummaryPrompts(user.uid, user.email || '');
-        const latest = await getLatestSummaryPrompt();
+        await initializeClientSummaryPrompts(user.uid, user.email || '');
+        const latest = await getLatestClientSummaryPrompt();
         setCurrentPrompt(latest);
         setContent(latest?.content || '');
       }
@@ -115,7 +115,7 @@ export default function SummaryPromptManager() {
 
   const loadHistory = async () => {
     try {
-      const promptHistory = await getSummaryPromptHistory();
+      const promptHistory = await getClientSummaryPromptHistory();
       setHistory(promptHistory);
     } catch (error) {
       console.error('Error loading history:', error);
@@ -136,7 +136,7 @@ export default function SummaryPromptManager() {
     setShowDescriptionDialog(false);
 
     try {
-      const id = await saveSummaryPrompt(
+      const id = await saveClientSummaryPrompt(
         content,
         description || 'Summary prompt update',
         user.uid,
@@ -185,7 +185,7 @@ export default function SummaryPromptManager() {
     setShowHistoryDialog(true);
   };
 
-  const handleRevertToVersion = async (prompt: SummaryPrompt) => {
+  const handleRevertToVersion = async (prompt: ClientSummaryPrompt) => {
     if (!user) return;
 
     setMessage('');
@@ -193,7 +193,7 @@ export default function SummaryPromptManager() {
 
     try {
       // Save current version to history before reverting
-      await saveSummaryPrompt(
+      await saveClientSummaryPrompt(
         content,
         'Auto-saved before revert',
         user.uid,
@@ -300,7 +300,7 @@ export default function SummaryPromptManager() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Test Mode:</strong> Näytetään PTA-prompti tiedostosta <code>/public/PTA_prompt.md</code>.
+                <strong>Test Mode:</strong> Näytetään prompti tiedostosta <code>/public/client_summary_prompt.md</code>.
                 Muokkaa tiedostoa suoraan tallentaaksesi muutokset. Tallennus tästä editorista tallentaa Production-versioon.
               </AlertDescription>
             </Alert>
@@ -321,14 +321,14 @@ export default function SummaryPromptManager() {
           )}
 
           <div>
-            <Label htmlFor="summary-prompt">Prompt Sisältö (Markdown)</Label>
+            <Label htmlFor="client-summary-prompt">Prompt Sisältö (Markdown)</Label>
             <div className="mt-2">
               <Textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Kirjoita tiivistelmän luomisen ohjeistus..."
                 className="min-h-[400px] font-mono text-sm"
-                id="summary-prompt"
+                id="client-summary-prompt"
               />
             </div>
           </div>

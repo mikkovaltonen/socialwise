@@ -3,10 +3,12 @@
  * Displays service plans (Asiakassuunnitelmat)
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
+import MarkdownDocumentEditor from '../MarkdownDocumentEditor';
 import type { ServicePlan } from '@/data/ls-types';
 
 interface ServicePlansProps {
@@ -32,6 +34,8 @@ const statusColors: Record<ServicePlan['status'], string> = {
 };
 
 export const ServicePlans: React.FC<ServicePlansProps> = ({ servicePlans }) => {
+  const [showEditor, setShowEditor] = useState(false);
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('fi-FI');
@@ -45,16 +49,26 @@ export const ServicePlans: React.FC<ServicePlansProps> = ({ servicePlans }) => {
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          <CardTitle>Asiakassuunnitelmat</CardTitle>
-          <span className="ml-auto text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded">
-            {servicePlans.length} kpl
-          </span>
-        </div>
-      </CardHeader>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            <CardTitle>Asiakassuunnitelmat</CardTitle>
+            <span className="ml-auto text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded">
+              {servicePlans.length} kpl
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowEditor(true)}
+              className="ml-2"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Lisää uusi
+            </Button>
+          </div>
+        </CardHeader>
       <CardContent>
         <ScrollArea className="h-[280px] pr-4">
           <div className="space-y-3">
@@ -124,5 +138,17 @@ export const ServicePlans: React.FC<ServicePlansProps> = ({ servicePlans }) => {
         </ScrollArea>
       </CardContent>
     </Card>
+
+    {/* Document Editor */}
+    <MarkdownDocumentEditor
+      open={showEditor}
+      onClose={() => setShowEditor(false)}
+      documentType="asiakassuunnitelma"
+      onSaved={() => {
+        setShowEditor(false);
+        // TODO: Refresh service plans list
+      }}
+    />
+    </>
   );
 };

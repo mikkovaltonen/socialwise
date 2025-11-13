@@ -7,10 +7,9 @@
  */
 
 import type { LSClientData } from '@/data/ls-types';
-import { getSummaryPromptForGeneration } from './summaryPromptService';
+import { getClientSummaryPromptForGeneration } from './clientSummaryPromptService';
 import { loadAineistoContext } from './aineistoLoader';
-import { getAuth } from 'firebase/auth';
-import { getUserLLMModel, getUserTemperature } from './systemPromptService';
+import { getSummaryLLMModel, getSummaryTemperature } from './systemPromptService';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -36,14 +35,9 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
   const MAX_RETRIES = 3;
   const BASE_DELAY = 2000; // 2 seconds
 
-  // Get current user's preferences (use same settings as chatbot)
-  const auth = getAuth();
-  const user = auth.currentUser;
-  const userId = user?.uid || 'anonymous';
-
-  // Load user's LLM preferences (shared between chatbot and summary)
-  const model = await getUserLLMModel(userId);
-  const temperature = await getUserTemperature(userId);
+  // Use fixed model for summaries (not user-configurable)
+  const model = getSummaryLLMModel();
+  const temperature = getSummaryTemperature();
   console.log(`🎛️ Summary generation using model: ${model}, temperature: ${temperature}`);
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -58,8 +52,8 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
       // Combine contexts
       const fullContext = `${aineistoContext.content}\n\n---\n\n${context}`;
 
-      // Get latest summary prompt from Firestore (or default)
-      const systemPrompt = await getSummaryPromptForGeneration();
+      // Get latest CLIENT summary prompt from Firestore (or default)
+      const systemPrompt = await getClientSummaryPromptForGeneration();
 
       console.log(`🔄 Attempting to generate summary (attempt ${attempt + 1}/${MAX_RETRIES})...`);
 

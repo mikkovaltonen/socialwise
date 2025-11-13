@@ -1,6 +1,6 @@
 # Aineisto Firebase Storage Migration Report
 
-**Generated:** 2025-11-11T11:00:34.577Z
+**Generated:** 2025-11-12T19:13:54.585Z
 **User:** mikko.j.valtonen@gmail.com
 **Source:** /mnt/c/Users/mikbu/Documents/SocialWise/public/Aineisto
 **Destination:** gs://socialwise-c8ddc.firebasestorage.app/Aineisto/
@@ -10,18 +10,9 @@
 | Metric | Count |
 |--------|-------|
 | Total Files | 6 |
-| Successfully Uploaded | 0 |
-| Failed Uploads | 6 |
-| Success Rate | 0.00% |
-
-## Errors
-
-- **DATA_PARSING_DOKUMENTAATIO.md**: Firebase Storage: An unknown error occurred, please check the error payload for server response. (storage/unknown)
-- **LS-ilmoitukset/Lapsi_1_2016_08_03_Lastensuojeluilmoitus.md**: Firebase Storage: An unknown error occurred, please check the error payload for server response. (storage/unknown)
-- **LS-ilmoitukset/Lapsi_1_2017_11_16_Lastensuojeluilmoitus.md**: Firebase Storage: An unknown error occurred, please check the error payload for server response. (storage/unknown)
-- **LS-ilmoitukset/Lapsi_1_2018_04_26_Lastensuojeluilmoitus.md**: Firebase Storage: An unknown error occurred, please check the error payload for server response. (storage/unknown)
-- **Päätökset/Lapsi_1_2025_03_22_päätös.md**: Firebase Storage: An unknown error occurred, please check the error payload for server response. (storage/unknown)
-- **Yhteystiedot/Lapsi_1_yhteystiedot.md**: Firebase Storage: An unknown error occurred, please check the error payload for server response. (storage/unknown)
+| Successfully Uploaded | 6 |
+| Failed Uploads | 0 |
+| Success Rate | 100.00% |
 
 ## Files Uploaded
 

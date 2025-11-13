@@ -12,9 +12,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Scale, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Scale, ChevronRight, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { Decision } from '@/data/ls-types';
+import MarkdownDocumentEditor from '../MarkdownDocumentEditor';
 
 interface DecisionsProps {
   decisions: Decision[];
@@ -40,6 +42,7 @@ const decisionTypeColors: Record<Decision['decisionType'], string> = {
 
 export const Decisions: React.FC<DecisionsProps> = ({ decisions }) => {
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -61,6 +64,15 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions }) => {
             <span className="ml-auto text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">
               {decisions.length} kpl
             </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowEditor(true)}
+              className="ml-2"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Lisää uusi
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -115,6 +127,17 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions }) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Document Editor */}
+      <MarkdownDocumentEditor
+        open={showEditor}
+        onClose={() => setShowEditor(false)}
+        documentType="päätös"
+        onSaved={() => {
+          setShowEditor(false);
+          // TODO: Refresh decisions list
+        }}
+      />
     </>
   );
 };

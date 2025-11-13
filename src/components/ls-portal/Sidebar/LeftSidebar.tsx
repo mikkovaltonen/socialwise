@@ -8,15 +8,13 @@
  */
 
 import React from 'react';
-import { MessageSquare, PanelLeftClose } from 'lucide-react';
+import { PanelLeftClose } from 'lucide-react';
 import { NavigationMenu } from './NavigationMenu';
 import { UserProfile } from './UserProfile';
 
 interface LeftSidebarProps {
   currentView?: 'child-view' | 'all-children' | 'settings';
   onNavigate?: (view: 'child-view' | 'all-children' | 'settings') => void;
-  onShowChat?: () => void;
-  isChatVisible?: boolean;
   onToggle?: () => void;
   clientName?: string;
   clientSummary?: {
@@ -30,8 +28,6 @@ interface LeftSidebarProps {
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   currentView = 'child-view',
   onNavigate,
-  onShowChat,
-  isChatVisible = false,
   onToggle,
   clientName,
   clientSummary,
@@ -73,22 +69,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       <div className="flex-1 py-4">
         <NavigationMenu currentView={currentView} onNavigate={onNavigate} />
       </div>
-
-      {/* Show AI Chat Button (when hidden) */}
-      {!isChatVisible && onShowChat && (
-        <div className="px-3 pb-3">
-          <button
-            onClick={onShowChat}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3
-                       bg-white/10 hover:bg-white/20
-                       text-white rounded-lg transition-colors duration-200
-                       font-medium text-sm"
-            title="Näytä AI-chat"
-          >
-            <MessageSquare className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* User Profile */}
       <div className="p-4 border-t border-white/20">

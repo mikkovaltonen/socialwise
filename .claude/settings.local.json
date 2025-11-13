@@ -30,7 +30,18 @@
       "Bash(done)",
       "Bash(git push:*)",
       "Bash(gh repo edit:*)",
-      "Bash(gh repo view:*)"
+      "Bash(gh repo view:*)",
+      "Bash(npx tsx:*)",
+      "Bash(gsutil cors set:*)",
+      "Bash(timeout 10s gsutil cors set:*)",
+      "Bash(gcloud auth list:*)",
+      "Bash(pkill:*)",
+      "Bash(timeout 8s npm run dev)",
+      "Bash(cat:*)",
+      "Bash(firebase storage:get:*)",
+      "Bash(python3:*)",
+      "Bash(git checkout:*)",
+      "WebFetch(domain:openrouter.ai)"
     ],
     "deny": []
   }

@@ -12,9 +12,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { FileText, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FileText, ChevronDown, ChevronUp, AlertTriangle, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { LSNotification } from '@/data/ls-types';
+import MarkdownDocumentEditor from '../MarkdownDocumentEditor';
 
 interface LSNotificationsProps {
   notifications: LSNotification[];
@@ -23,6 +25,7 @@ interface LSNotificationsProps {
 export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications }) => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selectedNotification, setSelectedNotification] = useState<LSNotification | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -39,6 +42,15 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
             <span className="ml-auto text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
               {notifications.length} kpl
             </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowEditor(true)}
+              className="ml-2"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Lisää uusi
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -140,6 +152,17 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Document Editor */}
+      <MarkdownDocumentEditor
+        open={showEditor}
+        onClose={() => setShowEditor(false)}
+        documentType="ls-ilmoitus"
+        onSaved={() => {
+          setShowEditor(false);
+          // TODO: Refresh notifications list
+        }}
+      />
     </>
   );
 };

@@ -274,6 +274,30 @@ export async function getUserTemperature(userId: string): Promise<number> {
 }
 
 /**
+ * Get LLM model for CLIENT SUMMARY generation
+ * FIXED: Always uses google/gemini-2.5-flash-lite for fast, cheap summaries
+ */
+export function getSummaryLLMModel(): string {
+  return 'google/gemini-2.5-flash-lite';
+}
+
+/**
+ * Get LLM model for PTA SUMMARY generation
+ * FIXED: Always uses google/gemini-2.5-flash-lite for fast, cheap summaries
+ */
+export function getPTALLMModel(): string {
+  return 'google/gemini-2.5-flash-lite';
+}
+
+/**
+ * Get temperature for summary generation
+ * Lower temperature = more consistent summaries
+ */
+export function getSummaryTemperature(): number {
+  return 0.3;
+}
+
+/**
  * Set user's LLM model preference
  */
 export async function setUserLLMModel(userId: string, model: string): Promise<boolean> {

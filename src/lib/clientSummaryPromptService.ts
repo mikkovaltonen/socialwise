@@ -1,8 +1,8 @@
 /**
- * Summary Prompt Service
+ * Client Summary Prompt Service
  *
- * Manages client summary generation prompts in Firestore
- * Similar to systemPromptService but for summary generation
+ * Manages CLIENT SUMMARY generation prompts in Firestore
+ * (Asiakkaan ylätason yhteenveto: mainProblems, timePeriod)
  */
 
 import {
@@ -19,33 +19,33 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
-const COLLECTION_NAME = 'crm_summary_prompts';
-const PREFERENCES_COLLECTION = 'crm_summary_preferences';
+const COLLECTION_NAME = 'crm_client_summary_prompts';
+const PREFERENCES_COLLECTION = 'crm_client_summary_preferences';
 
 // Default prompt loaded from file
-let DEFAULT_SUMMARY_PROMPT: string | null = null;
+let DEFAULT_CLIENT_SUMMARY_PROMPT: string | null = null;
 
 /**
- * Load default PTA summary prompt from file
+ * Load default client summary prompt from file
  */
-async function loadDefaultSummaryPrompt(): Promise<string> {
-  if (DEFAULT_SUMMARY_PROMPT) {
-    return DEFAULT_SUMMARY_PROMPT;
+async function loadDefaultClientSummaryPrompt(): Promise<string> {
+  if (DEFAULT_CLIENT_SUMMARY_PROMPT) {
+    return DEFAULT_CLIENT_SUMMARY_PROMPT;
   }
 
   try {
-    const response = await fetch('/PTA_prompt.md');
+    const response = await fetch('/client_summary_prompt.md');
     if (response.ok) {
-      DEFAULT_SUMMARY_PROMPT = await response.text();
-      console.log('✅ Loaded PTA summary prompt from /PTA_prompt.md');
-      return DEFAULT_SUMMARY_PROMPT;
+      DEFAULT_CLIENT_SUMMARY_PROMPT = await response.text();
+      console.log('✅ Loaded client summary prompt from /client_summary_prompt.md');
+      return DEFAULT_CLIENT_SUMMARY_PROMPT;
     }
   } catch (error) {
-    console.warn('⚠️ Could not load PTA_prompt.md, using fallback');
+    console.warn('⚠️ Could not load client_summary_prompt.md, using fallback');
   }
 
   // Fallback if file not found
-  DEFAULT_SUMMARY_PROMPT = `Olet lastensuojelun asiantuntija. Analysoi asiakkaan tiedot ja palauta VAIN JSON-muotoinen vastaus seuraavassa muodossa:
+  DEFAULT_CLIENT_SUMMARY_PROMPT = `Olet lastensuojelun asiantuntija. Analysoi asiakkaan tiedot ja palauta VAIN JSON-muotoinen vastaus seuraavassa muodossa:
 
 {
   "mainProblems": "Lyhyt kuvaus pääongelmista (max 60 merkkiä)",
@@ -64,10 +64,10 @@ TÄRKEÄÄ:
 - Aikaväli: Ensimmäisestä ilmoituksesta viimeisimpään tapahtumaan
 - Palauta VAIN JSON, ei mitään muuta tekstiä`;
 
-  return DEFAULT_SUMMARY_PROMPT;
+  return DEFAULT_CLIENT_SUMMARY_PROMPT;
 }
 
-export interface SummaryPrompt {
+export interface ClientSummaryPrompt {
   id?: string;
   content: string;
   createdAt: Timestamp;
@@ -76,16 +76,16 @@ export interface SummaryPrompt {
   description: string;
 }
 
-interface SummaryPreferences {
+interface ClientSummaryPreferences {
   llmModel: string;
   temperature: number;
   updatedAt: Timestamp;
 }
 
 /**
- * Get the latest summary prompt
+ * Get the latest client summary prompt
  */
-export async function getLatestSummaryPrompt(): Promise<SummaryPrompt | null> {
+export async function getLatestClientSummaryPrompt(): Promise<ClientSummaryPrompt | null> {
   try {
     const q = query(
       collection(db, COLLECTION_NAME),
@@ -103,17 +103,17 @@ export async function getLatestSummaryPrompt(): Promise<SummaryPrompt | null> {
     return {
       id: doc.id,
       ...doc.data(),
-    } as SummaryPrompt;
+    } as ClientSummaryPrompt;
   } catch (error) {
-    console.error('Error fetching latest summary prompt:', error);
+    console.error('Error fetching latest client summary prompt:', error);
     return null;
   }
 }
 
 /**
- * Save a new summary prompt version
+ * Save a new client summary prompt version
  */
-export async function saveSummaryPrompt(
+export async function saveClientSummaryPrompt(
   content: string,
   description: string,
   userId: string,
@@ -131,7 +131,7 @@ export async function saveSummaryPrompt(
     console.log('✅ Summary prompt saved with ID:', docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error('❌ Error saving summary prompt:', error);
+    console.error('❌ Error saving client summary prompt:', error);
     throw error;
   }
 }
@@ -139,7 +139,7 @@ export async function saveSummaryPrompt(
 /**
  * Get prompt history (all versions)
  */
-export async function getSummaryPromptHistory(): Promise<SummaryPrompt[]> {
+export async function getClientSummaryPromptHistory(): Promise<ClientSummaryPrompt[]> {
   try {
     const q = query(
       collection(db, COLLECTION_NAME),
@@ -150,49 +150,49 @@ export async function getSummaryPromptHistory(): Promise<SummaryPrompt[]> {
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-    })) as SummaryPrompt[];
+    })) as ClientSummaryPrompt[];
   } catch (error) {
-    console.error('Error fetching summary prompt history:', error);
+    console.error('Error fetching client summary prompt history:', error);
     return [];
   }
 }
 
 /**
- * Get summary prompt content for summary generation
+ * Get client summary prompt content for summary generation
  * Returns the latest prompt from Firestore, or default from file if none exists
  */
-export async function getSummaryPromptForGeneration(): Promise<string> {
-  const latest = await getLatestSummaryPrompt();
+export async function getClientSummaryPromptForGeneration(): Promise<string> {
+  const latest = await getLatestClientSummaryPrompt();
 
   if (latest && latest.content) {
-    console.log('📝 Using custom summary prompt from Firestore');
+    console.log('📝 Using custom client summary prompt from Firestore');
     return latest.content;
   }
 
-  console.log('📝 Using default summary prompt from file');
-  return await loadDefaultSummaryPrompt();
+  console.log('📝 Using default client summary prompt from file');
+  return await loadDefaultClientSummaryPrompt();
 }
 
 /**
- * Initialize summary prompts collection with default prompt if empty
+ * Initialize client summary prompts collection with default prompt if empty
  */
-export async function initializeSummaryPrompts(userId: string, userEmail: string): Promise<void> {
+export async function initializeClientSummaryPrompts(userId: string, userEmail: string): Promise<void> {
   try {
-    const latest = await getLatestSummaryPrompt();
+    const latest = await getLatestClientSummaryPrompt();
 
     if (!latest) {
-      console.log('⚙️ No PTA summary prompts found, initializing with default...');
-      const defaultPrompt = await loadDefaultSummaryPrompt();
-      await saveSummaryPrompt(
+      console.log('⚙️ No client summary prompts found, initializing with default...');
+      const defaultPrompt = await loadDefaultClientSummaryPrompt();
+      await saveClientSummaryPrompt(
         defaultPrompt,
-        'Default PTA summary generation prompt from PTA_prompt.md',
+        'Default client summary generation prompt from client_summary_prompt.md',
         userId,
         userEmail
       );
-      console.log('✅ Default PTA summary prompt initialized');
+      console.log('✅ Default client summary prompt initialized');
     }
   } catch (error) {
-    console.error('❌ Error initializing summary prompts:', error);
+    console.error('❌ Error initializing client summary prompts:', error);
   }
 }
 
