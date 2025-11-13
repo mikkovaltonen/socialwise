@@ -243,7 +243,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     if (userDoc.exists()) {
       const data = userDoc.data();
       return {
-        llmModel: data.llmModel || 'x-ai/grok-4-fast',
+        llmModel: data.llmModel || 'google/gemini-flash-lite-1.5-8b',
         temperature: data.temperature ?? 0.05,
         updatedAt: data.updatedAt
       };
@@ -252,7 +252,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     console.error('Error fetching user preferences:', error);
   }
   return {
-    llmModel: 'x-ai/grok-4-fast',
+    llmModel: 'google/gemini-flash-lite-1.5-8b',
     temperature: 0.05
   };
 }
@@ -271,6 +271,30 @@ export async function getUserLLMModel(userId: string): Promise<string> {
 export async function getUserTemperature(userId: string): Promise<number> {
   const prefs = await getUserPreferences(userId);
   return prefs.temperature;
+}
+
+/**
+ * Get LLM model for CLIENT SUMMARY generation
+ * FIXED: Always uses google/gemini-2.5-flash-lite for fast, cheap summaries
+ */
+export function getSummaryLLMModel(): string {
+  return 'google/gemini-2.5-flash-lite';
+}
+
+/**
+ * Get LLM model for PTA SUMMARY generation
+ * FIXED: Always uses google/gemini-2.5-flash-lite for fast, cheap summaries
+ */
+export function getPTALLMModel(): string {
+  return 'google/gemini-2.5-flash-lite';
+}
+
+/**
+ * Get temperature for summary generation
+ * Lower temperature = more consistent summaries
+ */
+export function getSummaryTemperature(): number {
+  return 0.3;
 }
 
 /**
