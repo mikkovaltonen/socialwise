@@ -8,14 +8,13 @@
  */
 
 import React from 'react';
-import { MessageSquare, PanelLeftClose } from 'lucide-react';
+import { PanelLeftClose } from 'lucide-react';
 import { NavigationMenu } from './NavigationMenu';
 import { UserProfile } from './UserProfile';
 
 interface LeftSidebarProps {
   currentView?: 'child-view' | 'all-children' | 'settings';
   onNavigate?: (view: 'child-view' | 'all-children' | 'settings') => void;
-  onShowChat?: () => void;
   onToggle?: () => void;
   clientName?: string;
   clientSummary?: {
@@ -29,7 +28,6 @@ interface LeftSidebarProps {
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   currentView = 'child-view',
   onNavigate,
-  onShowChat,
   onToggle,
   clientName,
   clientSummary,
@@ -70,30 +68,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       {/* Navigation Menu */}
       <div className="flex-1 py-4">
         <NavigationMenu currentView={currentView} onNavigate={onNavigate} />
-      </div>
-
-      {/* Show AI Chat Button - KIRKAS JA NÄKYVÄ */}
-      <div className="px-3 pb-3">
-        <button
-          onClick={() => {
-            console.log('🔵 KYSY AI:LTA CLICKED', { onShowChat: !!onShowChat });
-            if (onShowChat) {
-              onShowChat();
-            } else {
-              console.warn('⚠️ onShowChat is not defined!');
-            }
-          }}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3
-                     bg-white text-ls-blue-dark
-                     hover:bg-white/90 hover:scale-105
-                     rounded-lg transition-all duration-200
-                     font-semibold text-sm
-                     shadow-lg"
-          title="Avaa AI-chat-avustaja"
-        >
-          <MessageSquare className="w-5 h-5" />
-          <span>Kysy AI:lta</span>
-        </button>
       </div>
 
       {/* User Profile */}

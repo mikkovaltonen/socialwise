@@ -139,6 +139,27 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
       setIsLoading(true);
 
       try {
+        // Build messages array for API
+        const apiMessages = messages
+          .filter((m) => m.role !== 'assistant' || !m.content.startsWith('👋'))
+          .map((m) => ({
+            role: m.role,
+            content: m.content,
+          }));
+
+        // Add current user message
+        apiMessages.push({
+          role: 'user',
+          content: trimmedInput,
+        });
+
+        console.log('🔵 Sending to OpenRouter:', {
+          model: llmModel,
+          temperature: temperature,
+          messageCount: apiMessages.length,
+          contextLength: sessionContext?.length || 0,
+        });
+
         // Call OpenRouter API
         const response = await fetch(OPENROUTER_API_URL, {
           method: 'POST',
@@ -155,23 +176,21 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
                 role: 'system',
                 content: sessionContext,
               },
-              ...messages
-                .filter((m) => m.role !== 'assistant' || !m.content.startsWith('👋'))
-                .map((m) => ({
-                  role: m.role === 'assistant' ? 'assistant' : 'user',
-                  content: m.content,
-                })),
-              {
-                role: 'user',
-                content: trimmedInput,
-              },
+              ...apiMessages,
             ],
             temperature: temperature,
           }),
         });
 
         if (!response.ok) {
-          throw new Error(`OpenRouter API error: ${response.status}`);
+          const errorData = await response.json();
+          console.error('❌ OpenRouter API error details:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData,
+            model: llmModel,
+          });
+          throw new Error(`OpenRouter API error: ${response.status} - ${JSON.stringify(errorData)}`);
         }
 
         const data = await response.json();
