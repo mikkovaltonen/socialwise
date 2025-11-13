@@ -57,18 +57,16 @@ const Workbench = () => {
           <button
             onClick={handleShowChat}
             className="fixed bottom-8 right-8 z-50
-                       flex items-center gap-3 px-6 py-4
+                       flex items-center justify-center
+                       w-14 h-14
                        bg-gradient-to-r from-ls-blue to-ls-blue-dark
                        hover:from-ls-blue-dark hover:to-ls-blue
                        text-white rounded-full shadow-2xl
                        transition-all duration-300
-                       hover:scale-110 hover:shadow-3xl
-                       font-semibold text-base
-                       animate-pulse hover:animate-none"
+                       hover:scale-110 hover:shadow-3xl"
             title="Avaa AI-chat-avustaja"
           >
             <MessageSquare className="w-6 h-6" />
-            <span>Kysy AI:lta</span>
           </button>
         )}
 
