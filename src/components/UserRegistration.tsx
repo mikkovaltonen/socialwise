@@ -213,7 +213,7 @@ const UserRegistration = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  placeholder="user@valmet.com"
+                  placeholder="user@example.com"
                 />
               </div>
 
@@ -249,7 +249,7 @@ const UserRegistration = () => {
                     name="department"
                     value={formData.department}
                     onChange={handleInputChange}
-                    placeholder="Procurement"
+                    placeholder="Lastensuojelu"
                   />
                 </div>
                 <div className="space-y-2">
