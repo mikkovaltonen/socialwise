@@ -12,6 +12,7 @@ const Workbench = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [chatVisible, setChatVisible] = React.useState(false);
+  const [chatFullscreen, setChatFullscreen] = React.useState(false);
   const [clientData, setClientData] = React.useState<LSClientData | null>(null);
   const chatRef = React.useRef<SocialWorkChatRef>(null);
   const lsPortalRef = React.useRef<LSPortalRef>(null);
@@ -34,15 +35,22 @@ const Workbench = () => {
   };
 
   // Debug logging
-  console.log('🔵 WORKBENCH RENDER: chatVisible =', chatVisible);
+  console.log('🔵 WORKBENCH RENDER: chatVisible =', chatVisible, ', chatFullscreen =', chatFullscreen);
 
   return (
     <div className="min-h-screen bg-[#1A2332]">
       <div className="h-screen overflow-hidden">
         <PanelGroup direction="horizontal">
-          {/* LSPortal - Resizable left panel */}
-          <Panel defaultSize={chatVisible ? 75 : 100} minSize={30}>
-            <div className="h-full overflow-y-auto">
+          {/* LSPortal - Resizable left panel (hidden when chat is fullscreen) */}
+          <Panel
+            id="ls-portal-panel"
+            defaultSize={chatVisible ? 75 : 100}
+            minSize={chatFullscreen ? 0 : 30}
+            maxSize={chatFullscreen ? 0 : 100}
+            collapsible={chatFullscreen}
+            collapsedSize={0}
+          >
+            <div className={`h-full overflow-y-auto ${chatFullscreen ? 'hidden' : ''}`}>
               <LSPortal
                 ref={lsPortalRef}
                 onClientLoad={handleClientLoad}
@@ -50,19 +58,25 @@ const Workbench = () => {
             </div>
           </Panel>
 
-          {/* Resize Handle - Only visible when chat is open */}
-          {chatVisible && (
+          {/* Resize Handle - Only visible when chat is open and not fullscreen */}
+          {chatVisible && !chatFullscreen && (
             <PanelResizeHandle className="w-1 bg-gray-600 hover:bg-ls-blue transition-colors duration-200 cursor-col-resize" />
           )}
 
-          {/* Chat Panel - Resizable right panel */}
+          {/* Chat Panel - Resizable right panel or fullscreen */}
           {chatVisible && (
-            <Panel defaultSize={25} minSize={15} maxSize={70}>
+            <Panel
+              id="chat-panel"
+              defaultSize={chatFullscreen ? 100 : 25}
+              minSize={chatFullscreen ? 100 : 15}
+              maxSize={chatFullscreen ? 100 : 70}
+            >
               <SocialWorkChat
                 ref={chatRef}
                 onLogout={handleLogout}
                 chatVisible={chatVisible}
                 onChatVisibleChange={setChatVisible}
+                onFullscreenChange={setChatFullscreen}
                 clientData={clientData}
               />
             </Panel>

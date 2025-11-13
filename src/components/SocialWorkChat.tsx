@@ -10,7 +10,7 @@
 
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Send, RotateCcw, Loader2, PanelRightClose, FileText } from 'lucide-react';
+import { Send, RotateCcw, Loader2, PanelRightClose, FileText, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SessionService } from '@/lib/sessionService';
@@ -32,6 +32,7 @@ interface SocialWorkChatProps {
   onLogout?: () => void;
   chatVisible?: boolean;
   onChatVisibleChange?: (visible: boolean) => void;
+  onFullscreenChange?: (fullscreen: boolean) => void;
   clientData?: LSClientData | null;
 }
 
@@ -45,7 +46,7 @@ interface Message {
 // ============================================================================
 
 const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
-  ({ chatVisible = true, onChatVisibleChange, clientData }, ref) => {
+  ({ chatVisible = true, onChatVisibleChange, onFullscreenChange, clientData }, ref) => {
     const { user } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -55,6 +56,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
     const [llmModel, setLlmModel] = useState<string>('google/gemini-flash-lite-1.5-8b');
     const [temperature, setTemperature] = useState<number>(0.05);
     const [toolExecuting, setToolExecuting] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -382,27 +384,46 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
     return (
       <div className="flex flex-col h-full bg-gradient-to-b from-ls-blue to-ls-blue-dark">
         {/* Header */}
-        <div className="bg-ls-blue-dark text-white px-4 py-2.5 flex justify-between items-center border-b border-white/20">
-          <h2 className="text-base font-semibold">AI-Avustaja</h2>
-          {onChatVisibleChange && (
-            <button
-              onClick={() => onChatVisibleChange(false)}
-              className="hover:bg-white/10 text-white p-1.5 rounded transition-colors duration-200"
-              title="Piilota AI-chat"
-            >
-              <PanelRightClose className="w-4 h-4" />
-            </button>
-          )}
+        <div className="bg-ls-blue-dark text-white px-4 py-2 flex justify-between items-center border-b border-white/20">
+          <h2 className="text-sm font-semibold">AI-Avustaja</h2>
+          <div className="flex gap-1">
+            {onFullscreenChange && (
+              <button
+                onClick={() => {
+                  const newFullscreen = !isFullscreen;
+                  setIsFullscreen(newFullscreen);
+                  onFullscreenChange(newFullscreen);
+                }}
+                className="hover:bg-white/10 text-white p-1.5 rounded transition-colors duration-200"
+                title={isFullscreen ? "Poistu koko näytöstä" : "Koko näyttö"}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="w-4 h-4" />
+                ) : (
+                  <Maximize2 className="w-4 h-4" />
+                )}
+              </button>
+            )}
+            {onChatVisibleChange && !isFullscreen && (
+              <button
+                onClick={() => onChatVisibleChange(false)}
+                className="hover:bg-white/10 text-white p-1.5 rounded transition-colors duration-200"
+                title="Piilota AI-chat"
+              >
+                <PanelRightClose className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
           {sessionInitializing && (
             <div className="flex justify-start">
-              <div className="bg-white/95 rounded-lg px-3 py-2 shadow-sm">
+              <div className="bg-white/95 rounded-lg px-2.5 py-1.5 shadow-sm">
                 <div className="flex items-center space-x-2">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
-                  <span className="text-xs text-gray-700">Alustetaan AI...</span>
+                  <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+                  <span className="text-[11px] text-gray-700">Alustetaan AI...</span>
                 </div>
               </div>
             </div>
@@ -414,13 +435,13 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`px-3 py-2 rounded-lg max-w-[85%] ${
+                className={`px-2.5 py-1.5 rounded-lg max-w-[85%] ${
                   message.role === 'user'
                     ? 'bg-white text-ls-blue-dark ml-auto shadow-md'
                     : 'bg-white/95 shadow-sm text-gray-800'
                 }`}
               >
-                <div className="prose prose-sm max-w-none">
+                <div className="max-w-none text-[13px] leading-relaxed">
                   <ReactMarkdown>{message.content}</ReactMarkdown>
                 </div>
               </div>
@@ -429,17 +450,17 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
 
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-white/95 rounded-lg px-3 py-2 shadow-sm">
+              <div className="bg-white/95 rounded-lg px-2.5 py-1.5 shadow-sm">
                 <div className="flex items-center space-x-2">
                   {toolExecuting ? (
                     <>
-                      <FileText className="h-3.5 w-3.5 animate-pulse text-blue-600" />
-                      <span className="text-xs text-gray-700">Luodaan dokumenttia...</span>
+                      <FileText className="h-3 w-3 animate-pulse text-blue-600" />
+                      <span className="text-[11px] text-gray-700">Luodaan dokumenttia...</span>
                     </>
                   ) : (
                     <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
-                      <span className="text-xs text-gray-700">AI miettii...</span>
+                      <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+                      <span className="text-[11px] text-gray-700">AI miettii...</span>
                     </>
                   )}
                 </div>
@@ -451,8 +472,8 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
         </div>
 
         {/* Input Area */}
-        <div className="bg-ls-blue-dark border-t border-white/20 p-3">
-          <div className="flex space-x-2 items-center">
+        <div className="bg-ls-blue-dark border-t border-white/20 p-2.5">
+          <div className="flex space-x-1.5 items-center">
             <Input
               ref={inputRef}
               type="text"
@@ -461,23 +482,23 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={isLoading || sessionInitializing}
-              className="flex-1 h-9 px-3 text-sm border-white/30 rounded-lg focus:ring-2 focus:ring-white focus:border-white bg-white text-gray-800 placeholder-gray-400"
+              className="flex-1 h-8 px-2.5 text-xs border-white/30 rounded-lg focus:ring-2 focus:ring-white focus:border-white bg-white text-gray-800 placeholder-gray-400"
             />
             <Button
               onClick={handleSendMessage}
               disabled={!input.trim() || isLoading || sessionInitializing}
-              className="h-10 px-4 bg-white text-ls-blue-dark hover:bg-white/90 rounded-lg font-semibold shadow-md"
+              className="h-8 px-3 bg-white text-ls-blue-dark hover:bg-white/90 rounded-lg font-semibold shadow-md text-xs"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
             </Button>
             <Button
               variant="outline"
               onClick={handleReset}
-              className="h-10 px-3 text-white border-white/30 hover:bg-white/10 rounded-lg"
+              className="h-8 px-2.5 text-white border-white/30 hover:bg-white/10 rounded-lg"
               title="Nollaa keskustelu"
               disabled={sessionInitializing}
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
