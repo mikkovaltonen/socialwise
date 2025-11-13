@@ -27,17 +27,3 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-
-/**
- * Get the appropriate stock management collection name based on user email
- * @param userEmail - The current user's email address
- * @returns Collection name: 'public_stock_management' for public@viewer.com, 'stock_management' for others
- */
-export function getStockManagementCollection(userEmail: string | null | undefined): string {
-  const isPublicViewer = userEmail === 'public@viewer.com';
-  const collectionName = isPublicViewer ? 'public_stock_management' : 'stock_management';
-
-  console.log(`🔀 Collection Router: email="${userEmail}" → ${collectionName} (isPublicViewer: ${isPublicViewer})`);
-
-  return collectionName;
-}

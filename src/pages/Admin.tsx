@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, FileText, Sparkles } from "lucide-react";
+import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, FileText, Sparkles, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import PromptEditor from "../components/PromptEditor";
 import SystemPromptManager from "../components/SystemPromptManager";
 import ClientSummaryPromptManager from "../components/ClientSummaryPromptManager";
 import SummaryPromptManager from "../components/SummaryPromptManager";
+import BotInstructionManager from "../components/BotInstructionManager";
 import UserRegistration from "@/components/UserRegistration";
 import AineistoParsingDocumentation from "@/components/AineistoParsingDocumentation";
 
@@ -223,6 +224,33 @@ const Admin = () => {
                   <SummaryPromptManager />
                 </DialogContent>
               </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Bot Instructions Management - Featured */}
+        <div className="mb-8">
+          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-8">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <Upload className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold mb-2">
+                    Chatbotin Lisäohjeet (PDF)
+                  </CardTitle>
+                  <p className="text-blue-100 text-lg">
+                    Lataa PDF-dokumentteja chatbotin kontekstiin (lainsäädäntö, politiikat)
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 bg-white">
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                Lataa PDF-dokumentteja (esim. lastensuojelulaki, sosiaalihuoltolaki), jotka parsitaan tekstiksi ja lisätään chatbotin kontekstiin. Näet tokenitilaston ja voit aktivoida/deaktivoida dokumentteja tarpeen mukaan. Konteksti-ikkuna: 1M tokensia.
+              </p>
+              <BotInstructionManager />
             </CardContent>
           </Card>
         </div>

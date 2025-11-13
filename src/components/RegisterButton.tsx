@@ -74,7 +74,7 @@ export const RegisterButton = () => {
         <DialogHeader>
           <DialogTitle>Create Your Account</DialogTitle>
           <DialogDescription>
-            Join the Valmet Purchaser AI Assistant to start using procurement intelligence.
+            Join SocialWise to streamline social work documentation and case management.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
