@@ -1,5 +1,6 @@
 import { getSystemPromptForUser } from './systemPromptService';
 import { loadAineistoContext, formatClientContext } from './aineistoLoader';
+import { getActiveInstructions } from './pdfInstructionService';
 
 export interface ChatSession {
   sessionId: string;
@@ -56,6 +57,22 @@ export class SessionService {
         userContext += `**Kirjautumisaika:** ${new Date().toLocaleString('fi-FI')}\n\n`;
       }
 
+      // Build PDF instructions context
+      let instructionsContext = '';
+      try {
+        const activeInstructions = await getActiveInstructions();
+        if (activeInstructions.length > 0) {
+          console.log(`📚 Adding ${activeInstructions.length} active instruction documents to context`);
+          instructionsContext = '\n\n---\n\n## LISÄOHJEET JA LAINSÄÄDÄNTÖ\n\n';
+          instructionsContext += activeInstructions
+            .map(doc => `### ${doc.originalFilename}\n\n${doc.content}`)
+            .join('\n\n---\n\n');
+          instructionsContext += '\n\n';
+        }
+      } catch (error) {
+        console.error('Error loading PDF instructions:', error);
+      }
+
       // Build client context
       let clientContext = '';
       if (clientData) {
@@ -64,7 +81,7 @@ export class SessionService {
       }
 
       // Combine all contexts
-      const fullContext = systemPrompt + userContext + clientContext;
+      const fullContext = systemPrompt + userContext + instructionsContext + clientContext;
 
       // Generate unique session ID
       const sessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

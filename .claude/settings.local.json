@@ -41,7 +41,8 @@
       "Bash(firebase storage:get:*)",
       "Bash(python3:*)",
       "Bash(git checkout:*)",
-      "WebFetch(domain:openrouter.ai)"
+      "WebFetch(domain:openrouter.ai)",
+      "Bash(gsutil ls:*)"
     ],
     "deny": []
   }
