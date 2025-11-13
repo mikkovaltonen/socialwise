@@ -10,12 +10,14 @@
 
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Send, RotateCcw, Loader2, PanelRightClose } from 'lucide-react';
+import { Send, RotateCcw, Loader2, PanelRightClose, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SessionService } from '@/lib/sessionService';
 import { getUserLLMModel, getUserTemperature } from '@/lib/systemPromptService';
+import { createDocument, generateFilename } from '@/lib/documentToolService';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import type { LSClientData } from '@/data/ls-types';
 
 // ============================================================================
@@ -52,6 +54,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
     const [sessionContext, setSessionContext] = useState<string | null>(null);
     const [llmModel, setLlmModel] = useState<string>('google/gemini-flash-lite-1.5-8b');
     const [temperature, setTemperature] = useState<number>(0.05);
+    const [toolExecuting, setToolExecuting] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -60,6 +63,40 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
     // OpenRouter API configuration
     const OPENROUTER_API_KEY = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
     const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+    // OpenRouter function calling tools
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "create_document",
+          description: "Luo uusi lastensuojeludokumentti Firebase Storageen. Käytä tätä funktiota kun käyttäjä pyytää luomaan dokumentin (esim. lastensuojeluilmoitus, asiakaskirjaus, päätös, PTA, asiakassuunnitelma).",
+          parameters: {
+            type: "object",
+            properties: {
+              category: {
+                type: "string",
+                enum: ["LS-ilmoitukset", "Asiakaskirjaukset", "Päätökset", "PTA", "Asiakassuunnitelmat"],
+                description: "Dokumentin kategoria"
+              },
+              filename: {
+                type: "string",
+                description: "Tiedostonimi (ilman .md-päätettä). Käytä muotoa: Lapsi_X_YYYY_MM_DD_tyyppi"
+              },
+              content: {
+                type: "string",
+                description: "Dokumentin sisältö markdown-muodossa"
+              },
+              clientId: {
+                type: "string",
+                description: "Asiakkaan tunniste (esim. Lapsi_1)"
+              }
+            },
+            required: ["category", "filename", "content", "clientId"]
+          }
+        }
+      }
+    ];
 
     // Expose reset method via ref
     useImperativeHandle(ref, () => ({
@@ -133,6 +170,58 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
       }
     };
 
+    // Execute tool calls from AI
+    const executeToolCall = async (toolCall: any) => {
+      const { name, arguments: argsString } = toolCall.function;
+
+      try {
+        const args = JSON.parse(argsString);
+
+        if (name === 'create_document') {
+          if (!user) {
+            throw new Error('Käyttäjä ei ole kirjautunut');
+          }
+
+          console.log('📄 Creating document:', args);
+          toast.info('Luodaan dokumenttia...', { icon: <FileText className="h-4 w-4" /> });
+
+          const result = await createDocument(
+            args.category,
+            args.filename,
+            args.content,
+            args.clientId,
+            user.uid,
+            user.email || undefined
+          );
+
+          if (result.success) {
+            toast.success('Dokumentti luotu onnistuneesti!', {
+              description: `Tallennettu: ${result.storagePath}`,
+              duration: 5000,
+            });
+
+            return {
+              success: true,
+              storagePath: result.storagePath,
+              downloadURL: result.downloadURL
+            };
+          } else {
+            throw new Error(result.error || 'Tuntematon virhe');
+          }
+        }
+
+        throw new Error(`Tuntematon työkalu: ${name}`);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Tuntematon virhe';
+        console.error('❌ Tool execution error:', errorMsg);
+        toast.error('Dokumentin luonti epäonnistui', {
+          description: errorMsg,
+          duration: 5000,
+        });
+        return { success: false, error: errorMsg };
+      }
+    };
+
     // Send message to AI
     const handleSendMessage = async () => {
       const trimmedInput = input.trim();
@@ -145,13 +234,11 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
       setIsLoading(true);
 
       try {
-        // Build messages array for API
-        const apiMessages = messages
-          .filter((m) => m.role !== 'assistant' || !m.content.startsWith('👋'))
-          .map((m) => ({
-            role: m.role,
-            content: m.content,
-          }));
+        // Build messages array for API - include all messages for full context
+        const apiMessages = messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
 
         // Add current user message
         apiMessages.push({
@@ -164,9 +251,10 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
           temperature: temperature,
           messageCount: apiMessages.length,
           contextLength: sessionContext?.length || 0,
+          toolsEnabled: true,
         });
 
-        // Call OpenRouter API
+        // Call OpenRouter API with tools
         const response = await fetch(OPENROUTER_API_URL, {
           method: 'POST',
           headers: {
@@ -185,6 +273,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
               ...apiMessages,
             ],
             temperature: temperature,
+            tools: tools,
           }),
         });
 
@@ -200,11 +289,68 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
         }
 
         const data = await response.json();
-        const aiResponse = data.choices?.[0]?.message?.content || 'Virhe: Ei vastausta';
+        const responseMessage = data.choices?.[0]?.message;
 
-        // Add AI response
-        const assistantMessage: Message = { role: 'assistant', content: aiResponse };
-        setMessages((prev) => [...prev, assistantMessage]);
+        // Check if AI wants to call a tool
+        if (responseMessage?.tool_calls && responseMessage.tool_calls.length > 0) {
+          console.log('🔧 AI requested tool calls:', responseMessage.tool_calls);
+          setToolExecuting(true);
+
+          // Execute all tool calls
+          const toolResults = [];
+          for (const toolCall of responseMessage.tool_calls) {
+            const result = await executeToolCall(toolCall);
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              output: JSON.stringify(result),
+            });
+          }
+
+          setToolExecuting(false);
+
+          // Send tool results back to AI for final response
+          const followUpResponse = await fetch(OPENROUTER_API_URL, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': window.location.origin,
+              'X-Title': 'SocialWise - Chat',
+            },
+            body: JSON.stringify({
+              model: llmModel,
+              messages: [
+                {
+                  role: 'system',
+                  content: sessionContext,
+                },
+                ...apiMessages,
+                responseMessage,
+                {
+                  role: 'tool',
+                  tool_call_id: toolResults[0].tool_call_id,
+                  content: toolResults[0].output,
+                },
+              ],
+              temperature: temperature,
+            }),
+          });
+
+          if (!followUpResponse.ok) {
+            throw new Error('Tool result processing failed');
+          }
+
+          const followUpData = await followUpResponse.json();
+          const finalResponse = followUpData.choices?.[0]?.message?.content || 'Dokumentti luotu.';
+
+          const assistantMessage: Message = { role: 'assistant', content: finalResponse };
+          setMessages((prev) => [...prev, assistantMessage]);
+        } else {
+          // Normal text response
+          const aiResponse = responseMessage?.content || 'Virhe: Ei vastausta';
+          const assistantMessage: Message = { role: 'assistant', content: aiResponse };
+          setMessages((prev) => [...prev, assistantMessage]);
+        }
       } catch (error) {
         console.error('❌ Error sending message:', error);
         const errorMessage: Message = {
@@ -214,6 +360,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
         setMessages((prev) => [...prev, errorMessage]);
       } finally {
         setIsLoading(false);
+        setToolExecuting(false);
       }
     };
 
@@ -284,8 +431,17 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
             <div className="flex justify-start">
               <div className="bg-white/95 rounded-xl px-4 py-3 shadow-sm">
                 <div className="flex items-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                  <span className="text-sm text-gray-700">AI miettii...</span>
+                  {toolExecuting ? (
+                    <>
+                      <FileText className="h-4 w-4 animate-pulse text-blue-600" />
+                      <span className="text-sm text-gray-700">Luodaan dokumenttia...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                      <span className="text-sm text-gray-700">AI miettii...</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

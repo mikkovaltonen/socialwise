@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from 'sonner';
 import { MessageSquare } from 'lucide-react';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import SocialWorkChat, { SocialWorkChatRef } from "@/components/SocialWorkChat";
 import LSPortal, { LSPortalRef } from "@/components/LSPortal";
 import type { LSClientData } from "@/data/ls-types";
@@ -37,20 +38,36 @@ const Workbench = () => {
 
   return (
     <div className="min-h-screen bg-[#1A2332]">
-      <div className="flex h-screen overflow-hidden">
-        {/* LSPortal - Always mounted at the same location */}
-        <div
-          className={`transition-all duration-300 ${
-            chatVisible ? 'w-[75%]' : 'w-full'
-          }`}
-        >
-          <div className="h-full overflow-y-auto">
-            <LSPortal
-              ref={lsPortalRef}
-              onClientLoad={handleClientLoad}
-            />
-          </div>
-        </div>
+      <div className="h-screen overflow-hidden">
+        <PanelGroup direction="horizontal">
+          {/* LSPortal - Resizable left panel */}
+          <Panel defaultSize={chatVisible ? 75 : 100} minSize={30}>
+            <div className="h-full overflow-y-auto">
+              <LSPortal
+                ref={lsPortalRef}
+                onClientLoad={handleClientLoad}
+              />
+            </div>
+          </Panel>
+
+          {/* Resize Handle - Only visible when chat is open */}
+          {chatVisible && (
+            <PanelResizeHandle className="w-1 bg-gray-600 hover:bg-ls-blue transition-colors duration-200 cursor-col-resize" />
+          )}
+
+          {/* Chat Panel - Resizable right panel */}
+          {chatVisible && (
+            <Panel defaultSize={25} minSize={15} maxSize={70}>
+              <SocialWorkChat
+                ref={chatRef}
+                onLogout={handleLogout}
+                chatVisible={chatVisible}
+                onChatVisibleChange={setChatVisible}
+                clientData={clientData}
+              />
+            </Panel>
+          )}
+        </PanelGroup>
 
         {/* Floating Action Button - Bottom Right (only when chat is closed) */}
         {!chatVisible && (
@@ -68,22 +85,6 @@ const Workbench = () => {
           >
             <MessageSquare className="w-6 h-6" />
           </button>
-        )}
-
-        {/* Chat Panel - Slides in from right */}
-        {chatVisible && (
-          <div
-            className="w-[25%] border-l border-gray-700"
-            style={{ backgroundColor: 'rgba(255, 0, 0, 0.1)', zIndex: 9999 }}
-          >
-            <SocialWorkChat
-              ref={chatRef}
-              onLogout={handleLogout}
-              chatVisible={chatVisible}
-              onChatVisibleChange={setChatVisible}
-              clientData={clientData}
-            />
-          </div>
         )}
       </div>
     </div>
