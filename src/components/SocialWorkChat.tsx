@@ -91,10 +91,19 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
         setLlmModel(userModel);
         setTemperature(userTemp);
 
+        // Get user's name with fallbacks
+        console.log('👤 User object:', {
+          displayName: user.displayName,
+          email: user.email,
+          uid: user.uid
+        });
+        const userName = user.displayName || user.email?.split('@')[0] || 'Käyttäjä';
+        console.log('👤 Selected userName:', userName);
+
         // Initialize session with context
         const session = await sessionService.initializeChatSession(
           user.uid,
-          user.displayName || 'Käyttäjä',
+          userName,
           user.email || '',
           clientData
         );
@@ -105,8 +114,8 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
         const greetingMessage: Message = {
           role: 'assistant',
           content: clientData
-            ? `👋 Tervetuloa, ${user.displayName}!\n\nOlen nyt ladannut asiakkaan **${clientData.clientName}** tiedot kontekstiini.\n\nVoin auttaa sinua dokumentoinnissa, päätöksenteossa ja palvelun suunnittelussa. Mitä haluaisit tietää tai tehdä?`
-            : `👋 Tervetuloa SocialWise-työpöytään!\n\n**Valitse asiakas** vasemmalta päästäksesi alkuun.\n\nKun valitset asiakkaan, voin auttaa sinua dokumentoinnissa, päätöksenteossa ja palvelun suunnittelussa.`,
+            ? `👋 Tervetuloa, **${userName}**!\n\nOlen nyt ladannut asiakkaan **${clientData.clientName}** tiedot kontekstiini.\n\nVoin auttaa sinua dokumentoinnissa, päätöksenteossa ja palvelun suunnittelussa. Mitä haluaisit tietää tai tehdä?`
+            : `👋 Tervetuloa SocialWise-työpöytään, **${userName}**!\n\n**Valitse asiakas** vasemmalta päästäksesi alkuun.\n\nKun valitset asiakkaan, voin auttaa sinua dokumentoinnissa, päätöksenteossa ja palvelun suunnittelussa.`,
         };
 
         setMessages([greetingMessage]);
@@ -199,10 +208,10 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
     };
 
     return (
-      <div className="flex flex-col h-full bg-gradient-to-b from-[#4A7EBF] to-[#5B8FD0]">
+      <div className="flex flex-col h-full bg-gradient-to-b from-ls-blue to-ls-blue-dark">
         {/* Header */}
-        <div className="bg-[#5B8FD0] text-white px-4 py-3 flex justify-between items-center border-b border-white/20">
-          <h2 className="text-lg font-semibold">Kysy AI:lta</h2>
+        <div className="bg-ls-blue-dark text-white px-4 py-3 flex justify-between items-center border-b border-white/20">
+          <h2 className="text-lg font-semibold">AI-Avustaja</h2>
           {onChatVisibleChange && (
             <button
               onClick={() => onChatVisibleChange(false)}
@@ -235,11 +244,11 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
               <div
                 className={`px-4 py-3 rounded-xl max-w-[85%] ${
                   message.role === 'user'
-                    ? 'bg-[#5B8FD0] text-white ml-auto'
+                    ? 'bg-white text-ls-blue-dark ml-auto shadow-md'
                     : 'bg-white/95 shadow-sm text-gray-800'
                 }`}
               >
-                <div className={`prose ${message.role === 'user' ? 'prose-invert' : ''} max-w-none`}>
+                <div className="prose max-w-none">
                   <ReactMarkdown>{message.content}</ReactMarkdown>
                 </div>
               </div>
@@ -261,7 +270,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
         </div>
 
         {/* Input Area */}
-        <div className="bg-white/95 border-t border-white/20 p-4">
+        <div className="bg-ls-blue-dark border-t border-white/20 p-4">
           <div className="flex space-x-2 items-center">
             <Input
               ref={inputRef}
@@ -271,19 +280,19 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={isLoading || sessionInitializing}
-              className="flex-1 h-10 px-3 text-base border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              className="flex-1 h-10 px-3 text-base border-white/30 rounded-lg focus:ring-2 focus:ring-white focus:border-white bg-white text-gray-800 placeholder-gray-400"
             />
             <Button
               onClick={handleSendMessage}
               disabled={!input.trim() || isLoading || sessionInitializing}
-              className="h-10 px-4 bg-[#5B8FD0] hover:bg-[#4A7EBF] text-white rounded-lg"
+              className="h-10 px-4 bg-white text-ls-blue-dark hover:bg-white/90 rounded-lg font-semibold shadow-md"
             >
               <Send className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               onClick={handleReset}
-              className="h-10 px-3 text-red-600 border-red-200 hover:bg-red-50 rounded-lg"
+              className="h-10 px-3 text-white border-white/30 hover:bg-white/10 rounded-lg"
               title="Nollaa keskustelu"
               disabled={sessionInitializing}
             >
