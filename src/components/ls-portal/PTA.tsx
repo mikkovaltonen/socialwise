@@ -1,19 +1,15 @@
 /**
  * PTA Component
- * Displays PTA (Palvelusuunnitelma/Service Plan) records
+ * Displays PTA (Palvelutarpeen Arviointi) records
  */
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { ClipboardList, ChevronRight, Lightbulb } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { Button } from '@/components/ui/button';
+import { ClipboardList, ChevronRight, Lightbulb, Loader2, Plus } from 'lucide-react';
+import { PTADocumentDialog } from '@/components/PTADocumentDialog';
+import MarkdownDocumentEditor from '../MarkdownDocumentEditor';
 import type { PTARecord } from '@/data/ls-types';
 
 interface PTAProps {
@@ -40,6 +36,7 @@ const eventTypeColors: Record<PTARecord['eventType'], string> = {
 
 export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
   const [selectedRecord, setSelectedRecord] = useState<PTARecord | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -51,6 +48,9 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 10);
 
+  // Check if any summaries are still loading
+  const isLoadingSummaries = ptaRecords.some(r => r.summary === 'Ladataan yhteenvetoa...');
+
   return (
     <>
       <Card>
@@ -58,9 +58,21 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
           <div className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5" />
             <CardTitle>Palveluntarvearviointi</CardTitle>
+            {isLoadingSummaries && (
+              <Loader2 className="h-4 w-4 animate-spin text-blue-600 ml-2" />
+            )}
             <span className="ml-auto text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded">
               {ptaRecords.length} kirjausta
             </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowEditor(true)}
+              className="ml-2"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Lisää uusi
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -88,9 +100,36 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
                             {typeLabel}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-800 line-clamp-2">
-                          {record.summary}
+                        <p className="text-sm text-gray-800 line-clamp-2 flex items-center gap-2">
+                          {record.summary === 'Ladataan yhteenvetoa...' && (
+                            <Loader2 className="h-3 w-3 animate-spin text-blue-600 flex-shrink-0" />
+                          )}
+                          <span className={record.summary === 'Ladataan yhteenvetoa...' ? 'text-blue-600 italic' : ''}>
+                            {record.summary}
+                          </span>
                         </p>
+
+                        {/* Highlights */}
+                        {record.highlights && record.highlights.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {record.highlights.slice(0, 2).map((highlight, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-start gap-1 bg-blue-50 border border-blue-200 rounded px-2 py-1"
+                              >
+                                <Lightbulb className="h-3 w-3 text-blue-600 flex-shrink-0 mt-0.5" />
+                                <span className="text-xs text-blue-800 italic line-clamp-1">
+                                  {highlight}
+                                </span>
+                              </div>
+                            ))}
+                            {record.highlights.length > 2 && (
+                              <p className="text-xs text-gray-500 italic">
+                                +{record.highlights.length - 2} muuta korostusta...
+                              </p>
+                            )}
+                          </div>
+                        )}
 
                         {/* AI Guidance Indicator */}
                         {record.aiGuidance && (
@@ -119,58 +158,23 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
         </CardContent>
       </Card>
 
-      {/* Full Record Dialog */}
-      <Dialog
+      {/* Full PTA Document Dialog */}
+      <PTADocumentDialog
         open={selectedRecord !== null}
-        onOpenChange={(open) => !open && setSelectedRecord(null)}
-      >
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedRecord && eventTypeLabels[selectedRecord.eventType]} -{' '}
-              {selectedRecord && formatDate(selectedRecord.date)}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedRecord && (
-            <div className="space-y-4">
-              {/* AI Guidance */}
-              {selectedRecord.aiGuidance && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lightbulb className="h-4 w-4 text-yellow-700" />
-                    <span className="text-sm font-semibold text-yellow-900">
-                      AI-ohjaus
-                    </span>
-                  </div>
-                  <p className="text-sm text-yellow-800">
-                    {selectedRecord.aiGuidance}
-                  </p>
-                </div>
-              )}
+        onClose={() => setSelectedRecord(null)}
+        document={selectedRecord}
+      />
 
-              {/* Actions */}
-              {selectedRecord.actions.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Toimenpiteet:</h4>
-                  <ul className="list-disc list-inside space-y-1">
-                    {selectedRecord.actions.map((action, idx) => (
-                      <li key={idx} className="text-sm text-gray-700">
-                        {action}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Full Text */}
-              <div className="prose prose-sm max-w-none">
-                <h4 className="text-sm font-semibold mb-2">Täysi kirjaus:</h4>
-                <ReactMarkdown>{selectedRecord.fullText}</ReactMarkdown>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Document Editor */}
+      <MarkdownDocumentEditor
+        open={showEditor}
+        onClose={() => setShowEditor(false)}
+        documentType="pta"
+        onSaved={() => {
+          setShowEditor(false);
+          // TODO: Refresh PTA records list
+        }}
+      />
     </>
   );
 };

@@ -3,10 +3,12 @@
  * Displays contact information for child, guardians, and professionals
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, Phone, Mail, Home, School } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, Phone, Mail, Home, School, Edit } from 'lucide-react';
+import MarkdownDocumentEditor from '../MarkdownDocumentEditor';
 import type { ContactInfo as ContactInfoType } from '@/data/ls-types';
 
 interface ContactInfoProps {
@@ -14,16 +16,27 @@ interface ContactInfoProps {
 }
 
 export const ContactInfo: React.FC<ContactInfoProps> = ({ contactInfo }) => {
+  const [showEditor, setShowEditor] = useState(false);
   const { child, guardians, reporters, professionals } = contactInfo;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          <CardTitle>Yhteystiedot</CardTitle>
-        </div>
-      </CardHeader>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            <CardTitle>Yhteystiedot</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowEditor(true)}
+              className="ml-auto"
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Muokkaa
+            </Button>
+          </div>
+        </CardHeader>
       <CardContent>
         <ScrollArea className="h-[220px] pr-4">
           <div className="space-y-4">
@@ -169,5 +182,17 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ contactInfo }) => {
         </ScrollArea>
       </CardContent>
     </Card>
+
+    {/* Document Editor */}
+    <MarkdownDocumentEditor
+      open={showEditor}
+      onClose={() => setShowEditor(false)}
+      documentType="yhteystiedot"
+      onSaved={() => {
+        setShowEditor(false);
+        // TODO: Refresh contact info
+      }}
+    />
+    </>
   );
 };

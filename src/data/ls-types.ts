@@ -77,6 +77,10 @@ export interface PTARecord {
     actions?: string[]; // Green highlights
     aiGuidance?: string[]; // Yellow highlights
   };
+  // PTA-specific fields (from Firestore)
+  sections?: Record<string, string>; // All document sections
+  palvelut?: string[]; // Services provided
+  highlights?: string[]; // Key highlights from document
 }
 
 // ============================================================================

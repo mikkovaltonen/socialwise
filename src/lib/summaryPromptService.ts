@@ -26,7 +26,7 @@ const PREFERENCES_COLLECTION = 'crm_summary_preferences';
 let DEFAULT_SUMMARY_PROMPT: string | null = null;
 
 /**
- * Load default summary prompt from file
+ * Load default PTA summary prompt from file
  */
 async function loadDefaultSummaryPrompt(): Promise<string> {
   if (DEFAULT_SUMMARY_PROMPT) {
@@ -34,14 +34,14 @@ async function loadDefaultSummaryPrompt(): Promise<string> {
   }
 
   try {
-    const response = await fetch('/summary_prompt.md');
+    const response = await fetch('/PTA_prompt.md');
     if (response.ok) {
       DEFAULT_SUMMARY_PROMPT = await response.text();
-      console.log('✅ Loaded summary prompt from /summary_prompt.md');
+      console.log('✅ Loaded PTA summary prompt from /PTA_prompt.md');
       return DEFAULT_SUMMARY_PROMPT;
     }
   } catch (error) {
-    console.warn('⚠️ Could not load summary_prompt.md, using fallback');
+    console.warn('⚠️ Could not load PTA_prompt.md, using fallback');
   }
 
   // Fallback if file not found
@@ -181,15 +181,15 @@ export async function initializeSummaryPrompts(userId: string, userEmail: string
     const latest = await getLatestSummaryPrompt();
 
     if (!latest) {
-      console.log('⚙️ No summary prompts found, initializing with default...');
+      console.log('⚙️ No PTA summary prompts found, initializing with default...');
       const defaultPrompt = await loadDefaultSummaryPrompt();
       await saveSummaryPrompt(
         defaultPrompt,
-        'Default summary generation prompt from summary_prompt.md',
+        'Default PTA summary generation prompt from PTA_prompt.md',
         userId,
         userEmail
       );
-      console.log('✅ Default summary prompt initialized');
+      console.log('✅ Default PTA summary prompt initialized');
     }
   } catch (error) {
     console.error('❌ Error initializing summary prompts:', error);

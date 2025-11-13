@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import PromptEditor from "../components/PromptEditor";
 import SystemPromptManager from "../components/SystemPromptManager";
+import ClientSummaryPromptManager from "../components/ClientSummaryPromptManager";
 import SummaryPromptManager from "../components/SummaryPromptManager";
 import UserRegistration from "@/components/UserRegistration";
 import AineistoParsingDocumentation from "@/components/AineistoParsingDocumentation";
@@ -136,7 +137,7 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Summary Prompt Management - Featured */}
+        {/* Client Summary Prompt Management - Featured */}
         <div className="mb-8">
           <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
             <CardHeader className="bg-gradient-to-br from-purple-600 to-pink-600 text-white p-8">
@@ -146,17 +147,17 @@ const Admin = () => {
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-bold mb-2">
-                    Tiivistelmän Promptin hallinta
+                    Asiakasyhteenvedon Promptin hallinta
                   </CardTitle>
                   <p className="text-purple-100 text-lg">
-                    Hallitse asiakastiivistelmän luomisen ohjeistusta
+                    Hallitse asiakkaan ylätason yhteenvedon luomisen ohjeistusta
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 bg-white">
               <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Hallitse tiivistelmän luomisen järjestelmäpromptin versioita. Tiivistelmä käyttää samaa LLM-mallia ja temperature-asetusta kuin chatbot (voit vaihtaa mallin yllä olevasta osiosta). Muutokset tallentuvat versiohistoriaan.
+                Hallitse asiakkaan pääongelmien ja aikavälin tiivistelmän luomisen järjestelmäpromptin versioita. Yhteenveto käyttää samaa LLM-mallia ja temperature-asetusta kuin chatbot (voit vaihtaa mallin yllä olevasta osiosta). Muutokset tallentuvat versiohistoriaan.
               </p>
               <Dialog>
                 <DialogTrigger asChild>
@@ -164,14 +165,59 @@ const Admin = () => {
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-6 text-lg font-medium shadow-lg shadow-purple-600/25"
                   >
                     <Sparkles className="mr-2 h-5 w-5" />
-                    Avaa tiivistelmän promptin hallinta
+                    Avaa asiakasyhteenvedon promptin hallinta
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Tiivistelmän Promptin hallinta</DialogTitle>
+                    <DialogTitle>Asiakasyhteenvedon Promptin hallinta</DialogTitle>
                     <DialogDescription>
-                      Hallitse tiivistelmän luomisen järjestelmäpromptia. Tiivistelmä käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
+                      Hallitse asiakkaan pääongelmien ja aikavälin tiivistelmän luomisen järjestelmäpromptia. Yhteenveto käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ClientSummaryPromptManager />
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* PTA Summary Prompt Management - Featured */}
+        <div className="mb-8">
+          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-teal-600 to-cyan-600 text-white p-8">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold mb-2">
+                    PTA Yhteenvedon Promptin hallinta
+                  </CardTitle>
+                  <p className="text-teal-100 text-lg">
+                    Hallitse Palveluntarpeen arvioinnin yhteenvetojen luomisen ohjeistusta
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 bg-white">
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                Hallitse PTA-dokumenttien yhteenvetojen luomisen järjestelmäpromptin versioita. Yhteenveto käyttää samaa LLM-mallia ja temperature-asetusta kuin chatbot (voit vaihtaa mallin yllä olevasta osiosta). Muutokset tallentuvat versiohistoriaan.
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 py-6 text-lg font-medium shadow-lg shadow-teal-600/25"
+                  >
+                    <FileText className="mr-2 h-5 w-5" />
+                    Avaa PTA yhteenvedon promptin hallinta
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>PTA Yhteenvedon Promptin hallinta</DialogTitle>
+                    <DialogDescription>
+                      Hallitse Palveluntarpeen arvioinnin yhteenvetojen luomisen järjestelmäpromptia. Yhteenveto käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
                     </DialogDescription>
                   </DialogHeader>
                   <SummaryPromptManager />
