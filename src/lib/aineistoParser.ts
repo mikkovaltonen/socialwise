@@ -18,6 +18,7 @@ import * as StorageService from './aineistoStorageService';
 import { getSummaryPromptForGeneration } from './summaryPromptService';
 import { getIlmoitusSummaryPromptForGeneration } from './ilmoitusSummaryService';
 import { getPTALLMModel, getSummaryTemperature } from './systemPromptService';
+import { getClientOrganization } from './organizationService';
 
 // ============================================================================
 // Constants
@@ -1145,9 +1146,20 @@ export async function loadClientData(clientId: string = 'lapsi-1'): Promise<LSCl
       }))
     ].sort((a, b) => b.date.localeCompare(a.date));
 
+    // Load organization data
+    const organization = await getClientOrganization(clientId) || {
+      clientId,
+      clientName: `Asiakas ${clientId}`,
+      roles: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
     return {
       clientId,
-      clientName: `Asiakas ${clientId}`, // Generic name - LLM will infer real name from documents
+      clientName: organization.clientName,
+      socialSecurityNumber: organization.socialSecurityNumber,
+      organization,
       mainProblem: {
         category: 'Lapsen hyvinvointi',
         subcategories: ['Hoivan laiminlyönti', 'Turvattomuus'],

@@ -189,12 +189,33 @@ export interface MainProblem {
 }
 
 // ============================================================================
-// Complete Client Data (Lapsi 1)
+// Organization and User Roles
+// ============================================================================
+
+export interface UserRole {
+  userId: string;
+  userEmail: string;
+  role: 'oma_työntekijä' | 'vastuullinen_sosiaalityöntekijä' | 'sosiaalipalvelun_esimies';
+}
+
+export interface ClientOrganization {
+  clientId: string; // Technical key (UUID)
+  clientName: string;
+  socialSecurityNumber?: string; // SOTU (optional, sensitive data)
+  roles: UserRole[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ============================================================================
+// Complete Client Data (Multi-client support)
 // ============================================================================
 
 export interface LSClientData {
-  clientId: string;
+  clientId: string; // Technical key (UUID)
   clientName: string;
+  socialSecurityNumber?: string; // SOTU (optional)
+  organization: ClientOrganization;
   mainProblem: MainProblem;
   notifications: LSNotification[];
   caseNotes: CaseNote[];

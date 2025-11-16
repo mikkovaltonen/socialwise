@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, FileText, Sparkles, Upload } from "lucide-react";
+import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, FileText, Sparkles, Upload, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
@@ -17,6 +17,7 @@ import SystemPromptManager from "../components/SystemPromptManager";
 import ClientSummaryPromptManager from "../components/ClientSummaryPromptManager";
 import SummaryPromptManager from "../components/SummaryPromptManager";
 import IlmoitusPromptManager from "../components/IlmoitusPromptManager";
+import OrganizationManager from "../components/OrganizationManager";
 import BotInstructionManager from "../components/BotInstructionManager";
 import UserRegistration from "@/components/UserRegistration";
 import AineistoParsingDocumentation from "@/components/AineistoParsingDocumentation";
@@ -178,6 +179,51 @@ const Admin = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <ClientSummaryPromptManager />
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Organization Management */}
+        <div className="mb-8">
+          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-8">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold mb-2">
+                    Organisaatioiden hallinta
+                  </CardTitle>
+                  <p className="text-indigo-100 text-lg">
+                    Hallitse asiakasorganisaatioita ja käyttäjärooleja
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 bg-white">
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                Luo ja hallitse asiakasorganisaatioita. Jokaisella lapsella voi olla kolme käyttäjäroolia: Oma työntekijä, Vastuullinen sosiaalityöntekijä ja Sosiaalipalvelun esimies. Dokumentit yhdistetään teknisen avaimen perusteella turvallisuuden vuoksi.
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 py-6 text-lg font-medium shadow-lg shadow-indigo-600/25"
+                  >
+                    <Users className="mr-2 h-5 w-5" />
+                    Avaa organisaatioiden hallinta
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Organisaatioiden hallinta</DialogTitle>
+                    <DialogDescription>
+                      Hallitse asiakasorganisaatioita ja määrittele käyttäjäroolit kullekin lapselle.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <OrganizationManager />
                 </DialogContent>
               </Dialog>
             </CardContent>

@@ -190,15 +190,24 @@ export const KNOWN_FILES = {
     'LS-ilmoitukset/Lapsi_1_2016_08_03_Lastensuojeluilmoitus.md',
     'LS-ilmoitukset/Lapsi_1_2017_11_16_Lastensuojeluilmoitus.md',
     'LS-ilmoitukset/Lapsi_1_2018_04_26_Lastensuojeluilmoitus.md',
+    // Lapsi 2 dokumentit
+    'LS-ilmoitukset/Lapsi_2_2023_10_15_Lastensuojeluilmoitus.md',
+    'LS-ilmoitukset/Lapsi_2_2024_01_20_Lastensuojeluilmoitus.md',
   ],
   'Päätökset': [
     'Päätökset/Lapsi_1_2025_03_22_päätös.md',
+    // Lapsi 2 dokumentit
+    'Päätökset/Lapsi_2_2024_02_10_päätös.md',
   ],
   'Yhteystiedot': [
     'Yhteystiedot/Lapsi_1_yhteystiedot.md',
+    // Lapsi 2 dokumentit
+    'Yhteystiedot/Lapsi_2_yhteystiedot.md',
   ],
   'PTA': [
     'PTA/PTA_malliasiakas.md',
+    // Lapsi 2 dokumentit
+    'PTA/PTA_Lapsi_2.md',
   ],
   'Asiakassuunnitelmat': [],
 } as const;
