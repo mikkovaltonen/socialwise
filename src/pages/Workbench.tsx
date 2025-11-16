@@ -44,10 +44,11 @@ const Workbench = () => {
           {/* LSPortal - Resizable left panel (hidden when chat is fullscreen) */}
           <Panel
             id="ls-portal-panel"
-            defaultSize={chatVisible ? 75 : 100}
+            order={1}
+            defaultSize={chatFullscreen ? 0 : (chatVisible ? 75 : 100)}
             minSize={chatFullscreen ? 0 : 30}
             maxSize={chatFullscreen ? 0 : 100}
-            collapsible={chatFullscreen}
+            collapsible={true}
             collapsedSize={0}
           >
             <div className={`h-full overflow-y-auto ${chatFullscreen ? 'hidden' : ''}`}>
@@ -67,6 +68,7 @@ const Workbench = () => {
           {chatVisible && (
             <Panel
               id="chat-panel"
+              order={2}
               defaultSize={chatFullscreen ? 100 : 25}
               minSize={chatFullscreen ? 100 : 15}
               maxSize={chatFullscreen ? 100 : 70}

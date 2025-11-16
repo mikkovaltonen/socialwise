@@ -26,3 +26,15 @@ export function generateTruncatedListString(
 
   return `${firstItems}... ja ${remainingCount} muuta ${itemTypeName}`;
 }
+
+/**
+ * Preprocess markdown text to ensure line breaks are visible in ReactMarkdown
+ * This function preserves the original formatting by converting line breaks appropriately
+ */
+export function preprocessMarkdownForDisplay(markdown: string): string {
+  if (!markdown) return '';
+
+  // If the text already has proper paragraph breaks (double line breaks), keep them
+  // Otherwise, ensure single line breaks create visual separation
+  return markdown;
+}

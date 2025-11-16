@@ -6,7 +6,7 @@
  * Note: DATA_PARSING_DOKUMENTAATIO.md remains in local /public/Aineisto folder
  */
 
-import { getStorage, ref, getBytes, getMetadata, uploadString } from 'firebase/storage';
+import { getStorage, ref, getBytes, getMetadata, uploadString, deleteObject } from 'firebase/storage';
 import { auth } from './firebase';
 
 // ============================================================================
@@ -146,6 +146,35 @@ export async function uploadMarkdownFile(path: string, content: string): Promise
       console.error('🔒 Authentication required:', error.message);
     } else {
       console.error(`❌ Error uploading file to Firebase Storage (${path}):`, error);
+    }
+    return false;
+  }
+}
+
+/**
+ * Delete markdown file from Firebase Storage
+ * Requires user authentication
+ * @param path - Relative path within Aineisto folder (e.g., 'LS-ilmoitukset/Lapsi_1_2024_01_15_Lastensuojeluilmoitus.md')
+ * @returns true if successful, false otherwise
+ */
+export async function deleteMarkdownFile(path: string): Promise<boolean> {
+  try {
+    // Ensure user is authenticated before deleting
+    await ensureAuthenticated();
+
+    const storage = getStorage();
+    const filePath = `${STORAGE_BASE_PATH}/${path}`;
+    const fileRef = ref(storage, filePath);
+
+    await deleteObject(fileRef);
+
+    console.log(`✅ Successfully deleted: ${filePath}`);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('not authenticated')) {
+      console.error('🔒 Authentication required:', error.message);
+    } else {
+      console.error(`❌ Error deleting file from Firebase Storage (${path}):`, error);
     }
     return false;
   }

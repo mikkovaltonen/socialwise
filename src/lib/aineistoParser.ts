@@ -16,6 +16,7 @@ import type {
 } from '@/data/ls-types';
 import * as StorageService from './aineistoStorageService';
 import { getSummaryPromptForGeneration } from './summaryPromptService';
+import { getIlmoitusSummaryPromptForGeneration } from './ilmoitusSummaryService';
 import { getPTALLMModel, getSummaryTemperature } from './systemPromptService';
 
 // ============================================================================
@@ -708,6 +709,107 @@ async function generateSummaryWithLLM(markdown: string): Promise<string> {
 }
 
 /**
+ * Generoi ilmoituksen yhteenvedon LLM:llä
+ * @param markdown - Ilmoituksen markdown-sisältö
+ * @returns Promise joka palauttaa yhteenveto tekstin
+ */
+async function generateIlmoitusSummaryWithLLM(markdown: string): Promise<string> {
+  const MAX_RETRIES = 3;
+  const BASE_DELAY = 2000; // 2 seconds
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      // Hae OpenRouter API key ympäristömuuttujasta
+      const apiKey = import.meta.env.VITE_OPEN_ROUTER_API_KEY;
+
+      if (!apiKey) {
+        throw new Error('OpenRouter API key not found! Check .env file for VITE_OPEN_ROUTER_API_KEY');
+      }
+
+      // Hae ilmoitus summary prompt Firestoresta tai tiedostosta
+      const summaryPrompt = await getIlmoitusSummaryPromptForGeneration();
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin || 'https://valmet-buyer.firebaseapp.com',
+        },
+        body: JSON.stringify({
+          model: getPTALLMModel(), // Käytä samaa mallia kuin PTA
+          messages: [
+            {
+              role: 'system',
+              content: summaryPrompt
+            },
+            {
+              role: 'user',
+              content: `Ilmoitus:\n${markdown.substring(0, 3000)}` // Rajoita 3000 merkkiin kustannusten säästämiseksi
+            }
+          ],
+          temperature: getSummaryTemperature(), // Matala lämpötila = tarkempi yhteenveto
+          max_tokens: 100
+        })
+      });
+
+      // Käsittele 429 Too Many Requests virhe
+      if (response.status === 429) {
+        const retryDelay = BASE_DELAY * Math.pow(2, attempt); // Exponential backoff: 2s, 4s, 8s
+        console.warn(`⏳ Rate limited (429). Retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+
+        if (attempt < MAX_RETRIES - 1) {
+          await delay(retryDelay);
+          continue; // Yritä uudelleen
+        } else {
+          console.error('❌ Rate limit exceeded after max retries');
+          return 'Rate limit ylitetty';
+        }
+      }
+
+      if (!response.ok) {
+        console.error('LLM API error:', response.status, response.statusText);
+
+        // Jos tämä on viimeinen yritys, palauta fallback
+        if (attempt === MAX_RETRIES - 1) {
+          return 'Ilmoituksen yhteenveto';
+        }
+
+        // Muuten yritä uudelleen
+        await delay(BASE_DELAY);
+        continue;
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content?.trim() || '';
+
+      // Jos saatiin sisältöä, käytä sitä
+      if (content && content.length > 5) {
+        // Poista mahdolliset markdown koodiblokit
+        const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
+        return cleanContent.substring(0, 100); // Rajaa 100 merkkiin
+      }
+
+      // Jos tämä on viimeinen yritys, palauta fallback
+      if (attempt === MAX_RETRIES - 1) {
+        return 'Ilmoituksen yhteenveto';
+      }
+
+    } catch (error) {
+      console.error(`Error generating ilmoitus summary with LLM (attempt ${attempt + 1}/${MAX_RETRIES}):`, error);
+
+      // Jos tämä on viimeinen yritys, palauta fallback
+      if (attempt === MAX_RETRIES - 1) {
+        return 'Ilmoituksen yhteenveto';
+      }
+    }
+  }
+
+  // Fallback (ei pitäisi koskaan päätyä tänne)
+  return 'Ilmoituksen yhteenveto';
+}
+
+/**
  * Lataa ja parsii Palveluntarvearviointi-kirjaukset Firebase Storagesta
  * NOPEA: Palauttaa recordit ILMAN LLM-yhteenvetoja (placeholder summarylla)
  */
@@ -784,6 +886,57 @@ export async function generatePTASummaries(records: PTARecord[]): Promise<PTARec
   }
 
   return updatedRecords;
+}
+
+/**
+ * Generoi yhteenvedot LS-ilmoituksille LLM:llä
+ * HIDAS: Käytetään taustalla kun ilmoitukset on jo ladattu
+ * @param notifications - LS-ilmoitukset joille generoidaan yhteenvedot
+ * @returns Promise joka päivittää ilmoitusten summaryt
+ */
+export async function generateIlmoitusSummaries(notifications: LSNotification[]): Promise<LSNotification[]> {
+  const updatedNotifications: LSNotification[] = [];
+
+  // Käsittele ilmoitukset SARJASSA viiveellä (ei Promise.all)
+  for (let i = 0; i < notifications.length; i++) {
+    const notification = notifications[i];
+
+    try {
+      // Käytä fullText joka on jo ladattu ilmoitukseen
+      if (notification.fullText) {
+        // Generoi yhteenveto LLM:llä
+        const summary = await generateIlmoitusSummaryWithLLM(notification.fullText);
+
+        // Päivitä ilmoitus yhteenvetolla
+        notification.summary = summary;
+
+        // Aseta kiireellisyys perustuen yhteenvetoon (yksinkertainen heuristiikka)
+        if (summary.toLowerCase().includes('väkivalta') || summary.toLowerCase().includes('vaara') || summary.toLowerCase().includes('uhka')) {
+          notification.urgency = 'kriittinen';
+        } else if (summary.toLowerCase().includes('päihteet') || summary.toLowerCase().includes('hoito') || summary.toLowerCase().includes('terveys')) {
+          notification.urgency = 'kiireellinen';
+        } else {
+          notification.urgency = 'normaali';
+        }
+      } else {
+        console.warn(`No fullText found for notification ${notification.id}`);
+        notification.summary = 'Ei sisältöä yhteenvedon generointiin';
+      }
+    } catch (error) {
+      console.error(`Error generating summary for ${notification.id}:`, error);
+      notification.summary = 'Yhteenvedon generointi epäonnistui';
+    }
+
+    updatedNotifications.push(notification);
+
+    // Lisää 3.5 sekunnin viive ennen seuraavaa kutsua (paitsi viimeisen jälkeen)
+    if (i < notifications.length - 1) {
+      console.log(`⏳ Odotetaan 3.5s ennen seuraavaa ilmoitus-yhteenvetoa (${i + 2}/${notifications.length})...`);
+      await delay(3500);
+    }
+  }
+
+  return updatedNotifications;
 }
 
 /**
