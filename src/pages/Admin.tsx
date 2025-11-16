@@ -16,6 +16,7 @@ import PromptEditor from "../components/PromptEditor";
 import SystemPromptManager from "../components/SystemPromptManager";
 import ClientSummaryPromptManager from "../components/ClientSummaryPromptManager";
 import SummaryPromptManager from "../components/SummaryPromptManager";
+import IlmoitusPromptManager from "../components/IlmoitusPromptManager";
 import BotInstructionManager from "../components/BotInstructionManager";
 import UserRegistration from "@/components/UserRegistration";
 import AineistoParsingDocumentation from "@/components/AineistoParsingDocumentation";
@@ -222,6 +223,49 @@ const Admin = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <SummaryPromptManager />
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Ilmoitus Summary Management */}
+        <div className="mb-8">
+          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-orange-600 to-red-600 text-white p-8">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold mb-2">Lastensuojeluilmoitusten yhteenveto</CardTitle>
+                  <p className="text-white/90 text-lg leading-relaxed">
+                    Hallitse lastensuojeluilmoitusten LLM-pohjaisten yhteenvetojen luomisen järjestelmäpromptin versioita
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 bg-white">
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                Hallitse lastensuojeluilmoitusten yhteenvetojen luomisen järjestelmäpromptin versioita. Yhteenveto käyttää samaa LLM-mallia ja temperature-asetusta kuin chatbot (voit vaihtaa mallin yllä olevasta osiosta). Muutokset tallentuvat versiohistoriaan.
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 py-6 text-lg font-medium shadow-lg shadow-orange-600/25"
+                  >
+                    <AlertTriangle className="mr-2 h-5 w-5" />
+                    Avaa ilmoitusten yhteenvedon promptin hallinta
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Ilmoitusten Yhteenvedon Promptin hallinta</DialogTitle>
+                    <DialogDescription>
+                      Hallitse lastensuojeluilmoitusten yhteenvetojen luomisen järjestelmäpromptia. Yhteenveto käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <IlmoitusPromptManager />
                 </DialogContent>
               </Dialog>
             </CardContent>

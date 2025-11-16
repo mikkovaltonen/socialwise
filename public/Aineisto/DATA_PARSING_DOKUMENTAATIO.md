@@ -11,22 +11,7 @@ SocialWise lukee lastensuojelun asiakastietoja suoraan markdown-tiedostoista, ku
 
 ---
 
-## 1. Lastensuojeluilmoitukset
 
-### Mistä data tulee?
-- **Kansio:** `/public/Aineisto/Lastensuojeluilmoitukset/`
-- **Tiedostot:** `Lapsi_1_2018_04_26_Lastensuojeluilmoitus.md`
-
-### Mitä poimitaan?
-1. **Päivämäärä** → Luetaan tiedoston nimestä (2018_04_26 = 26.4.2018)
-2. **Ilmoittajan ammatti** → Koulukuraattori, Opettaja, Naapuri...
-3. **Korostetut kohdat** → Ne kohdat, jotka on merkitty dokumentissa erikseen
-
-### Miten näytetään?
-- Lista ilmoituksista aikajärjestyksessä (uusin ensin)
-- Klikkaamalla voi lukea koko ilmoituksen
-
----
 
 ## 2. Asiakaskirjaukset
 
@@ -289,7 +274,6 @@ UI:ssa näytetään maksimissaan 2 ensimmäistä korostusta, ja merkintä "+X mu
 
 | Laatikko | Mistä? | Mitä näytetään? |
 |----------|--------|-----------------|
-| **Lastensuojeluilmoitukset** | Firebase Storage `/LS-ilmoitukset/*.md` | Lista ilmoituksista, ilmoittajan ammatti, blockquote-korostukset |
 | **Asiakaskirjaukset** | Kaikista muista | Yhtenäinen aikajana kaikista tapahtumista |
 | **Päätökset** | Firebase Storage `/Päätökset/*.md` | Lista päätöksistä, tyyppi, lakipykälä, `[oleellinen]` ja `[päätös peruste]` korostukset |
 | **Yhteystiedot** | Firebase Storage `/Yhteystiedot/Lapsi_*.md` | Yhteystiedot ryhmiteltynä roolien mukaan |
@@ -324,7 +308,7 @@ Yhteystiedot ovat asiakaskohtaisia: `Lapsi_1_yhteystiedot.md`, `Lapsi_2_yhteysti
 ## Miten data ladataan?
 
 1. **Sovellus käynnistyy** → LSPortal-komponentti latautuu
-2. **Ladataan kaikki kategoriat kerralla** → Lastensuojeluilmoitukset, Päätökset, Palveluntarvearviointi, Yhteystiedot, Asiakassuunnitelmat
+2. **Ladataan kaikki kategoriat kerralla** → Päätökset, Palveluntarvearviointi, Yhteystiedot, Asiakassuunnitelmat
 3. **Luodaan Asiakaskirjaukset** → Yhdistetään kaikki tapahtumat yhdeksi aikajanaksi
 4. **Näytetään UI** → Jokainen laatikko saa omat tietonsa
 
