@@ -13,12 +13,6 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-console.log('Firebase config:', {
-  ...firebaseConfig,
-  apiKey: firebaseConfig.apiKey ? '[SET]' : '[MISSING]',
-  projectId: firebaseConfig.projectId || '[MISSING]'
-});
-
 if (!firebaseConfig.projectId) {
   throw new Error('Firebase projectId is missing. Check VITE_FIREBASE_PROJECT_ID environment variable.');
 }

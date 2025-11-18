@@ -9,12 +9,7 @@ import {
   getLatestSystemPrompt,
   saveSystemPrompt,
   getPromptHistory,
-  getUserLLMModel,
-  setUserLLMModel,
-  getUserTemperature,
-  setUserTemperature,
   getUserPromptVersion,
-  setUserPromptVersion,
   initializeSystemPrompts,
   SystemPrompt
 } from '@/lib/systemPromptService';
@@ -68,37 +63,30 @@ export default function SystemPromptManager() {
 
   useEffect(() => {
     if (user) {
-      loadUserPreferences();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
       loadPrompt();
     }
-  }, [user, promptVersion]);
+  }, [user]);
 
   const loadPrompt = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      if (promptVersion === 'test') {
-        // Load from file
-        const response = await fetch('/chatbot_prompt.md');
-        if (response.ok) {
-          const fileContent = await response.text();
-          setContent(fileContent);
-          setCurrentPrompt(null);
-        } else {
-          throw new Error('Could not load test prompt file');
-        }
+      // Load from Firestore (always)
+      await initializeSystemPrompts(user.uid);
+      const latest = await getLatestSystemPrompt();
+      setCurrentPrompt(latest);
+      setContent(latest?.content || '');
+
+      // Load all global settings from latest prompt
+      if (latest) {
+        setSelectedModel(latest.llmModel || 'x-ai/grok-4-fast');
+        setTemperature(latest.temperature ?? 0.05);
+        setPromptVersionState(latest.promptVersion || 'production');
       } else {
-        // Load from Firestore (production)
-        await initializeSystemPrompts(user.uid);
-        const latest = await getLatestSystemPrompt();
-        setCurrentPrompt(latest);
-        setContent(latest?.content || '');
+        // Get global prompt version if no prompt exists yet
+        const version = await getUserPromptVersion();
+        setPromptVersionState(version);
       }
     } catch (error) {
       console.error('Error loading prompt:', error);
@@ -108,20 +96,6 @@ export default function SystemPromptManager() {
     }
   };
 
-  const loadUserPreferences = async () => {
-    if (!user) return;
-
-    try {
-      const modelPref = await getUserLLMModel(user.uid);
-      const tempPref = await getUserTemperature(user.uid);
-      const versionPref = await getUserPromptVersion(user.uid);
-      setSelectedModel(modelPref);
-      setTemperature(tempPref);
-      setPromptVersionState(versionPref);
-    } catch (error) {
-      console.error('Error loading user preferences:', error);
-    }
-  };
 
   const loadHistory = async () => {
     try {
@@ -149,12 +123,15 @@ export default function SystemPromptManager() {
       const id = await saveSystemPrompt(
         content,
         user.uid,
+        selectedModel,
+        temperature,
+        promptVersion,
         user.email || '',
         description || 'System prompt update'
       );
 
       if (id) {
-        setMessage('Prompt saved successfully');
+        setMessage('Prompt saved successfully (including all global settings)');
         setDescription('');
         // Reload prompt to get updated info
         await loadPrompt();
@@ -176,16 +153,26 @@ export default function SystemPromptManager() {
     setError('');
 
     try {
-      const success = await setUserLLMModel(user.uid, model);
+      // Save new version with updated LLM model
+      const id = await saveSystemPrompt(
+        content,
+        user.uid,
+        model,
+        temperature,
+        promptVersion,
+        user.email || '',
+        `LLM model changed to ${model.includes('grok') ? 'Grok-4-Fast' : model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' : 'Gemini 2.5 Pro'}`
+      );
 
-      if (success) {
+      if (id) {
         setSelectedModel(model);
         const modelName = model.includes('grok') ? 'Grok-4-Fast' :
                          model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' :
                          'Gemini 2.5 Pro';
-        setMessage(`Your LLM model preference updated to ${modelName}`);
+        setMessage(`Global LLM model updated to ${modelName} (affects all users)`);
+        await loadPrompt(); // Reload to update current prompt reference
       } else {
-        setError('Failed to update model preference');
+        setError('Failed to update model');
       }
     } catch (error) {
       console.error('Error updating model:', error);
@@ -202,11 +189,21 @@ export default function SystemPromptManager() {
     const tempValue = parseFloat(temp);
 
     try {
-      const success = await setUserTemperature(user.uid, tempValue);
+      // Save new version with updated temperature
+      const id = await saveSystemPrompt(
+        content,
+        user.uid,
+        selectedModel,
+        tempValue,
+        promptVersion,
+        user.email || '',
+        `Temperature changed to ${tempValue}`
+      );
 
-      if (success) {
+      if (id) {
         setTemperature(tempValue);
-        setMessage(`Temperature updated to ${tempValue}`);
+        setMessage(`Global temperature updated to ${tempValue} (affects all users)`);
+        await loadPrompt(); // Reload to update current prompt reference
       } else {
         setError('Failed to update temperature');
       }
@@ -223,11 +220,21 @@ export default function SystemPromptManager() {
     setError('');
 
     try {
-      const success = await setUserPromptVersion(user.uid, version);
+      // Save new version with updated prompt version
+      const id = await saveSystemPrompt(
+        content,
+        user.uid,
+        selectedModel,
+        temperature,
+        version,
+        user.email || '',
+        `Prompt version changed to ${version === 'test' ? 'Test' : 'Production'}`
+      );
 
-      if (success) {
+      if (id) {
         setPromptVersionState(version);
-        setMessage(`Prompt version changed to ${version === 'test' ? 'Test (file)' : 'Production (Firestore)'}`);
+        setMessage(`Global prompt version updated to ${version === 'test' ? 'Test (file)' : 'Production (DB)'} (affects all users)`);
+        await loadPrompt(); // Reload to update current prompt reference
       } else {
         setError('Failed to update prompt version');
       }
@@ -253,12 +260,18 @@ export default function SystemPromptManager() {
       await saveSystemPrompt(
         content,
         user.uid,
+        selectedModel,
+        temperature,
+        promptVersion,
         user.email || '',
         'Auto-saved before revert'
       );
 
-      // Set content to historical version
+      // Set content and settings to historical version
       setContent(prompt.content);
+      setSelectedModel(prompt.llmModel || 'x-ai/grok-4-fast');
+      setTemperature(prompt.temperature ?? 0.05);
+      setPromptVersionState(prompt.promptVersion || 'production');
       setMessage(`Reverted to version from ${formatDate(prompt.createdAt)}`);
       setShowHistoryDialog(false);
     } catch (error) {
@@ -296,23 +309,23 @@ export default function SystemPromptManager() {
       <Card className="p-4 bg-purple-50 border-purple-200">
         <div className="flex items-center gap-2 mb-2">
           <Bot className="w-4 h-4 text-purple-600" />
-          <Label className="text-sm font-medium">AI-Asetukset (Chatbot + Tiivistelmä)</Label>
+          <Label className="text-sm font-medium">Globaalit AI-Asetukset</Label>
           <span className="text-xs text-gray-500">(OpenRouter)</span>
         </div>
         <p className="text-xs text-gray-600 mb-3">
-          Nämä asetukset käytetään sekä chatbotissa että tiivistelmän luomisessa.
+          Nämä asetukset vaikuttavat kaikkiin käyttäjiin. Tallennetaan chatbot_prompt-collectioniin järjestelmäpromptin mukana.
         </p>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium">Prompt Versio</Label>
+            <Label className="text-sm font-medium">Prompt Lähde</Label>
             <Select value={promptVersion} onValueChange={handlePromptVersionChange}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger className="w-40">
                 <SelectValue>
-                  {promptVersion === 'test' ? 'Test (File)' : 'Production (DB)'}
+                  {promptVersion === 'test' ? 'Test (Tiedosto)' : 'Production (DB)'}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="test">Test (File)</SelectItem>
+                <SelectItem value="test">Test (Tiedosto)</SelectItem>
                 <SelectItem value="production">Production (DB)</SelectItem>
               </SelectContent>
             </Select>
@@ -375,16 +388,6 @@ export default function SystemPromptManager() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {promptVersion === 'test' && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Test Mode:</strong> Näytetään prompti tiedostosta <code>/public/chatbot_prompt.md</code>.
-                Muokkaa tiedostoa suoraan tallentaaksesi muutokset. Tallennus tästä editorista tallentaa Production-versioon.
-              </AlertDescription>
-            </Alert>
-          )}
-
           <div className="space-y-2">
             <div className="text-xs text-gray-500">
               {content.split('\n').length} riviä • {content.length} merkkiä
@@ -497,6 +500,9 @@ export default function SystemPromptManager() {
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Saved By</TableHead>
+                    <TableHead>Version</TableHead>
+                    <TableHead>LLM Model</TableHead>
+                    <TableHead>Temp</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -513,6 +519,22 @@ export default function SystemPromptManager() {
                         )}
                       </TableCell>
                       <TableCell className="text-xs">{prompt.createdByEmail || prompt.createdBy}</TableCell>
+                      <TableCell className="text-xs">
+                        <span className={`px-2 py-0.5 text-[10px] rounded ${
+                          prompt.promptVersion === 'test'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {prompt.promptVersion === 'test' ? 'TEST' : 'PROD'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {prompt.llmModel?.includes('grok') ? 'Grok-4' :
+                         prompt.llmModel === 'google/gemini-2.5-flash' ? 'Gemini Flash' :
+                         prompt.llmModel === 'google/gemini-2.5-pro' ? 'Gemini Pro' :
+                         prompt.llmModel || '-'}
+                      </TableCell>
+                      <TableCell className="text-xs">{prompt.temperature ?? '-'}</TableCell>
                       <TableCell className="text-xs">{prompt.description || '-'}</TableCell>
                       <TableCell className="text-right">
                         {idx !== 0 && (

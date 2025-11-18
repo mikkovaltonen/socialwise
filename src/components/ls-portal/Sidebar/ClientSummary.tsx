@@ -47,7 +47,9 @@ export const ClientSummary: React.FC<ClientSummaryProps> = ({
       {!isLoading && !error && mainProblems && (
         <div className="space-y-2">
           <div className="flex items-start gap-2">
-            <span className="text-sm font-medium text-gray-700 shrink-0">Tiivistelmä:</span>
+            <span className="text-sm font-medium text-gray-700 shrink-0">
+              {clientName ? `${clientName} - Tiivistelmä:` : 'Tiivistelmä:'}
+            </span>
             <p className="text-sm text-gray-900 leading-relaxed">
               {mainProblems}
             </p>

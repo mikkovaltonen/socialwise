@@ -115,9 +115,11 @@ export interface Decision {
 export interface ContactInfo {
   child: {
     name: string;
-    socialSecurityNumber: string;
-    address: string;
+    socialSecurityNumber?: string;
+    address?: string;
     school?: string;
+    phone?: string;
+    schoolPhone?: string;
   };
   guardians: {
     mother?: {
@@ -158,6 +160,11 @@ export interface ContactInfo {
       phone?: string;
       email?: string;
       school?: string;
+    };
+    supervisor?: {
+      name: string;
+      phone?: string;
+      email?: string;
     };
   };
 }

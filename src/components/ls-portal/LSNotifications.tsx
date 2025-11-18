@@ -178,44 +178,52 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[280px] pr-4">
-            <div className="space-y-3">
-              {processedNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => setSelectedNotification(notification)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-sm">
-                          {formatDate(notification.date)}
-                        </span>
-                        {notification.urgency && (
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded border ${getUrgencyColor(notification.urgency)}`}
-                          >
-                            {getUrgencyLabel(notification.urgency)}
+            {processedNotifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                <FileText className="h-12 w-12 text-gray-300 mb-3" />
+                <p className="text-sm text-gray-500 mb-2">Ei lastensuojeluilmoituksia</p>
+                <p className="text-xs text-gray-400">Lisää uusi ilmoitus yllä olevasta painikkeesta</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {processedNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => setSelectedNotification(notification)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm">
+                            {formatDate(notification.date)}
                           </span>
-                        )}
+                          {notification.urgency && (
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded border ${getUrgencyColor(notification.urgency)}`}
+                            >
+                              {getUrgencyLabel(notification.urgency)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-600 mb-2">
+                          Ilmoittaja: {notification.reporter.profession}
+                        </div>
+                        <p className="text-sm text-gray-800 line-clamp-2">
+                          {notification.summary === 'Ladataan yhteenvetoa...' && (
+                            <Loader2 className="h-3 w-3 animate-spin text-blue-600 flex-shrink-0 inline mr-1" />
+                          )}
+                          <span className={notification.summary === 'Ladataan yhteenvetoa...' ? 'text-blue-600 italic' : ''}>
+                            {notification.summary}
+                          </span>
+                        </p>
                       </div>
-                      <div className="text-xs text-gray-600 mb-2">
-                        Ilmoittaja: {notification.reporter.profession}
-                      </div>
-                      <p className="text-sm text-gray-800 line-clamp-2">
-                        {notification.summary === 'Ladataan yhteenvetoa...' && (
-                          <Loader2 className="h-3 w-3 animate-spin text-blue-600 flex-shrink-0 inline mr-1" />
-                        )}
-                        <span className={notification.summary === 'Ladataan yhteenvetoa...' ? 'text-blue-600 italic' : ''}>
-                          {notification.summary}
-                        </span>
-                      </p>
+                      <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
                     </div>
-                    <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </ScrollArea>
         </CardContent>
       </Card>

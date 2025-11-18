@@ -186,7 +186,10 @@ function generateFilename(type: DocumentType, existingFilename?: string): string
   };
 
   const { folder, suffix } = typeMap[type];
-  return `${folder}/Lapsi_1_${dateStr}_${suffix}.md`;
+  // HUOM: Tämä vaatii clientId:n propsista tulevaisuudessa
+  // Tällä hetkellä käytetään oletusarvoa
+  const clientId = 'lapsi-1'; // TODO: Hae propsista
+  return `${clientId}/${folder}/${dateStr}_${suffix}.md`;
 }
 
 export default function MarkdownDocumentEditor({

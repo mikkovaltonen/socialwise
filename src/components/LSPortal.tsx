@@ -10,6 +10,9 @@ import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'rea
 import * as AineistoParser from '@/lib/aineistoParser';
 import { generateClientSummary } from '@/lib/generateClientSummary';
 import type { LSClientData } from '@/data/ls-types';
+import { logger } from '@/lib/logger';
+import { getAllClientsBasicInfo } from '@/lib/clientService';
+import type { ClientBasicInfo } from '@/types/client';
 
 // Import layout components
 import { LSPortalLayout } from './ls-portal/LSPortalLayout';
@@ -44,7 +47,10 @@ export interface LSPortalRef {
 
 export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
   ({ onClientLoad, className = '' }, ref) => {
-    // Demo: Only one client (lapsi-1) - no client selection needed
+    // Client selection state
+    const [availableClients, setAvailableClients] = useState<ClientBasicInfo[]>([]);
+    const [isLoadingClients, setIsLoadingClients] = useState(false);
+    const [selectedClientId, setSelectedClientId] = useState<string>('');
     const [clientData, setClientData] = useState<LSClientData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [currentView, setCurrentView] = useState<'child-view' | 'all-children' | 'settings'>('child-view');
@@ -72,13 +78,42 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
       getClientData: () => clientData!,
     }));
 
+    // Load available clients from Firestore
+    const loadAvailableClients = async () => {
+      try {
+        setIsLoadingClients(true);
+        const clients = await getAllClientsBasicInfo();
+        setAvailableClients(clients);
+
+        // Set first client as default (only on initial load)
+        if (clients.length > 0 && !selectedClientId) {
+          setSelectedClientId(clients[0].clientId);
+          logger.debug(`Auto-selected first client: ${clients[0].clientId}`);
+        } else if (clients.length === 0) {
+          logger.warn('No clients found in ASIAKAS_PERUSTIEDOT');
+        }
+      } catch (error) {
+        logger.error('Error loading clients:', error);
+      } finally {
+        setIsLoadingClients(false);
+      }
+    };
+
     // Load client data dynamically from Aineisto files
     const loadClientData = async () => {
+      if (!selectedClientId) {
+        logger.warn('No client selected');
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
         // Load data from markdown files using runtime parser
-        const data = await AineistoParser.loadClientData('lapsi-1');
+        const data = await AineistoParser.loadClientData(selectedClientId);
 
+        // ROBUSTNESS: Always set data even if null/partial
+        // UI components should handle missing data gracefully
         if (data) {
           setClientData(data);
 
@@ -96,7 +131,7 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
             const summary = await generateClientSummary(data);
             setClientSummary(summary);
           } catch (summaryError) {
-            console.error('Error generating summary:', summaryError);
+            logger.error('Error generating summary:', summaryError);
             setClientSummary({
               mainProblems: '',
               timePeriod: '',
@@ -112,10 +147,8 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
             try {
               // CRITICAL: Wait 3 seconds before starting PTA summaries
               // This prevents rate limiting when client summary is still processing
-              console.log('⏳ Odotetaan 3s ennen PTA-yhteenvetojen generointia (rate limit prevention)...');
               await new Promise(resolve => setTimeout(resolve, 3000));
 
-              console.log('🔄 Generoidaan PTA-yhteenvetoja taustalla...');
               const updatedRecords = await AineistoParser.generatePTASummaries(data.ptaRecords);
 
               // Update clientData with new summaries
@@ -126,25 +159,52 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
                   ptaRecords: updatedRecords,
                 };
               });
-              console.log('✅ PTA-yhteenvedot valmis!');
             } catch (ptaError) {
-              console.error('❌ PTA-yhteenvetojen generointi epäonnistui:', ptaError);
+              logger.error('PTA-yhteenvetojen generointi epäonnistui:', ptaError);
             }
           }
         } else {
-          console.warn('No client data found');
+          // No data found - show empty state but don't crash
+          setClientData({
+            clientId: selectedClientId,
+            clientName: selectedClientId,
+            notifications: [],
+            caseNotes: [],
+            decisions: [],
+            ptaRecords: [],
+            servicePlans: [],
+            timeline: [],
+          });
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('Error loading client data:', error);
+        logger.error('Error loading client data:', error);
+        // Set minimal valid data structure so UI doesn't crash
+        setClientData({
+          clientId: selectedClientId,
+          clientName: selectedClientId,
+          notifications: [],
+          caseNotes: [],
+          decisions: [],
+          ptaRecords: [],
+          servicePlans: [],
+          timeline: [],
+        });
         setIsLoading(false);
       }
     };
 
-    // Auto-load client data on mount
+    // Auto-load available clients on mount
     useEffect(() => {
-      loadClientData();
-    }, []); // Only run once on mount - single client demo
+      loadAvailableClients();
+    }, []);
+
+    // Load client data when selected client changes
+    useEffect(() => {
+      if (selectedClientId) {
+        loadClientData();
+      }
+    }, [selectedClientId]);
 
     // Show loading state
     if (isLoading) {
@@ -191,6 +251,11 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
         mainContent={
           <ContentArea
             clientName={clientData?.clientName}
+            selectedClientId={selectedClientId}
+            onClientChange={setSelectedClientId}
+            onClientCreated={loadAvailableClients}
+            availableClients={availableClients}
+            isLoadingClients={isLoadingClients}
             clientSummary={clientSummary}
           >
             {/* Lastensuojeluilmoitukset + Asiakaskirjaukset (side by side) */}
@@ -202,7 +267,11 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
             {/* Päätökset + Yhteystiedot (side by side) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Decisions decisions={clientData.decisions} />
-              <ContactInfo contactInfo={clientData.contactInfo} />
+              <ContactInfo
+                contactInfo={clientData.contactInfo}
+                clientId={selectedClientId}
+                onUpdate={loadClientData}
+              />
             </div>
 
             {/* PTA + Asiakassuunnitelmat (side by side) */}

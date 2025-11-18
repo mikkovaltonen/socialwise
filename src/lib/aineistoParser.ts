@@ -2,7 +2,7 @@
  * Runtime Aineisto Parser
  *
  * Dynaamisesti lukee ja parsii markdown-tiedostot Firebase Storage -palvelusta.
- * Korvaa staattisen build-time parserin (process-ls-data.ts) runtime-toiminnallisuudella.
+ * Uusi rakenne: {clientId}/{category}/{filename}.md
  */
 
 import type {
@@ -19,21 +19,16 @@ import { getSummaryPromptForGeneration } from './summaryPromptService';
 import { getIlmoitusSummaryPromptForGeneration } from './ilmoitusSummaryService';
 import { getPTALLMModel, getSummaryTemperature } from './systemPromptService';
 import { getClientOrganization } from './organizationService';
+import { getClientBasicInfo } from './clientService';
+import { logger } from './logger';
+import { buildStoragePath, STORAGE_CONFIG } from '@/config/storage';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const AINEISTO_BASE_PATH = '/Aineisto';
-
-export const AINEISTO_CATEGORIES = {
-  LS_ILMOITUKSET: 'LS-ilmoitukset',
-  ASIAKASKIRJAUKSET: 'Asiakaskirjaukset',
-  PAATOKSET: 'Päätökset',
-  YHTEYSTIEDOT: 'Yhteystiedot',
-  PTA: 'PTA',
-  ASIAKASSUUNNITELMAT: 'Asiakassuunnitelmat'
-} as const;
+// Re-export categories from config
+export const AINEISTO_CATEGORIES = STORAGE_CONFIG.categories;
 
 // ============================================================================
 // Helper Functions
@@ -52,7 +47,7 @@ async function fetchMarkdownFiles(category: string): Promise<string[]> {
     const response = await fetch(`${path}/`);
 
     if (!response.ok) {
-      console.warn(`Cannot list files in ${path}`);
+      logger.warn(`Cannot list files in ${path}`);
       return [];
     }
 
@@ -63,21 +58,29 @@ async function fetchMarkdownFiles(category: string): Promise<string[]> {
 
     return [];
   } catch (error) {
-    console.error(`Error fetching files from ${category}:`, error);
+    logger.error(`Error fetching files from ${category}:`, error);
     return [];
   }
 }
 
 /**
  * Hakee yksittäisen markdown-tiedoston Firebase Storage -palvelusta
+ *
+ * @param clientId - Asiakkaan tunniste
+ * @param category - Kategoria
+ * @param filename - Tiedostonimi
  */
-async function fetchMarkdownFile(category: string, filename: string): Promise<string | null> {
-  const path = `${category}/${filename}`;
+async function fetchMarkdownFile(
+  clientId: string,
+  category: string,
+  filename: string
+): Promise<string | null> {
+  const path = buildStoragePath(clientId, category, filename);
 
   try {
     return await StorageService.fetchMarkdownFile(path);
   } catch (error) {
-    console.error(`Error fetching file ${path}:`, error);
+    logger.error(`Error fetching file ${path}:`, error);
     return null;
   }
 }
@@ -421,49 +424,65 @@ function parseServicePlan(filename: string, markdown: string): ServicePlan {
 
 /**
  * Lataa ja parsii LS-ilmoitukset
+ *
+ * HUOM: Tämä on siirtymävaiheen toteutus. Tuotannossa tulisi käyttää
+ * Firestore-manifestia tai backend-endpointtia tiedostojen listaamiseen.
+ *
+ * @param clientId - Asiakkaan tunniste
+ * @param knownFilenames - Lista tiedostonimistä (valinnainen)
  */
-export async function loadLSNotifications(): Promise<LSNotification[]> {
-  const category = AINEISTO_CATEGORIES.LS_ILMOITUKSET;
+export async function loadLSNotifications(
+  clientId: string,
+  knownFilenames?: string[]
+): Promise<LSNotification[]> {
+  try {
+    // Jos tiedostonimiä ei anneta, palautetaan tyhjä lista
+    // (Ei kovakoodattuja oletustiedostoja)
+    if (!knownFilenames || knownFilenames.length === 0) {
+      return [];
+    }
 
-  // Tunnetut tiedostot (kovakoodattu - tuotannossa käytettäisiin manifestia tai backend-endpointtia)
-  const knownFiles = [
-    'Lapsi_1_2016_08_03_Lastensuojeluilmoitus.md',
-    'Lapsi_1_2017_11_16_Lastensuojeluilmoitus.md',
-    'Lapsi_1_2018_04_26_Lastensuojeluilmoitus.md'
-  ];
+    const category = AINEISTO_CATEGORIES.LS_ILMOITUKSET;
+    const notifications: LSNotification[] = [];
 
-  const notifications: LSNotification[] = [];
-
-  for (const filename of knownFiles) {
-    const markdown = await fetchMarkdownFile(category, filename);
-    if (markdown) {
+    for (const filename of knownFilenames) {
       try {
-        const notification = parseLSNotification(filename, markdown);
-        notifications.push(notification);
+        const markdown = await fetchMarkdownFile(clientId, category, filename);
+        if (markdown) {
+          const notification = parseLSNotification(filename, markdown);
+          notifications.push(notification);
+        }
       } catch (error) {
-        console.error(`Error parsing ${filename}:`, error);
+        logger.debug(`Could not load notification file ${filename} for client ${clientId}`);
+        // Continue with other files even if one fails
       }
     }
-  }
 
-  return notifications.sort((a, b) => b.date.localeCompare(a.date));
+    return notifications.sort((a, b) => b.date.localeCompare(a.date));
+  } catch (error) {
+    logger.error('Error loading LS notifications:', error);
+    return []; // Return empty array instead of crashing
+  }
 }
 
 /**
  * Generoi asiakaskirjaukset yhteenvetona kaikista dokumenteista
  * Asiakaskirjaukset eivät ole enää erillinen lähdekansio, vaan automaattisesti
  * generoitu lista kaikista tapahtumista (LS-ilmoitukset, päätökset, PTA, suunnitelmat)
+ *
+ * @param clientId - Asiakkaan tunniste
  */
-export async function loadCaseNotes(): Promise<CaseNote[]> {
-  const caseNotes: CaseNote[] = [];
+export async function loadCaseNotes(clientId: string): Promise<CaseNote[]> {
+  try {
+    const caseNotes: CaseNote[] = [];
 
-  // Lataa kaikki dokumenttityypit
-  const [notifications, decisions, ptaRecords, servicePlans] = await Promise.all([
-    loadLSNotifications(),
-    loadDecisions(),
-    loadPTARecords(),
-    loadServicePlans()
-  ]);
+    // Lataa kaikki dokumenttityypit - varmista että aina saadaan arrayt
+    const [notifications, decisions, ptaRecords, servicePlans] = await Promise.all([
+      loadLSNotifications(clientId).catch(() => []),
+      loadDecisions(clientId).catch(() => []),
+      loadPTARecords(clientId).catch(() => []),
+      loadServicePlans(clientId).catch(() => [])
+    ]);
 
   // Luo kirjaus jokaisesta LS-ilmoituksesta
   notifications.forEach(notification => {
@@ -559,34 +578,50 @@ export async function loadCaseNotes(): Promise<CaseNote[]> {
 
   // Järjestä aikajärjestykseen (uusimmat ensin)
   return caseNotes.sort((a, b) => b.date.localeCompare(a.date));
+  } catch (error) {
+    logger.error('Error loading case notes:', error);
+    return []; // Return empty array instead of crashing
+  }
 }
 
 /**
  * Lataa ja parsii päätökset
+ *
+ * @param clientId - Asiakkaan tunniste
+ * @param knownFilenames - Lista tiedostonimistä (valinnainen)
  */
-export async function loadDecisions(): Promise<Decision[]> {
-  const category = AINEISTO_CATEGORIES.PAATOKSET;
+export async function loadDecisions(
+  clientId: string,
+  knownFilenames?: string[]
+): Promise<Decision[]> {
+  try {
+    // Jos tiedostonimiä ei anneta, palautetaan tyhjä lista
+    // (Ei kovakoodattuja oletustiedostoja)
+    if (!knownFilenames || knownFilenames.length === 0) {
+      return [];
+    }
 
-  // Tunnetut tiedostot (kovakoodattu - Vercel-yhteensopiva)
-  const knownFiles = [
-    'Lapsi_1_2025_03_22_päätös.md'
-  ];
+    const category = AINEISTO_CATEGORIES.PAATOKSET;
+    const decisions: Decision[] = [];
 
-  const decisions: Decision[] = [];
-
-  for (const filename of knownFiles) {
-    const markdown = await fetchMarkdownFile(category, filename);
-    if (markdown) {
+    for (const filename of knownFilenames) {
       try {
-        const decision = parseDecision(filename, markdown);
-        decisions.push(decision);
+        const markdown = await fetchMarkdownFile(clientId, category, filename);
+        if (markdown) {
+          const decision = parseDecision(filename, markdown);
+          decisions.push(decision);
+        }
       } catch (error) {
-        console.error(`Error parsing decision ${filename}:`, error);
+        logger.debug(`Could not load decision file ${filename} for client ${clientId}`);
+        // Continue with other files
       }
     }
-  }
 
-  return decisions.sort((a, b) => b.date.localeCompare(a.date));
+    return decisions.sort((a, b) => b.date.localeCompare(a.date));
+  } catch (error) {
+    logger.error('Error loading decisions:', error);
+    return []; // Return empty array instead of crashing
+  }
 }
 
 /**
@@ -664,19 +699,19 @@ async function generateSummaryWithLLM(markdown: string): Promise<string> {
       // Käsittele 429 Too Many Requests virhe
       if (response.status === 429) {
         const retryDelay = BASE_DELAY * Math.pow(2, attempt); // Exponential backoff: 2s, 4s, 8s
-        console.warn(`⏳ Rate limited (429). Retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+        logger.warn(`Rate limited (429). Retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${MAX_RETRIES})`);
 
         if (attempt < MAX_RETRIES - 1) {
           await delay(retryDelay);
           continue; // Yritä uudelleen
         } else {
-          console.error('❌ Rate limit exceeded after max retries');
+          logger.error('Rate limit exceeded after max retries');
           return 'Palveluntarpeen arviointi (rate limit)';
         }
       }
 
       if (!response.ok) {
-        console.error('LLM API error:', response.status, response.statusText);
+        logger.error('LLM API error:', response.status, response.statusText);
 
         // Jos tämä on viimeinen yritys, palauta fallback
         if (attempt === MAX_RETRIES - 1) {
@@ -693,7 +728,7 @@ async function generateSummaryWithLLM(markdown: string): Promise<string> {
 
       return summary;
     } catch (error) {
-      console.error(`Error generating summary with LLM (attempt ${attempt + 1}/${MAX_RETRIES}):`, error);
+      logger.error(`Error generating summary with LLM (attempt ${attempt + 1}/${MAX_RETRIES}):`, error);
 
       // Jos tämä on viimeinen yritys, palauta fallback
       if (attempt === MAX_RETRIES - 1) {
@@ -757,19 +792,19 @@ async function generateIlmoitusSummaryWithLLM(markdown: string): Promise<string>
       // Käsittele 429 Too Many Requests virhe
       if (response.status === 429) {
         const retryDelay = BASE_DELAY * Math.pow(2, attempt); // Exponential backoff: 2s, 4s, 8s
-        console.warn(`⏳ Rate limited (429). Retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+        logger.warn(`Rate limited (429). Retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${MAX_RETRIES})`);
 
         if (attempt < MAX_RETRIES - 1) {
           await delay(retryDelay);
           continue; // Yritä uudelleen
         } else {
-          console.error('❌ Rate limit exceeded after max retries');
+          logger.error('Rate limit exceeded after max retries');
           return 'Rate limit ylitetty';
         }
       }
 
       if (!response.ok) {
-        console.error('LLM API error:', response.status, response.statusText);
+        logger.error('LLM API error:', response.status, response.statusText);
 
         // Jos tämä on viimeinen yritys, palauta fallback
         if (attempt === MAX_RETRIES - 1) {
@@ -797,7 +832,7 @@ async function generateIlmoitusSummaryWithLLM(markdown: string): Promise<string>
       }
 
     } catch (error) {
-      console.error(`Error generating ilmoitus summary with LLM (attempt ${attempt + 1}/${MAX_RETRIES}):`, error);
+      logger.error(`Error generating ilmoitus summary with LLM (attempt ${attempt + 1}/${MAX_RETRIES}):`, error);
 
       // Jos tämä on viimeinen yritys, palauta fallback
       if (attempt === MAX_RETRIES - 1) {
@@ -813,32 +848,44 @@ async function generateIlmoitusSummaryWithLLM(markdown: string): Promise<string>
 /**
  * Lataa ja parsii Palveluntarvearviointi-kirjaukset Firebase Storagesta
  * NOPEA: Palauttaa recordit ILMAN LLM-yhteenvetoja (placeholder summarylla)
+ *
+ * @param clientId - Asiakkaan tunniste
+ * @param knownFilenames - Lista tiedostonimistä (valinnainen)
  */
-export async function loadPTARecords(): Promise<PTARecord[]> {
-  const category = AINEISTO_CATEGORIES.PTA;
+export async function loadPTARecords(
+  clientId: string,
+  knownFilenames?: string[]
+): Promise<PTARecord[]> {
+  try {
+    // Jos tiedostonimiä ei anneta, palautetaan tyhjä lista
+    // (Ei kovakoodattuja oletustiedostoja)
+    if (!knownFilenames || knownFilenames.length === 0) {
+      return [];
+    }
 
-  // Tunnetut tiedostot Firebase Storagessa
-  const knownFiles = [
-    'PTA_malliasiakas.md'
-  ];
+    const category = AINEISTO_CATEGORIES.PTA;
+    const records: PTARecord[] = [];
 
-  const records: PTARecord[] = [];
-
-  for (const filename of knownFiles) {
-    const markdown = await fetchMarkdownFile(category, filename);
-    if (markdown) {
+    for (const filename of knownFilenames) {
       try {
-        const record = parsePTARecord(filename, markdown);
-        // Ei generoi yhteenvetoa tässä - palauttaa placeholder
-        record.summary = 'Ladataan yhteenvetoa...';
-        records.push(record);
+        const markdown = await fetchMarkdownFile(clientId, category, filename);
+        if (markdown) {
+          const record = parsePTARecord(filename, markdown);
+          // Ei generoi yhteenvetoa tässä - palauttaa placeholder
+          record.summary = 'Ladataan yhteenvetoa...';
+          records.push(record);
+        }
       } catch (error) {
-        console.error(`Error parsing PTA ${filename}:`, error);
+        logger.debug(`Could not load PTA file ${filename} for client ${clientId}`);
+        // Continue with other files
       }
     }
-  }
 
-  return records.sort((a, b) => b.date.localeCompare(a.date));
+    return records.sort((a, b) => b.date.localeCompare(a.date));
+  } catch (error) {
+    logger.error('Error loading PTA records:', error);
+    return []; // Return empty array instead of crashing
+  }
 }
 
 /**
@@ -868,11 +915,11 @@ export async function generatePTASummaries(records: PTARecord[]): Promise<PTARec
         // Generoi yhteenveto LLM:llä
         record.summary = await generateSummaryWithLLM(record.fullText);
       } else {
-        console.warn(`No fullText found for record ${record.id}`);
+        logger.warn(`No fullText found for record ${record.id}`);
         record.summary = 'Ei sisältöä yhteenvedon generointiin';
       }
     } catch (error) {
-      console.error(`Error generating summary for ${record.id}:`, error);
+      logger.error(`Error generating summary for ${record.id}:`, error);
       record.summary = 'Yhteenvedon generointi epäonnistui';
     }
 
@@ -881,7 +928,6 @@ export async function generatePTASummaries(records: PTARecord[]): Promise<PTARec
     // Lisää 3.5 sekunnin viive ennen seuraavaa kutsua (paitsi viimeisen jälkeen)
     // Kasvatettu 1.5s → 3.5s rate limiting -ongelmien välttämiseksi
     if (i < records.length - 1) {
-      console.log(`⏳ Odotetaan 3.5s ennen seuraavaa PTA-yhteenvetoa (${i + 2}/${records.length})...`);
       await delay(3500);
     }
   }
@@ -920,11 +966,11 @@ export async function generateIlmoitusSummaries(notifications: LSNotification[])
           notification.urgency = 'normaali';
         }
       } else {
-        console.warn(`No fullText found for notification ${notification.id}`);
+        logger.warn(`No fullText found for notification ${notification.id}`);
         notification.summary = 'Ei sisältöä yhteenvedon generointiin';
       }
     } catch (error) {
-      console.error(`Error generating summary for ${notification.id}:`, error);
+      logger.error(`Error generating summary for ${notification.id}:`, error);
       notification.summary = 'Yhteenvedon generointi epäonnistui';
     }
 
@@ -932,7 +978,6 @@ export async function generateIlmoitusSummaries(notifications: LSNotification[])
 
     // Lisää 3.5 sekunnin viive ennen seuraavaa kutsua (paitsi viimeisen jälkeen)
     if (i < notifications.length - 1) {
-      console.log(`⏳ Odotetaan 3.5s ennen seuraavaa ilmoitus-yhteenvetoa (${i + 2}/${notifications.length})...`);
       await delay(3500);
     }
   }
@@ -942,9 +987,15 @@ export async function generateIlmoitusSummaries(notifications: LSNotification[])
 
 /**
  * Lataa ja parsii asiakassuunnitelmat
+ *
+ * @param clientId - Asiakkaan tunniste
+ * @param knownFilenames - Lista tiedostonimistä (valinnainen)
  */
-export async function loadServicePlans(): Promise<ServicePlan[]> {
-  // Tyhjä kansio - palauttaa tyhjä array
+export async function loadServicePlans(
+  clientId: string,
+  knownFilenames?: string[]
+): Promise<ServicePlan[]> {
+  // Placeholder - ei vielä toteutettu
   return [];
 }
 
@@ -1061,46 +1112,109 @@ function parseContactInfo(markdown: string): ContactInfo {
 }
 
 /**
- * Lataa yhteystiedot tiedostosta (client-specific)
+ * Lataa yhteystiedot ASIAKAS_PERUSTIEDOT-kokoelmasta Firestoresta
+ *
+ * HUOM: Yhteystiedot eivät ole enää markdown-tiedostoja Storage:ssa,
+ * vaan Firestore-dokumentteja parempaa haettavuutta varten.
+ *
+ * @param clientId - Asiakkaan tunniste
  */
-export async function loadContactInfo(clientId: string = 'lapsi-1'): Promise<ContactInfo | null> {
-  const category = AINEISTO_CATEGORIES.YHTEYSTIEDOT;
-
-  // Muunna client ID tiedostonimeksi (esim. "lapsi-1" -> "Lapsi_1_yhteystiedot.md")
-  const fileId = clientId.replace('lapsi-', 'Lapsi_');
-  const filename = `${fileId}_yhteystiedot.md`;
-
-  const markdown = await fetchMarkdownFile(category, filename);
-  if (!markdown) {
-    console.warn(`Contact info file not found: ${filename}`);
-    return null;
-  }
-
+async function loadContactInfo(clientId: string): Promise<ContactInfo | null> {
   try {
-    return parseContactInfo(markdown);
+    const basicInfo = await getClientBasicInfo(clientId);
+
+    if (!basicInfo) {
+      // getClientBasicInfo already logs debug message
+      return null;
+    }
+
+    // Muunna ClientBasicInfo -> ContactInfo
+    // Huoltajat: Etsi äiti ja isä guardians-arraystä
+    const mother = basicInfo.guardians?.find(g => g.rooli === 'äiti');
+    const father = basicInfo.guardians?.find(g => g.rooli === 'isä');
+
+    // Ammattilaiset: Muunna professionals-array objektiksi
+    const professionals: ContactInfo['professionals'] = {};
+    basicInfo.professionals?.forEach(prof => {
+      const role = prof.rooli.toLowerCase();
+      if (role.includes('sosiaali') && role.includes('työntekijä')) {
+        professionals.socialWorker = {
+          name: prof.nimi,
+          phone: prof.puhelin,
+          email: prof.sahkoposti,
+        };
+      } else if (role.includes('ohjaaja')) {
+        professionals.socialGuide = {
+          name: prof.nimi,
+          phone: prof.puhelin,
+          email: prof.sahkoposti,
+        };
+      } else if (role.includes('esimies')) {
+        // Tallenna esimiehen tiedot myös, jos tarvitaan myöhemmin
+        if (!professionals.supervisor) {
+          professionals.supervisor = {
+            name: prof.nimi,
+            phone: prof.puhelin,
+            email: prof.sahkoposti,
+          };
+        }
+      }
+    });
+
+    const contactInfo: ContactInfo = {
+      child: {
+        name: basicInfo.child?.nimi || '',
+        socialSecurityNumber: undefined,
+        address: undefined,
+        school: basicInfo.child?.koulu,
+        phone: basicInfo.child?.puhelin,
+        schoolPhone: basicInfo.child?.koulunPuhelin,
+      },
+      guardians: {
+        mother: mother ? {
+          name: mother.nimi,
+          socialSecurityNumber: undefined,
+          address: mother.osoite,
+          phone: mother.puhelin,
+          email: mother.sahkoposti,
+        } : undefined,
+        father: father ? {
+          name: father.nimi,
+          socialSecurityNumber: undefined,
+          address: father.osoite,
+          phone: father.puhelin,
+          email: father.sahkoposti,
+        } : undefined,
+      },
+      reporters: [], // Ei saatavilla ClientBasicInfo:ssa
+      professionals,
+    };
+
+    return contactInfo;
   } catch (error) {
-    console.error('Error parsing contact info:', error);
+    logger.error(`Error loading contact info for ${clientId}:`, error);
     return null;
   }
 }
 
 /**
  * Lataa kaikki asiakastiedot
+ *
+ * ROBUSTNESS: Palauttaa aina validin LSClientData-objektin,
+ * vaikka kaikki kentät olisivat tyhjiä. EI KOSKAAN null.
+ *
+ * @param clientId - Asiakkaan tunniste (pakollinen)
  */
-export async function loadClientData(clientId: string = 'lapsi-1'): Promise<LSClientData | null> {
+export async function loadClientData(clientId: string): Promise<LSClientData> {
   try {
     const [notifications, caseNotes, decisions, ptaRecords, servicePlans, contactInfo] = await Promise.all([
-      loadLSNotifications(),
-      loadCaseNotes(),
-      loadDecisions(),
-      loadPTARecords(),
-      loadServicePlans(),
-      loadContactInfo()
+      loadLSNotifications(clientId).catch(() => []),
+      loadCaseNotes(clientId).catch(() => []),
+      loadDecisions(clientId).catch(() => []),
+      loadPTARecords(clientId).catch(() => []),
+      loadServicePlans(clientId).catch(() => []),
+      loadContactInfo(clientId).catch(() => null)
     ]);
-
-    if (notifications.length === 0 && !contactInfo) {
-      return null;
-    }
 
     // Luo aikajana kaikista tapahtumista
     const timeline = [
@@ -1146,20 +1260,17 @@ export async function loadClientData(clientId: string = 'lapsi-1'): Promise<LSCl
       }))
     ].sort((a, b) => b.date.localeCompare(a.date));
 
-    // Load organization data
-    const organization = await getClientOrganization(clientId) || {
-      clientId,
-      clientName: `Asiakas ${clientId}`,
-      roles: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    // Get client name from contactInfo (child.name from ASIAKAS_PERUSTIEDOT)
+    const clientName = contactInfo?.child?.name || `Asiakas ${clientId}`;
+
+    // Load organization data (optional)
+    const organization = await getClientOrganization(clientId).catch(() => null);
 
     return {
       clientId,
-      clientName: organization.clientName,
-      socialSecurityNumber: organization.socialSecurityNumber,
-      organization,
+      clientName,
+      socialSecurityNumber: organization?.socialSecurityNumber,
+      organization: organization || undefined,
       mainProblem: {
         category: 'Lapsen hyvinvointi',
         subcategories: ['Hoivan laiminlyönti', 'Turvattomuus'],
@@ -1175,43 +1286,67 @@ export async function loadClientData(clientId: string = 'lapsi-1'): Promise<LSCl
       timeline
     };
   } catch (error) {
-    console.error('Error loading client data:', error);
-    return null;
+    logger.error('Error loading client data:', error);
+    // Return minimal valid data structure so UI doesn't crash
+    return {
+      clientId,
+      clientName: `Asiakas ${clientId}`,
+      mainProblem: {
+        category: 'Ei tietoja',
+        subcategories: [],
+        description: '',
+        severity: 'medium'
+      },
+      notifications: [],
+      caseNotes: [],
+      decisions: [],
+      ptaRecords: [],
+      servicePlans: [],
+      timeline: []
+    };
   }
 }
 
 /**
  * Tarkistaa onko kategoriassa sisältöä
  */
-export async function hasCategoryContent(category: keyof typeof AINEISTO_CATEGORIES): Promise<boolean> {
-  switch (category) {
-    case 'LS_ILMOITUKSET':
-      const notifications = await loadLSNotifications();
-      return notifications.length > 0;
-    case 'ASIAKASKIRJAUKSET':
-      // Asiakaskirjaukset generoidaan muista dokumenteista, joten tarkistetaan
-      // onko mitään dokumentteja olemassa
-      const [notifs, decs, ptas, plans] = await Promise.all([
-        loadLSNotifications(),
-        loadDecisions(),
-        loadPTARecords(),
-        loadServicePlans()
-      ]);
-      return notifs.length > 0 || decs.length > 0 || ptas.length > 0 || plans.length > 0;
-    case 'PAATOKSET':
-      const decisions = await loadDecisions();
-      return decisions.length > 0;
-    case 'PTA':
-      const ptaRecords = await loadPTARecords();
-      return ptaRecords.length > 0;
-    case 'ASIAKASSUUNNITELMAT':
-      const servicePlans = await loadServicePlans();
-      return servicePlans.length > 0;
-    case 'YHTEYSTIEDOT':
-      // Yhteystiedot ladataan tiedostosta
-      const contactInfo = await loadContactInfo();
-      return contactInfo !== null;
-    default:
-      return false;
+export async function hasCategoryContent(
+  clientId: string,
+  category: keyof typeof AINEISTO_CATEGORIES
+): Promise<boolean> {
+  try {
+    switch (category) {
+      case 'LS_ILMOITUKSET':
+        const notifications = await loadLSNotifications(clientId);
+        return notifications.length > 0;
+      case 'ASIAKASKIRJAUKSET':
+        // Asiakaskirjaukset generoidaan muista dokumenteista, joten tarkistetaan
+        // onko mitään dokumentteja olemassa
+        const [notifs, decs, ptas, plans] = await Promise.all([
+          loadLSNotifications(clientId).catch(() => []),
+          loadDecisions(clientId).catch(() => []),
+          loadPTARecords(clientId).catch(() => []),
+          loadServicePlans(clientId).catch(() => [])
+        ]);
+        return notifs.length > 0 || decs.length > 0 || ptas.length > 0 || plans.length > 0;
+      case 'PAATOKSET':
+        const decisions = await loadDecisions(clientId);
+        return decisions.length > 0;
+      case 'PTA':
+        const ptaRecords = await loadPTARecords(clientId);
+        return ptaRecords.length > 0;
+      case 'ASIAKASSUUNNITELMAT':
+        const servicePlans = await loadServicePlans(clientId);
+        return servicePlans.length > 0;
+      case 'YHTEYSTIEDOT':
+        // Yhteystiedot ladataan Firestoresta
+        const contactInfo = await loadContactInfo(clientId);
+        return contactInfo !== null;
+      default:
+        return false;
+    }
+  } catch (error) {
+    logger.error(`Error checking category content for ${category}:`, error);
+    return false;
   }
 }

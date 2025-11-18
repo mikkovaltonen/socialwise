@@ -128,33 +128,41 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions }) => {
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[220px] pr-4">
-            <div className="space-y-2">
-              {sortedDecisions.map((decision, index) => {
-                const typeLabel = decisionTypeLabels[decision.decisionType];
-                const typeColor = decisionTypeColors[decision.decisionType];
+            {sortedDecisions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                <Scale className="h-12 w-12 text-gray-300 mb-3" />
+                <p className="text-sm text-gray-500 mb-2">Ei päätöksiä</p>
+                <p className="text-xs text-gray-400">Lisää uusi päätös yllä olevasta painikkeesta</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {sortedDecisions.map((decision, index) => {
+                  const typeLabel = decisionTypeLabels[decision.decisionType];
+                  const typeColor = decisionTypeColors[decision.decisionType];
 
-                return (
-                  <div
-                    key={`${decision.id}-${index}`}
-                    className={`border rounded-lg p-3 cursor-pointer hover:shadow-md transition-all ${typeColor}`}
-                    onClick={() => setSelectedDecision(decision)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold">
-                          {formatDate(decision.date)}
-                        </span>
-                        <span className="text-sm">-</span>
-                        <span className="text-sm font-bold">
-                          {typeLabel}
-                        </span>
+                  return (
+                    <div
+                      key={`${decision.id}-${index}`}
+                      className={`border rounded-lg p-3 cursor-pointer hover:shadow-md transition-all ${typeColor}`}
+                      onClick={() => setSelectedDecision(decision)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold">
+                            {formatDate(decision.date)}
+                          </span>
+                          <span className="text-sm">-</span>
+                          <span className="text-sm font-bold">
+                            {typeLabel}
+                          </span>
+                        </div>
+                        <ChevronRight className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                       </div>
-                      <ChevronRight className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </ScrollArea>
         </CardContent>
       </Card>

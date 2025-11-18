@@ -8,10 +8,16 @@
 import React from 'react';
 import { PageHeader } from './PageHeader';
 import { ClientSummary } from '../Sidebar/ClientSummary';
+import type { ClientBasicInfo } from '@/types/client';
 
 interface ContentAreaProps {
   children: React.ReactNode;
   clientName?: string;
+  selectedClientId: string;
+  onClientChange: (clientId: string) => void;
+  onClientCreated?: () => void;
+  availableClients: ClientBasicInfo[];
+  isLoadingClients?: boolean;
   clientSummary?: {
     mainProblems: string;
     timePeriod: string;
@@ -23,13 +29,25 @@ interface ContentAreaProps {
 export const ContentArea: React.FC<ContentAreaProps> = ({
   children,
   clientName,
+  selectedClientId,
+  onClientChange,
+  onClientCreated,
+  availableClients,
+  isLoadingClients = false,
   clientSummary,
 }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-10 space-y-8">
         {/* Page Header */}
-        <PageHeader />
+        <PageHeader
+          clientName={clientName}
+          selectedClientId={selectedClientId}
+          onClientChange={onClientChange}
+          onClientCreated={onClientCreated}
+          availableClients={availableClients}
+          isLoadingClients={isLoadingClients}
+        />
 
         {/* Client Summary below header */}
         {clientName && clientSummary && (

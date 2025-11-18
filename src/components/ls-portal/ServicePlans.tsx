@@ -71,70 +71,78 @@ export const ServicePlans: React.FC<ServicePlansProps> = ({ servicePlans }) => {
         </CardHeader>
       <CardContent>
         <ScrollArea className="h-[280px] pr-4">
-          <div className="space-y-3">
-            {sortedPlans.map((plan) => {
-              const statusLabel = statusLabels[plan.status];
-              const statusIcon = statusIcons[plan.status];
-              const statusColor = statusColors[plan.status];
+          {sortedPlans.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+              <Calendar className="h-12 w-12 text-gray-300 mb-3" />
+              <p className="text-sm text-gray-500 mb-2">Ei asiakassuunnitelmia</p>
+              <p className="text-xs text-gray-400">Lisää uusi suunnitelma yllä olevasta painikkeesta</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sortedPlans.map((plan) => {
+                const statusLabel = statusLabels[plan.status];
+                const statusIcon = statusIcons[plan.status];
+                const statusColor = statusColors[plan.status];
 
-              return (
-                <div
-                  key={plan.id}
-                  className={`border rounded-lg p-3 ${statusColor}`}
-                >
-                  {/* Status Badge */}
-                  <div className="flex items-center gap-2 mb-2">
-                    {statusIcon}
-                    <span className="text-xs font-semibold text-gray-700">
-                      {statusLabel}
-                    </span>
-                  </div>
+                return (
+                  <div
+                    key={plan.id}
+                    className={`border rounded-lg p-3 ${statusColor}`}
+                  >
+                    {/* Status Badge */}
+                    <div className="flex items-center gap-2 mb-2">
+                      {statusIcon}
+                      <span className="text-xs font-semibold text-gray-700">
+                        {statusLabel}
+                      </span>
+                    </div>
 
-                  {/* Service Type */}
-                  <h4 className="font-semibold text-sm text-gray-800 mb-2">
-                    {plan.serviceType}
-                  </h4>
+                    {/* Service Type */}
+                    <h4 className="font-semibold text-sm text-gray-800 mb-2">
+                      {plan.serviceType}
+                    </h4>
 
-                  {/* Description */}
-                  <p className="text-sm text-gray-700 mb-2">{plan.description}</p>
+                    {/* Description */}
+                    <p className="text-sm text-gray-700 mb-2">{plan.description}</p>
 
-                  {/* Dates */}
-                  <div className="flex items-center gap-3 text-xs text-gray-600">
-                    <span>Alkanut: {formatDate(plan.startDate)}</span>
-                    {plan.endDate && (
-                      <span>Päättynyt: {formatDate(plan.endDate)}</span>
+                    {/* Dates */}
+                    <div className="flex items-center gap-3 text-xs text-gray-600">
+                      <span>Alkanut: {formatDate(plan.startDate)}</span>
+                      {plan.endDate && (
+                        <span>Päättynyt: {formatDate(plan.endDate)}</span>
+                      )}
+                    </div>
+
+                    {/* Goals */}
+                    {plan.goals && plan.goals.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-medium text-gray-700 mb-1">
+                          Tavoitteet:
+                        </p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          {plan.goals.map((goal, idx) => (
+                            <li key={idx} className="text-xs text-gray-600">
+                              {goal}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Outcomes */}
+                    {plan.outcomes && (
+                      <div className="mt-2">
+                        <p className="text-xs font-medium text-gray-700 mb-1">
+                          Tulokset:
+                        </p>
+                        <p className="text-xs text-gray-600">{plan.outcomes}</p>
+                      </div>
                     )}
                   </div>
-
-                  {/* Goals */}
-                  {plan.goals && plan.goals.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs font-medium text-gray-700 mb-1">
-                        Tavoitteet:
-                      </p>
-                      <ul className="list-disc list-inside space-y-0.5">
-                        {plan.goals.map((goal, idx) => (
-                          <li key={idx} className="text-xs text-gray-600">
-                            {goal}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Outcomes */}
-                  {plan.outcomes && (
-                    <div className="mt-2">
-                      <p className="text-xs font-medium text-gray-700 mb-1">
-                        Tulokset:
-                      </p>
-                      <p className="text-xs text-gray-600">{plan.outcomes}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </ScrollArea>
       </CardContent>
     </Card>

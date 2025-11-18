@@ -19,6 +19,7 @@ import { createDocument, generateFilename } from '@/lib/documentToolService';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import type { LSClientData } from '@/data/ls-types';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Types
@@ -123,7 +124,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
 
       // Prevent re-initialization if session already exists
       if (sessionContext) {
-        console.log('⏭️ Session already initialized, skipping re-initialization');
+        logger.debug('⏭️ Session already initialized, skipping re-initialization');
         return;
       }
 
@@ -137,13 +138,13 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
         setTemperature(userTemp);
 
         // Get user's name with fallbacks
-        console.log('👤 User object:', {
+        logger.debug('👤 User object:', {
           displayName: user.displayName,
           email: user.email,
           uid: user.uid
         });
         const userName = user.displayName || user.email?.split('@')[0] || 'Käyttäjä';
-        console.log('👤 Selected userName:', userName);
+        logger.debug('👤 Selected userName:', userName);
 
         // Initialize session with context
         const session = await sessionService.initializeChatSession(
@@ -164,9 +165,9 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
         };
 
         setMessages([greetingMessage]);
-        console.log('✅ Chat session initialized');
+        logger.debug('✅ Chat session initialized');
       } catch (error) {
-        console.error('❌ Failed to initialize session:', error);
+        logger.error('❌ Failed to initialize session:', error);
       } finally {
         setSessionInitializing(false);
       }
@@ -184,7 +185,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
             throw new Error('Käyttäjä ei ole kirjautunut');
           }
 
-          console.log('📄 Creating document:', args);
+          logger.debug('📄 Creating document:', args);
           toast.info('Luodaan dokumenttia...', { icon: <FileText className="h-4 w-4" /> });
 
           const result = await createDocument(
@@ -215,7 +216,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
         throw new Error(`Tuntematon työkalu: ${name}`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Tuntematon virhe';
-        console.error('❌ Tool execution error:', errorMsg);
+        logger.error('❌ Tool execution error:', errorMsg);
         toast.error('Dokumentin luonti epäonnistui', {
           description: errorMsg,
           duration: 5000,
@@ -248,7 +249,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
           content: trimmedInput,
         });
 
-        console.log('🔵 Sending to OpenRouter:', {
+        logger.debug('🔵 Sending to OpenRouter:', {
           model: llmModel,
           temperature: temperature,
           messageCount: apiMessages.length,
@@ -281,7 +282,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.error('❌ OpenRouter API error details:', {
+          logger.error('❌ OpenRouter API error details:', {
             status: response.status,
             statusText: response.statusText,
             error: errorData,
@@ -295,7 +296,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
 
         // Check if AI wants to call a tool
         if (responseMessage?.tool_calls && responseMessage.tool_calls.length > 0) {
-          console.log('🔧 AI requested tool calls:', responseMessage.tool_calls);
+          logger.debug('🔧 AI requested tool calls:', responseMessage.tool_calls);
           setToolExecuting(true);
 
           // Execute all tool calls
@@ -354,7 +355,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
           setMessages((prev) => [...prev, assistantMessage]);
         }
       } catch (error) {
-        console.error('❌ Error sending message:', error);
+        logger.error('❌ Error sending message:', error);
         const errorMessage: Message = {
           role: 'assistant',
           content: 'Pahoittelut, tapahtui virhe. Yritä uudelleen.',

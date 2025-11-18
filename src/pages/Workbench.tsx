@@ -25,17 +25,12 @@ const Workbench = () => {
   // Handle LS client data loading
   // When LSPortal loads client data, store it in state and pass to chat
   const handleClientLoad = React.useCallback(async (loadedClientData: LSClientData) => {
-    console.log('Client data loaded:', loadedClientData.clientName);
     setClientData(loadedClientData);
   }, []);
 
   const handleShowChat = () => {
-    console.log('🔵 SHOW CHAT CLICKED - Setting chatVisible to true');
     setChatVisible(true);
   };
-
-  // Debug logging
-  console.log('🔵 WORKBENCH RENDER: chatVisible =', chatVisible, ', chatFullscreen =', chatFullscreen);
 
   return (
     <div className="min-h-screen bg-[#1A2332]">
