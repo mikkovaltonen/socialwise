@@ -64,7 +64,7 @@ const SocialWorkChat = forwardRef<SocialWorkChatRef, SocialWorkChatProps>(
     const sessionService = new SessionService();
 
     // OpenRouter API configuration
-    const OPENROUTER_API_KEY = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
+    const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
     const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
     // OpenRouter function calling tools

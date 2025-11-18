@@ -7,12 +7,11 @@
  */
 
 import type { LSClientData } from '@/data/ls-types';
-import { getClientSummaryPromptForGeneration } from './clientSummaryPromptService';
+import * as AsiakasYhteenvetoService from './asiakasYhteenvetoService';
 import { loadAineistoContext } from './aineistoLoader';
-import { getSummaryLLMModel, getSummaryTemperature } from './systemPromptService';
 import { logger } from './logger';
 
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 interface ClientSummary {
@@ -36,9 +35,20 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
   const MAX_RETRIES = 3;
   const BASE_DELAY = 2000; // 2 seconds
 
-  // Use fixed model for summaries (not user-configurable)
-  const model = getSummaryLLMModel();
-  const temperature = getSummaryTemperature();
+  // Check API key
+  if (!OPENROUTER_API_KEY) {
+    logger.error('❌ VITE_OPENROUTER_API_KEY not configured in .env file');
+    return {
+      mainProblems: '',
+      timePeriod: '',
+      isLoading: false,
+      error: 'OpenRouter API-avain puuttuu. Tarkista .env -tiedosto.',
+    };
+  }
+
+  // Get global asiakas yhteenveto settings
+  const model = await AsiakasYhteenvetoService.getLLMModel();
+  const temperature = await AsiakasYhteenvetoService.getTemperature();
   logger.debug(`🎛️ Summary generation using model: ${model}, temperature: ${temperature}`);
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -54,7 +64,7 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
       const fullContext = `${aineistoContext.content}\n\n---\n\n${context}`;
 
       // Get latest CLIENT summary prompt from Firestore (or default)
-      const systemPrompt = await getClientSummaryPromptForGeneration();
+      const systemPrompt = await AsiakasYhteenvetoService.getPromptForGeneration();
 
       logger.debug(`🔄 Attempting to generate summary (attempt ${attempt + 1}/${MAX_RETRIES})...`);
 
@@ -83,6 +93,13 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
         }),
       });
 
+      // Handle authentication errors (don't retry)
+      if (response.status === 401) {
+        const errorText = await response.text();
+        logger.error('❌ OpenRouter authentication failed:', errorText);
+        throw new Error('OpenRouter API-avain on virheellinen tai vanhentunut. Tarkista .env -tiedosto.');
+      }
+
       // Handle rate limiting with retry
       if (response.status === 429) {
         const delay = BASE_DELAY * Math.pow(2, attempt); // Exponential backoff
@@ -97,7 +114,9 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
       }
 
       if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.statusText}`);
+        const errorText = await response.text();
+        logger.error(`❌ OpenRouter API error (${response.status}):`, errorText);
+        throw new Error(`OpenRouter API virhe: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -119,10 +138,22 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
         isLoading: false,
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      // Don't retry authentication errors
+      if (errorMessage.includes('API-avain')) {
+        logger.error('❌ Authentication error, stopping retries');
+        return {
+          mainProblems: '',
+          timePeriod: '',
+          isLoading: false,
+          error: errorMessage,
+        };
+      }
+
       // If this is the last attempt, return error state
       if (attempt === MAX_RETRIES - 1) {
         logger.error('❌ Error generating client summary after retries:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
         return {
           mainProblems: '',

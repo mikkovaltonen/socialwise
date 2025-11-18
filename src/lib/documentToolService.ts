@@ -9,8 +9,7 @@
  */
 
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
-import { storage, db } from './firebase';
+import { storage } from './firebase';
 import { buildStoragePath } from '@/config/storage';
 
 // Allowed document categories
@@ -67,22 +66,7 @@ export async function createDocument(
     // Get download URL
     const downloadURL = await getDownloadURL(storageRef);
 
-    // Save metadata to Firestore
-    const metadata: Omit<DocumentMetadata, 'id'> = {
-      category,
-      filename: sanitizedFilename,
-      clientId,
-      storagePath,
-      downloadURL,
-      aiGenerated: true,
-      createdBy: userId,
-      createdByEmail: userEmail || '',
-      createdAt: serverTimestamp(),
-      contentPreview: content.substring(0, 200),
-    };
-
-    const docRef = await addDoc(collection(db, 'dokumentit'), metadata);
-    console.log(`✅ Document created: ${storagePath} (Firestore ID: ${docRef.id})`);
+    console.log(`✅ Document created: ${storagePath}`);
 
     return {
       success: true,
