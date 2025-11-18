@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import PromptEditor from "../components/PromptEditor";
 import SystemPromptManager from "../components/SystemPromptManager";
-import ClientSummaryPromptManager from "../components/ClientSummaryPromptManager";
-import SummaryPromptManager from "../components/SummaryPromptManager";
-import IlmoitusPromptManager from "../components/IlmoitusPromptManager";
+import AsiakasYhteenvetoPromptManager from "../components/AsiakasYhteenvetoPromptManager";
+import PtaYhteenvetoPromptManager from "../components/PtaYhteenvetoPromptManager";
+import IlmoitusYhteenvetoPromptManager from "../components/IlmoitusYhteenvetoPromptManager";
 import OrganizationManager from "../components/OrganizationManager";
 import BotInstructionManager from "../components/BotInstructionManager";
 import UserRegistration from "@/components/UserRegistration";
@@ -178,7 +178,7 @@ const Admin = () => {
                       Hallitse asiakkaan pääongelmien ja aikavälin tiivistelmän luomisen järjestelmäpromptia. Yhteenveto käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
                     </DialogDescription>
                   </DialogHeader>
-                  <ClientSummaryPromptManager />
+                  <AsiakasYhteenvetoPromptManager />
                 </DialogContent>
               </Dialog>
             </CardContent>
@@ -268,7 +268,7 @@ const Admin = () => {
                       Hallitse Palveluntarpeen arvioinnin yhteenvetojen luomisen järjestelmäpromptia. Yhteenveto käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
                     </DialogDescription>
                   </DialogHeader>
-                  <SummaryPromptManager />
+                  <PtaYhteenvetoPromptManager />
                 </DialogContent>
               </Dialog>
             </CardContent>
@@ -311,7 +311,7 @@ const Admin = () => {
                       Hallitse lastensuojeluilmoitusten yhteenvetojen luomisen järjestelmäpromptia. Yhteenveto käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
                     </DialogDescription>
                   </DialogHeader>
-                  <IlmoitusPromptManager />
+                  <IlmoitusYhteenvetoPromptManager />
                 </DialogContent>
               </Dialog>
             </CardContent>

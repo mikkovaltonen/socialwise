@@ -77,7 +77,7 @@ Luo `.env` tiedosto projektin juureen ja määrittele seuraavat muuttujat:
 
 ```env
 # OpenRouter API LLM-malleille
-VITE_OPEN_ROUTER_API_KEY=your_openrouter_api_key
+VITE_OPENROUTER_API_KEY=your_openrouter_api_key
 
 # Firebase-konfiguraatio
 VITE_FIREBASE_API_KEY=your_firebase_api_key
@@ -180,7 +180,7 @@ npm run lint
 
 1. Rekisteröidy [OpenRouter](https://openrouter.ai/)
 2. Luo uusi API-avain
-3. Lisää se `.env`-tiedostoon muuttujana `VITE_OPEN_ROUTER_API_KEY`
+3. Lisää se `.env`-tiedostoon muuttujana `VITE_OPENROUTER_API_KEY`
 
 ### Uusien ominaisuuksien lisääminen
 

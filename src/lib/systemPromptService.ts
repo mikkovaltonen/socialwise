@@ -34,7 +34,7 @@ export interface SystemPrompt {
   description?: string;
 }
 
-const PROMPTS_COLLECTION = 'botin_ohjeet';
+const PROMPTS_COLLECTION = 'chatbot_prompt';
 const USER_PREFERENCES_COLLECTION = 'crm_user_preferences';
 
 /**

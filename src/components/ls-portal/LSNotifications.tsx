@@ -165,15 +165,6 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
             <span className="ml-auto text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
               {processedNotifications.length} kpl
             </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowEditor(true)}
-              className="ml-2"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Lisää uusi
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -182,7 +173,7 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
               <div className="flex flex-col items-center justify-center h-full text-center p-6">
                 <FileText className="h-12 w-12 text-gray-300 mb-3" />
                 <p className="text-sm text-gray-500 mb-2">Ei lastensuojeluilmoituksia</p>
-                <p className="text-xs text-gray-400">Lisää uusi ilmoitus yllä olevasta painikkeesta</p>
+                <p className="text-xs text-gray-400">Luo uusi ilmoitus "Luo uusi asiakirja" -painikkeesta</p>
               </div>
             ) : (
               <div className="space-y-3">

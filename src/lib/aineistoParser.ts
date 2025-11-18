@@ -15,9 +15,8 @@ import type {
   LSClientData
 } from '@/data/ls-types';
 import * as StorageService from './aineistoStorageService';
-import { getSummaryPromptForGeneration } from './summaryPromptService';
-import { getIlmoitusSummaryPromptForGeneration } from './ilmoitusSummaryService';
-import { getPTALLMModel, getSummaryTemperature } from './systemPromptService';
+import * as PtaYhteenvetoService from './ptaYhteenvetoService';
+import * as IlmoitusYhteenvetoService from './ilmoitusYhteenvetoService';
 import { getClientOrganization } from './organizationService';
 import { getClientBasicInfo } from './clientService';
 import { logger } from './logger';
@@ -425,27 +424,27 @@ function parseServicePlan(filename: string, markdown: string): ServicePlan {
 /**
  * Lataa ja parsii LS-ilmoitukset
  *
- * HUOM: Tämä on siirtymävaiheen toteutus. Tuotannossa tulisi käyttää
- * Firestore-manifestia tai backend-endpointtia tiedostojen listaamiseen.
+ * Hakee tiedostonimet automaattisesti Firebase Storagesta listDocuments() -funktiolla.
  *
  * @param clientId - Asiakkaan tunniste
- * @param knownFilenames - Lista tiedostonimistä (valinnainen)
  */
 export async function loadLSNotifications(
-  clientId: string,
-  knownFilenames?: string[]
+  clientId: string
 ): Promise<LSNotification[]> {
   try {
-    // Jos tiedostonimiä ei anneta, palautetaan tyhjä lista
-    // (Ei kovakoodattuja oletustiedostoja)
-    if (!knownFilenames || knownFilenames.length === 0) {
+    const category = AINEISTO_CATEGORIES.LS_ILMOITUKSET;
+
+    // Hae tiedostonimet automaattisesti Storage:sta
+    const filenames = await StorageService.listDocuments(clientId, category);
+
+    if (filenames.length === 0) {
+      logger.debug(`No LS notification files found for client ${clientId}`);
       return [];
     }
 
-    const category = AINEISTO_CATEGORIES.LS_ILMOITUKSET;
     const notifications: LSNotification[] = [];
 
-    for (const filename of knownFilenames) {
+    for (const filename of filenames) {
       try {
         const markdown = await fetchMarkdownFile(clientId, category, filename);
         if (markdown) {
@@ -587,24 +586,27 @@ export async function loadCaseNotes(clientId: string): Promise<CaseNote[]> {
 /**
  * Lataa ja parsii päätökset
  *
+ * Hakee tiedostonimet automaattisesti Firebase Storagesta listDocuments() -funktiolla.
+ *
  * @param clientId - Asiakkaan tunniste
- * @param knownFilenames - Lista tiedostonimistä (valinnainen)
  */
 export async function loadDecisions(
-  clientId: string,
-  knownFilenames?: string[]
+  clientId: string
 ): Promise<Decision[]> {
   try {
-    // Jos tiedostonimiä ei anneta, palautetaan tyhjä lista
-    // (Ei kovakoodattuja oletustiedostoja)
-    if (!knownFilenames || knownFilenames.length === 0) {
+    const category = AINEISTO_CATEGORIES.PAATOKSET;
+
+    // Hae tiedostonimet automaattisesti Storage:sta
+    const filenames = await StorageService.listDocuments(clientId, category);
+
+    if (filenames.length === 0) {
+      logger.debug(`No decision files found for client ${clientId}`);
       return [];
     }
 
-    const category = AINEISTO_CATEGORIES.PAATOKSET;
     const decisions: Decision[] = [];
 
-    for (const filename of knownFilenames) {
+    for (const filename of filenames) {
       try {
         const markdown = await fetchMarkdownFile(clientId, category, filename);
         if (markdown) {
@@ -663,14 +665,16 @@ async function generateSummaryWithLLM(markdown: string): Promise<string> {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       // Hae OpenRouter API key ympäristömuuttujasta
-      const apiKey = import.meta.env.VITE_OPEN_ROUTER_API_KEY;
+      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
 
       if (!apiKey) {
-        throw new Error('OpenRouter API key not found! Check .env file for VITE_OPEN_ROUTER_API_KEY');
+        throw new Error('OpenRouter API key not found! Check .env file for VITE_OPENROUTER_API_KEY');
       }
 
       // Hae summary prompt Firestoresta tai tiedostosta
-      const summaryPrompt = await getSummaryPromptForGeneration();
+      const summaryPrompt = await PtaYhteenvetoService.getPromptForGeneration();
+      const llmModel = await PtaYhteenvetoService.getLLMModel();
+      const llmTemperature = await PtaYhteenvetoService.getTemperature();
 
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -680,7 +684,7 @@ async function generateSummaryWithLLM(markdown: string): Promise<string> {
           'HTTP-Referer': window.location.origin || 'https://valmet-buyer.firebaseapp.com',
         },
         body: JSON.stringify({
-          model: getPTALLMModel(), // Kiinteä malli PTA-yhteenvetoihin (ei käyttäjäkohtainen)
+          model: llmModel, // Globaalit PTA-yhteenveto asetukset
           messages: [
             {
               role: 'system',
@@ -691,7 +695,7 @@ async function generateSummaryWithLLM(markdown: string): Promise<string> {
               content: `Dokumentti:\n${markdown.substring(0, 3000)}` // Rajoita 3000 merkkiin kustannusten säästämiseksi
             }
           ],
-          temperature: getSummaryTemperature(), // Matala lämpötila = tarkempi yhteenveto
+          temperature: llmTemperature, // Globaalit PTA-yhteenveto asetukset
           max_tokens: 100
         })
       });
@@ -756,14 +760,16 @@ async function generateIlmoitusSummaryWithLLM(markdown: string): Promise<string>
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       // Hae OpenRouter API key ympäristömuuttujasta
-      const apiKey = import.meta.env.VITE_OPEN_ROUTER_API_KEY;
+      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
 
       if (!apiKey) {
-        throw new Error('OpenRouter API key not found! Check .env file for VITE_OPEN_ROUTER_API_KEY');
+        throw new Error('OpenRouter API key not found! Check .env file for VITE_OPENROUTER_API_KEY');
       }
 
       // Hae ilmoitus summary prompt Firestoresta tai tiedostosta
-      const summaryPrompt = await getIlmoitusSummaryPromptForGeneration();
+      const summaryPrompt = await IlmoitusYhteenvetoService.getPromptForGeneration();
+      const llmModel = await IlmoitusYhteenvetoService.getLLMModel();
+      const llmTemperature = await IlmoitusYhteenvetoService.getTemperature();
 
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -773,7 +779,7 @@ async function generateIlmoitusSummaryWithLLM(markdown: string): Promise<string>
           'HTTP-Referer': window.location.origin || 'https://valmet-buyer.firebaseapp.com',
         },
         body: JSON.stringify({
-          model: getPTALLMModel(), // Käytä samaa mallia kuin PTA
+          model: llmModel, // Globaalit ilmoitus-yhteenveto asetukset
           messages: [
             {
               role: 'system',
@@ -784,7 +790,7 @@ async function generateIlmoitusSummaryWithLLM(markdown: string): Promise<string>
               content: `Ilmoitus:\n${markdown.substring(0, 3000)}` // Rajoita 3000 merkkiin kustannusten säästämiseksi
             }
           ],
-          temperature: getSummaryTemperature(), // Matala lämpötila = tarkempi yhteenveto
+          temperature: llmTemperature, // Globaalit ilmoitus-yhteenveto asetukset
           max_tokens: 100
         })
       });
@@ -849,24 +855,27 @@ async function generateIlmoitusSummaryWithLLM(markdown: string): Promise<string>
  * Lataa ja parsii Palveluntarvearviointi-kirjaukset Firebase Storagesta
  * NOPEA: Palauttaa recordit ILMAN LLM-yhteenvetoja (placeholder summarylla)
  *
+ * Hakee tiedostonimet automaattisesti Firebase Storagesta listDocuments() -funktiolla.
+ *
  * @param clientId - Asiakkaan tunniste
- * @param knownFilenames - Lista tiedostonimistä (valinnainen)
  */
 export async function loadPTARecords(
-  clientId: string,
-  knownFilenames?: string[]
+  clientId: string
 ): Promise<PTARecord[]> {
   try {
-    // Jos tiedostonimiä ei anneta, palautetaan tyhjä lista
-    // (Ei kovakoodattuja oletustiedostoja)
-    if (!knownFilenames || knownFilenames.length === 0) {
+    const category = AINEISTO_CATEGORIES.PTA;
+
+    // Hae tiedostonimet automaattisesti Storage:sta
+    const filenames = await StorageService.listDocuments(clientId, category);
+
+    if (filenames.length === 0) {
+      logger.debug(`No PTA files found for client ${clientId}`);
       return [];
     }
 
-    const category = AINEISTO_CATEGORIES.PTA;
     const records: PTARecord[] = [];
 
-    for (const filename of knownFilenames) {
+    for (const filename of filenames) {
       try {
         const markdown = await fetchMarkdownFile(clientId, category, filename);
         if (markdown) {
@@ -988,15 +997,44 @@ export async function generateIlmoitusSummaries(notifications: LSNotification[])
 /**
  * Lataa ja parsii asiakassuunnitelmat
  *
+ * Hakee tiedostonimet automaattisesti Firebase Storagesta listDocuments() -funktiolla.
+ *
  * @param clientId - Asiakkaan tunniste
- * @param knownFilenames - Lista tiedostonimistä (valinnainen)
  */
 export async function loadServicePlans(
-  clientId: string,
-  knownFilenames?: string[]
+  clientId: string
 ): Promise<ServicePlan[]> {
-  // Placeholder - ei vielä toteutettu
-  return [];
+  try {
+    const category = AINEISTO_CATEGORIES.ASIAKASSUUNNITELMAT;
+
+    // Hae tiedostonimet automaattisesti Storage:sta
+    const filenames = await StorageService.listDocuments(clientId, category);
+
+    if (filenames.length === 0) {
+      logger.debug(`No service plan files found for client ${clientId}`);
+      return [];
+    }
+
+    const plans: ServicePlan[] = [];
+
+    for (const filename of filenames) {
+      try {
+        const markdown = await fetchMarkdownFile(clientId, category, filename);
+        if (markdown) {
+          const plan = parseServicePlan(filename, markdown);
+          plans.push(plan);
+        }
+      } catch (error) {
+        logger.debug(`Could not load service plan file ${filename} for client ${clientId}`);
+        // Continue with other files
+      }
+    }
+
+    return plans.sort((a, b) => b.startDate.localeCompare(a.startDate));
+  } catch (error) {
+    logger.error('Error loading service plans:', error);
+    return []; // Return empty array instead of crashing
+  }
 }
 
 /**

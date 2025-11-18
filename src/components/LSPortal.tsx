@@ -26,6 +26,7 @@ import { Decisions } from './ls-portal/Decisions';
 import { ContactInfo } from './ls-portal/ContactInfo';
 import { PTA } from './ls-portal/PTA';
 import { ServicePlans } from './ls-portal/ServicePlans';
+import DocumentCreationDialog from './DocumentCreationDialog';
 
 // ============================================================================
 // Types
@@ -69,6 +70,9 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
 
     // Panel visibility state
     const [isLeftVisible, setIsLeftVisible] = useState(true);
+
+    // Document creation dialog state
+    const [isCreateDocumentDialogOpen, setIsCreateDocumentDialogOpen] = useState(false);
 
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
@@ -236,14 +240,16 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
     }
 
     return (
-      <LSPortalLayout
-        isLeftVisible={isLeftVisible}
-        onToggleLeft={() => setIsLeftVisible(!isLeftVisible)}
-        leftSidebar={
+      <>
+        <LSPortalLayout
+          isLeftVisible={isLeftVisible}
+          onToggleLeft={() => setIsLeftVisible(!isLeftVisible)}
+          leftSidebar={
           <LeftSidebar
             currentView={currentView}
             onNavigate={setCurrentView}
             onToggle={() => setIsLeftVisible(false)}
+            onCreateDocument={() => setIsCreateDocumentDialogOpen(true)}
             clientName={clientData?.clientName}
             clientSummary={clientSummary}
           />
@@ -281,7 +287,16 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
             </div>
           </ContentArea>
         }
-      />
+        />
+
+        {/* Document Creation Dialog */}
+        <DocumentCreationDialog
+          open={isCreateDocumentDialogOpen}
+          onClose={() => setIsCreateDocumentDialogOpen(false)}
+          clientId={selectedClientId}
+          onSaved={loadClientData}
+        />
+      </>
     );
   }
 );

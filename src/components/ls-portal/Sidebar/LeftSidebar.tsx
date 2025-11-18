@@ -16,6 +16,7 @@ interface LeftSidebarProps {
   currentView?: 'child-view' | 'all-children' | 'settings';
   onNavigate?: (view: 'child-view' | 'all-children' | 'settings') => void;
   onToggle?: () => void;
+  onCreateDocument?: () => void;
   clientName?: string;
   clientSummary?: {
     mainProblems: string;
@@ -29,6 +30,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   currentView = 'child-view',
   onNavigate,
   onToggle,
+  onCreateDocument,
   clientName,
   clientSummary,
 }) => {
@@ -75,7 +77,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
       {/* Navigation Menu */}
       <div className="flex-1 py-4">
-        <NavigationMenu currentView={currentView} onNavigate={onNavigate} />
+        <NavigationMenu
+          currentView={currentView}
+          onNavigate={onNavigate}
+          onCreateDocument={onCreateDocument}
+        />
       </div>
 
       {/* User Profile */}

@@ -5,17 +5,19 @@
  */
 
 import React from 'react';
-import { User, Users, Settings } from 'lucide-react';
+import { User, Users, Settings, FilePlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface NavigationMenuProps {
   currentView: 'child-view' | 'all-children' | 'settings';
   onNavigate?: (view: 'child-view' | 'all-children' | 'settings') => void;
+  onCreateDocument?: () => void;
 }
 
 export const NavigationMenu: React.FC<NavigationMenuProps> = ({
   currentView,
   onNavigate,
+  onCreateDocument,
 }) => {
   const navigate = useNavigate();
 
@@ -49,6 +51,7 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({
 
   return (
     <nav className="space-y-1 px-3">
+      {/* Navigation Menu Items */}
       {menuItems.map((item) => {
         const Icon = item.icon;
         const isActive = currentView === item.id && !item.isExternalLink;
@@ -72,6 +75,22 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({
           </button>
         );
       })}
+
+      {/* Create Document Action Button */}
+      {onCreateDocument && (
+        <div className="pt-4 mt-4 border-t border-white/10">
+          <button
+            onClick={onCreateDocument}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg
+                       bg-white/10 hover:bg-white/20 text-white
+                       transition-colors duration-200 text-left
+                       border border-white/20 hover:border-white/30"
+          >
+            <FilePlus className="w-5 h-5" />
+            <span className="text-sm font-medium">Luo uusi asiakirja</span>
+          </button>
+        </div>
+      )}
     </nav>
   );
 };

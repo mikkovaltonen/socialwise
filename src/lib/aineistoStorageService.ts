@@ -8,7 +8,7 @@
  * Vanha rakenne: Aineisto/{category}/{filename}.md (ei enää käytössä)
  */
 
-import { getStorage, ref, getBytes, getMetadata, uploadString, deleteObject } from 'firebase/storage';
+import { getStorage, ref, getBytes, getMetadata, uploadString, deleteObject, listAll } from 'firebase/storage';
 import { auth } from './firebase';
 import { logger } from './logger';
 import { buildStoragePath } from '@/config/storage';
@@ -179,6 +179,48 @@ export async function deleteMarkdownFile(path: string): Promise<boolean> {
       logger.error(`Error deleting file from Firebase Storage (${path}):`, error);
     }
     return false;
+  }
+}
+
+/**
+ * List all document filenames in a category for a client
+ * Uses Firebase Storage listAll() to fetch document list
+ * Requires user authentication
+ *
+ * @param clientId - Client ID (e.g., 'lapsi-1')
+ * @param category - Category (e.g., 'LS-ilmoitukset')
+ * @returns Array of filenames (e.g., ['2024_01_15_Lastensuojeluilmoitus.md'])
+ */
+export async function listDocuments(clientId: string, category: string): Promise<string[]> {
+  try {
+    // Ensure user is authenticated before accessing Storage
+    await ensureAuthenticated();
+
+    const storage = getStorage();
+    const categoryPath = `${clientId}/${category}`;
+    const categoryRef = ref(storage, categoryPath);
+
+    // List all files in the category folder
+    const result = await listAll(categoryRef);
+
+    // Extract filenames from full paths
+    const filenames = result.items.map(itemRef => {
+      // itemRef.name contains just the filename (e.g., '2024_01_15_Lastensuojeluilmoitus.md')
+      return itemRef.name;
+    });
+
+    logger.debug(`Found ${filenames.length} documents in ${categoryPath}`);
+    return filenames;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('not authenticated')) {
+      logger.error('Authentication required:', error.message);
+    } else if (error instanceof Error && error.message.includes('object-not-found')) {
+      // Category folder doesn't exist yet - this is normal for new clients
+      logger.debug(`Category folder not found: ${clientId}/${category}`);
+    } else {
+      logger.error(`Error listing documents in ${clientId}/${category}:`, error);
+    }
+    return [];
   }
 }
 

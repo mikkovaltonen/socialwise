@@ -40,6 +40,7 @@ interface MarkdownDocumentEditorProps {
   open: boolean;
   onClose: () => void;
   documentType: DocumentType;
+  clientId: string;
   existingContent?: string;
   existingFilename?: string;
   onSaved?: () => void;
@@ -165,7 +166,7 @@ Kuvaa tapaaminen tai tapahtuma...
 };
 
 // Generate filename based on document type and date
-function generateFilename(type: DocumentType, existingFilename?: string): string {
+function generateFilename(type: DocumentType, clientId: string, existingFilename?: string): string {
   if (existingFilename) {
     return existingFilename;
   }
@@ -186,9 +187,6 @@ function generateFilename(type: DocumentType, existingFilename?: string): string
   };
 
   const { folder, suffix } = typeMap[type];
-  // HUOM: Tämä vaatii clientId:n propsista tulevaisuudessa
-  // Tällä hetkellä käytetään oletusarvoa
-  const clientId = 'lapsi-1'; // TODO: Hae propsista
   return `${clientId}/${folder}/${dateStr}_${suffix}.md`;
 }
 
@@ -196,6 +194,7 @@ export default function MarkdownDocumentEditor({
   open,
   onClose,
   documentType,
+  clientId,
   existingContent,
   existingFilename,
   onSaved,
@@ -255,7 +254,7 @@ export default function MarkdownDocumentEditor({
     setError('');
 
     try {
-      const filename = generateFilename(documentType, existingFilename);
+      const filename = generateFilename(documentType, clientId, existingFilename);
       const success = await uploadMarkdownFile(filename, content);
 
       if (success) {
