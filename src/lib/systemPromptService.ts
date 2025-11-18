@@ -25,6 +25,9 @@ import { db } from './firebase';
 export interface SystemPrompt {
   id?: string;
   content: string;
+  llmModel: string;
+  temperature: number;
+  promptVersion: 'test' | 'production';
   createdAt: Timestamp;
   createdBy: string;
   createdByEmail?: string;
@@ -93,29 +96,26 @@ export async function getLatestSystemPrompt(): Promise<SystemPrompt | null> {
 }
 
 /**
- * Get user's prompt version preference (test vs production)
+ * Get global prompt version from latest system prompt
  */
-export async function getUserPromptVersion(userId: string): Promise<'test' | 'production'> {
+export async function getUserPromptVersion(userId?: string): Promise<'test' | 'production'> {
   try {
-    const docRef = doc(db, USER_PREFERENCES_COLLECTION, userId);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      return data.promptVersion || 'production';
+    const latest = await getLatestSystemPrompt();
+    if (latest && latest.promptVersion) {
+      return latest.promptVersion;
     }
-
-    return 'production'; // Default
   } catch (error) {
-    console.error('Error fetching prompt version:', error);
-    return 'production';
+    console.error('Error fetching prompt version from system prompt:', error);
   }
+  return 'production'; // Default
 }
 
 /**
+ * @deprecated Use saveSystemPrompt() instead - Prompt version is now stored globally
  * Set user's prompt version preference
  */
 export async function setUserPromptVersion(userId: string, version: 'test' | 'production'): Promise<boolean> {
+  console.warn('⚠️ setUserPromptVersion is deprecated. Use saveSystemPrompt() to update global settings.');
   try {
     const docRef = doc(db, USER_PREFERENCES_COLLECTION, userId);
     await setDoc(
@@ -179,6 +179,9 @@ export async function getSystemPromptForUser(user: any): Promise<string> {
 export async function saveSystemPrompt(
   content: string,
   userId: string,
+  llmModel: string,
+  temperature: number,
+  promptVersion: 'test' | 'production',
   userEmail?: string,
   description?: string
 ): Promise<string | null> {
@@ -187,13 +190,16 @@ export async function saveSystemPrompt(
 
     const docRef = await addDoc(promptsRef, {
       content,
+      llmModel,
+      temperature,
+      promptVersion,
       createdAt: serverTimestamp(),
       createdBy: userId,
       createdByEmail: userEmail || '',
       description: description || 'System prompt'
     });
 
-    console.log(`✅ New prompt saved with ID: ${docRef.id}`);
+    console.log(`✅ New prompt saved with ID: ${docRef.id} (Model: ${llmModel}, Temp: ${temperature}, Version: ${promptVersion})`);
     return docRef.id;
   } catch (error) {
     console.error('Error saving prompt:', error);
@@ -258,19 +264,33 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
 }
 
 /**
- * Get user's LLM model preference
+ * Get global LLM model from latest system prompt
  */
-export async function getUserLLMModel(userId: string): Promise<string> {
-  const prefs = await getUserPreferences(userId);
-  return prefs.llmModel;
+export async function getUserLLMModel(userId?: string): Promise<string> {
+  try {
+    const latest = await getLatestSystemPrompt();
+    if (latest && latest.llmModel) {
+      return latest.llmModel;
+    }
+  } catch (error) {
+    console.error('Error fetching LLM model from system prompt:', error);
+  }
+  return 'x-ai/grok-4-fast'; // Default fallback
 }
 
 /**
- * Get user's temperature preference
+ * Get global temperature from latest system prompt
  */
-export async function getUserTemperature(userId: string): Promise<number> {
-  const prefs = await getUserPreferences(userId);
-  return prefs.temperature;
+export async function getUserTemperature(userId?: string): Promise<number> {
+  try {
+    const latest = await getLatestSystemPrompt();
+    if (latest && latest.temperature !== undefined) {
+      return latest.temperature;
+    }
+  } catch (error) {
+    console.error('Error fetching temperature from system prompt:', error);
+  }
+  return 0.05; // Default fallback
 }
 
 /**
@@ -298,9 +318,11 @@ export function getSummaryTemperature(): number {
 }
 
 /**
+ * @deprecated Use saveSystemPrompt() instead - LLM settings are now stored globally
  * Set user's LLM model preference
  */
 export async function setUserLLMModel(userId: string, model: string): Promise<boolean> {
+  console.warn('⚠️ setUserLLMModel is deprecated. Use saveSystemPrompt() to update global settings.');
   try {
     await setDoc(doc(db, 'kayttaja_preferenssit', userId), {
       llmModel: model,
@@ -315,9 +337,11 @@ export async function setUserLLMModel(userId: string, model: string): Promise<bo
 }
 
 /**
+ * @deprecated Use saveSystemPrompt() instead - Temperature settings are now stored globally
  * Set user's temperature preference
  */
 export async function setUserTemperature(userId: string, temperature: number): Promise<boolean> {
+  console.warn('⚠️ setUserTemperature is deprecated. Use saveSystemPrompt() to update global settings.');
   try {
     await setDoc(doc(db, 'kayttaja_preferenssit', userId), {
       temperature,
@@ -343,6 +367,9 @@ export async function initializeSystemPrompts(userId: string): Promise<void> {
       await saveSystemPrompt(
         content,
         userId,
+        'x-ai/grok-4-fast', // Default LLM model
+        0.05, // Default temperature
+        'production', // Default prompt version
         '',
         'Initial system prompt'
       );

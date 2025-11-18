@@ -10,6 +10,7 @@ import type { LSClientData } from '@/data/ls-types';
 import { getClientSummaryPromptForGeneration } from './clientSummaryPromptService';
 import { loadAineistoContext } from './aineistoLoader';
 import { getSummaryLLMModel, getSummaryTemperature } from './systemPromptService';
+import { logger } from './logger';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPEN_ROUTER_API_KEY || '';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -38,13 +39,13 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
   // Use fixed model for summaries (not user-configurable)
   const model = getSummaryLLMModel();
   const temperature = getSummaryTemperature();
-  console.log(`🎛️ Summary generation using model: ${model}, temperature: ${temperature}`);
+  logger.debug(`🎛️ Summary generation using model: ${model}, temperature: ${temperature}`);
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       // Load Aineisto context (full client data from markdown files)
       const aineistoContext = await loadAineistoContext();
-      console.log(`📁 Loaded ${aineistoContext.fileCount} files from Aineisto`);
+      logger.debug(`📁 Loaded ${aineistoContext.fileCount} files from Aineisto`);
 
       // Prepare context from all client data
       const context = prepareClientContext(clientData);
@@ -55,7 +56,7 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
       // Get latest CLIENT summary prompt from Firestore (or default)
       const systemPrompt = await getClientSummaryPromptForGeneration();
 
-      console.log(`🔄 Attempting to generate summary (attempt ${attempt + 1}/${MAX_RETRIES})...`);
+      logger.debug(`🔄 Attempting to generate summary (attempt ${attempt + 1}/${MAX_RETRIES})...`);
 
       // Call LLM
       const response = await fetch(OPENROUTER_API_URL, {
@@ -85,7 +86,7 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
       // Handle rate limiting with retry
       if (response.status === 429) {
         const delay = BASE_DELAY * Math.pow(2, attempt); // Exponential backoff
-        console.warn(`⏳ Rate limited. Retrying in ${delay}ms...`);
+        logger.warn(`⏳ Rate limited. Retrying in ${delay}ms...`);
 
         if (attempt < MAX_RETRIES - 1) {
           await sleep(delay);
@@ -110,7 +111,7 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
 
       const parsed = JSON.parse(jsonMatch[0]);
 
-      console.log('✅ Summary generated successfully');
+      logger.debug('✅ Summary generated successfully');
 
       return {
         mainProblems: parsed.mainProblems || 'Ei määritelty',
@@ -120,7 +121,7 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
     } catch (error) {
       // If this is the last attempt, return error state
       if (attempt === MAX_RETRIES - 1) {
-        console.error('❌ Error generating client summary after retries:', error);
+        logger.error('❌ Error generating client summary after retries:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
         return {
@@ -134,7 +135,7 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
       }
 
       // For other attempts, continue to retry
-      console.warn(`⚠️ Attempt ${attempt + 1} failed, retrying...`);
+      logger.warn(`⚠️ Attempt ${attempt + 1} failed, retrying...`);
     }
   }
 

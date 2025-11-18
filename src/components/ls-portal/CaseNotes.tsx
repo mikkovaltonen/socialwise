@@ -51,21 +51,29 @@ export const CaseNotes: React.FC<CaseNotesProps> = ({ caseNotes }) => {
         </CardHeader>
       <CardContent>
         <ScrollArea className="h-[280px] pr-4">
-          <div className="space-y-2">
-            {sortedNotes.map((note) => (
-              <div
-                key={note.id}
-                className="flex gap-2 text-sm text-gray-800 leading-relaxed"
-              >
-                <span className="text-purple-600 font-bold">•</span>
-                <span>
-                  <span className="font-semibold">{formatDate(note.date)}</span>
-                  {' - '}
-                  {note.notificationGround}
-                </span>
-              </div>
-            ))}
-          </div>
+          {sortedNotes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+              <FileText className="h-12 w-12 text-gray-300 mb-3" />
+              <p className="text-sm text-gray-500 mb-2">Ei asiakaskirjauksia</p>
+              <p className="text-xs text-gray-400">Lisää uusi kirjaus yllä olevasta painikkeesta</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {sortedNotes.map((note) => (
+                <div
+                  key={note.id}
+                  className="flex gap-2 text-sm text-gray-800 leading-relaxed"
+                >
+                  <span className="text-purple-600 font-bold">•</span>
+                  <span>
+                    <span className="font-semibold">{formatDate(note.date)}</span>
+                    {' - '}
+                    {note.notificationGround}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </ScrollArea>
       </CardContent>
     </Card>

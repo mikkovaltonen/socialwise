@@ -7,6 +7,7 @@
  */
 
 import * as StorageService from './aineistoStorageService';
+import { logger } from './logger';
 
 interface AineistoContext {
   content: string;
@@ -36,7 +37,7 @@ export async function loadAineistoContext(): Promise<AineistoContext> {
       fullContent += `## Aineiston Rakenne\n\n${docContent}\n\n---\n\n`;
     }
   } catch (error) {
-    console.warn('Could not load documentation file');
+    logger.warn('Could not load documentation file');
   }
 
   // Load files from each category
@@ -57,7 +58,7 @@ export async function loadAineistoContext(): Promise<AineistoContext> {
         fullContent += `_Ei tiedostoja tässä kategoriassa_\n\n`;
       }
     } catch (error) {
-      console.warn(`Could not load files from category: ${category}`);
+      logger.debug(`Could not load files from category: ${category}`);
       fullContent += `_Virhe ladattaessa tiedostoja_\n\n`;
     }
 
@@ -99,7 +100,7 @@ async function loadCategoryFiles(category: string): Promise<Array<{ name: string
       }
     } catch (error) {
       // File doesn't exist, skip
-      console.debug(`File not found in Storage: ${filePath}`);
+      logger.debug(`File not found in Storage: ${filePath}`);
     }
   }
 
@@ -279,7 +280,7 @@ export function formatClientContext(clientData: any): string {
 
   context += '---\n\n';
 
-  console.log(`📄 Formatted client context: ${context.length} characters`);
+  logger.debug(`📄 Formatted client context: ${context.length} characters`);
 
   return context;
 }

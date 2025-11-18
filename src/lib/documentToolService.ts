@@ -4,11 +4,14 @@
  * Enables AI to create and manage documents in Firebase Storage.
  * Used with OpenRouter function calling to allow LLM to create
  * child welfare documents (decisions, case notes, PTA, etc.)
+ *
+ * Uusi rakenne: {clientId}/{category}/{filename}.md
  */
 
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { storage, db } from './firebase';
+import { buildStoragePath } from '@/config/storage';
 
 // Allowed document categories
 export type DocumentCategory =
@@ -52,8 +55,8 @@ export async function createDocument(
     }
     sanitizedFilename = sanitizedFilename.replace(/[^a-zA-Z0-9_\-åäöÅÄÖ.]/g, '_');
 
-    // Build storage path: /Aineisto/{category}/{filename}
-    const storagePath = `/Aineisto/${category}/${sanitizedFilename}`;
+    // Build storage path: {clientId}/{category}/{filename}
+    const storagePath = buildStoragePath(clientId, category, sanitizedFilename);
     const storageRef = ref(storage, storagePath);
 
     // Upload markdown content

@@ -77,8 +77,15 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[280px] pr-4">
-            <div className="space-y-2">
-              {recentRecords.map((record, index) => {
+            {recentRecords.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                <ClipboardList className="h-12 w-12 text-gray-300 mb-3" />
+                <p className="text-sm text-gray-500 mb-2">Ei PTA-kirjauksia</p>
+                <p className="text-xs text-gray-400">Lisää uusi kirjaus yllä olevasta painikkeesta</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {recentRecords.map((record, index) => {
                 const typeLabel = eventTypeLabels[record.eventType];
                 const typeColor = eventTypeColors[record.eventType];
 
@@ -153,7 +160,8 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
                   </div>
                 );
               })}
-            </div>
+              </div>
+            )}
           </ScrollArea>
         </CardContent>
       </Card>

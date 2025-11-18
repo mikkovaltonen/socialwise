@@ -1,19 +1,17 @@
 /**
- * Firebase Storage Service for Aineisto Client Data
+ * Firebase Storage Service for Client Data
  *
  * Fetches client data files from Firebase Storage
  * Requires user authentication via Firebase Auth
- * Note: DATA_PARSING_DOKUMENTAATIO.md remains in local /public/Aineisto folder
+ *
+ * Uusi rakenne: {clientId}/{category}/{filename}.md
+ * Vanha rakenne: Aineisto/{category}/{filename}.md (ei enää käytössä)
  */
 
 import { getStorage, ref, getBytes, getMetadata, uploadString, deleteObject } from 'firebase/storage';
 import { auth } from './firebase';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const STORAGE_BASE_PATH = 'Aineisto';
+import { logger } from './logger';
+import { buildStoragePath } from '@/config/storage';
 
 // ============================================================================
 // Authentication Helper
@@ -57,7 +55,8 @@ async function ensureAuthenticated(): Promise<void> {
 /**
  * Fetch a single markdown file from Firebase Storage
  * Requires user authentication
- * @param path - Relative path within Aineisto folder (e.g., 'LS-ilmoitukset/Lapsi_1_2016_08_03_Lastensuojeluilmoitus.md')
+ *
+ * @param path - Full storage path (e.g., 'lapsi-1/LS-ilmoitukset/2016_08_03_Lastensuojeluilmoitus.md')
  * @returns File content as string, or null if not found
  */
 export async function fetchMarkdownFile(path: string): Promise<string | null> {
@@ -66,8 +65,7 @@ export async function fetchMarkdownFile(path: string): Promise<string | null> {
     await ensureAuthenticated();
 
     const storage = getStorage();
-    const filePath = `${STORAGE_BASE_PATH}/${path}`;
-    const fileRef = ref(storage, filePath);
+    const fileRef = ref(storage, path);
 
     // Get file bytes directly (uses authenticated user token)
     const arrayBuffer = await getBytes(fileRef);
@@ -79,9 +77,13 @@ export async function fetchMarkdownFile(path: string): Promise<string | null> {
     return content;
   } catch (error) {
     if (error instanceof Error && error.message.includes('not authenticated')) {
-      console.error('🔒 Authentication required:', error.message);
+      logger.error('Authentication required:', error.message);
+    } else if (error instanceof Error && error.message.includes('object-not-found')) {
+      // 404 on odotettava tilanne tyhjällä Storagella - ei virhettä, vain debug-viesti
+      logger.debug(`File not found in Storage: ${path}`);
     } else {
-      console.error(`Error fetching file from Firebase Storage (${path}):`, error);
+      // Muut virheet (network, permission, jne.) ovat todellisia ongelmia
+      logger.error(`Error fetching file from Firebase Storage (${path}):`, error);
     }
     return null;
   }
@@ -99,7 +101,8 @@ export async function fetchMarkdownFiles(paths: string[]): Promise<(string | nul
 /**
  * Check if a file exists in Firebase Storage
  * Requires user authentication
- * @param path - Relative path within Aineisto folder
+ *
+ * @param path - Full storage path (e.g., 'lapsi-1/LS-ilmoitukset/2016_08_03_Lastensuojeluilmoitus.md')
  * @returns true if file exists, false otherwise
  */
 export async function fileExists(path: string): Promise<boolean> {
@@ -108,8 +111,7 @@ export async function fileExists(path: string): Promise<boolean> {
     await ensureAuthenticated();
 
     const storage = getStorage();
-    const filePath = `${STORAGE_BASE_PATH}/${path}`;
-    const fileRef = ref(storage, filePath);
+    const fileRef = ref(storage, path);
 
     await getMetadata(fileRef);
     return true;
@@ -121,7 +123,8 @@ export async function fileExists(path: string): Promise<boolean> {
 /**
  * Upload markdown content to Firebase Storage
  * Requires user authentication
- * @param path - Relative path within Aineisto folder (e.g., 'LS-ilmoitukset/Lapsi_1_2024_01_15_Lastensuojeluilmoitus.md')
+ *
+ * @param path - Full storage path (e.g., 'lapsi-1/LS-ilmoitukset/2024_01_15_Lastensuojeluilmoitus.md')
  * @param content - Markdown content to upload
  * @returns true if successful, false otherwise
  */
@@ -131,21 +134,20 @@ export async function uploadMarkdownFile(path: string, content: string): Promise
     await ensureAuthenticated();
 
     const storage = getStorage();
-    const filePath = `${STORAGE_BASE_PATH}/${path}`;
-    const fileRef = ref(storage, filePath);
+    const fileRef = ref(storage, path);
 
     // Upload string content as raw text
     await uploadString(fileRef, content, 'raw', {
       contentType: 'text/markdown; charset=utf-8',
     });
 
-    console.log(`✅ Successfully uploaded: ${filePath}`);
+    logger.info(`Successfully uploaded: ${path}`);
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('not authenticated')) {
-      console.error('🔒 Authentication required:', error.message);
+      logger.error('Authentication required:', error.message);
     } else {
-      console.error(`❌ Error uploading file to Firebase Storage (${path}):`, error);
+      logger.error(`Error uploading file to Firebase Storage (${path}):`, error);
     }
     return false;
   }
@@ -154,7 +156,8 @@ export async function uploadMarkdownFile(path: string, content: string): Promise
 /**
  * Delete markdown file from Firebase Storage
  * Requires user authentication
- * @param path - Relative path within Aineisto folder (e.g., 'LS-ilmoitukset/Lapsi_1_2024_01_15_Lastensuojeluilmoitus.md')
+ *
+ * @param path - Full storage path (e.g., 'lapsi-1/LS-ilmoitukset/2024_01_15_Lastensuojeluilmoitus.md')
  * @returns true if successful, false otherwise
  */
 export async function deleteMarkdownFile(path: string): Promise<boolean> {
@@ -163,42 +166,38 @@ export async function deleteMarkdownFile(path: string): Promise<boolean> {
     await ensureAuthenticated();
 
     const storage = getStorage();
-    const filePath = `${STORAGE_BASE_PATH}/${path}`;
-    const fileRef = ref(storage, filePath);
+    const fileRef = ref(storage, path);
 
     await deleteObject(fileRef);
 
-    console.log(`✅ Successfully deleted: ${filePath}`);
+    logger.info(`Successfully deleted: ${path}`);
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('not authenticated')) {
-      console.error('🔒 Authentication required:', error.message);
+      logger.error('Authentication required:', error.message);
     } else {
-      console.error(`❌ Error deleting file from Firebase Storage (${path}):`, error);
+      logger.error(`Error deleting file from Firebase Storage (${path}):`, error);
     }
     return false;
   }
 }
 
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
 /**
- * Known file paths for each category (in Firebase Storage)
- * These are hardcoded since Firebase Storage doesn't support directory listing
- * without custom backend
+ * Build a full storage path for a file
+ *
+ * @param clientId - Client ID (e.g., 'lapsi-1')
+ * @param category - Category (e.g., 'LS-ilmoitukset')
+ * @param filename - Filename (e.g., '2024_01_15_Lastensuojeluilmoitus.md')
+ * @returns Full storage path
  */
-export const KNOWN_FILES = {
-  'LS-ilmoitukset': [
-    'LS-ilmoitukset/Lapsi_1_2016_08_03_Lastensuojeluilmoitus.md',
-    'LS-ilmoitukset/Lapsi_1_2017_11_16_Lastensuojeluilmoitus.md',
-    'LS-ilmoitukset/Lapsi_1_2018_04_26_Lastensuojeluilmoitus.md',
-  ],
-  'Päätökset': [
-    'Päätökset/Lapsi_1_2025_03_22_päätös.md',
-  ],
-  'Yhteystiedot': [
-    'Yhteystiedot/Lapsi_1_yhteystiedot.md',
-  ],
-  'PTA': [
-    'PTA/PTA_malliasiakas.md',
-  ],
-  'Asiakassuunnitelmat': [],
-} as const;
+export function buildFilePath(
+  clientId: string,
+  category: string,
+  filename: string
+): string {
+  return buildStoragePath(clientId, category, filename);
+}

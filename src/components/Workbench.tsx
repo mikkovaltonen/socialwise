@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DataService } from '../lib/dataService';
+import { logger } from '../lib/logger';
 
 const dataService = new DataService();
 
@@ -20,7 +21,7 @@ const Workbench: React.FC = () => {
         setTimeSeriesData(data);
         setLoading(false);
       } catch (error) {
-        console.error('[Workbench] Error loading data:', error);
+        logger.error('[Workbench] Error loading data:', error);
         setLoading(false);
       }
     };

@@ -115,9 +115,11 @@ export interface Decision {
 export interface ContactInfo {
   child: {
     name: string;
-    socialSecurityNumber: string;
-    address: string;
+    socialSecurityNumber?: string;
+    address?: string;
     school?: string;
+    phone?: string;
+    schoolPhone?: string;
   };
   guardians: {
     mother?: {
@@ -159,6 +161,11 @@ export interface ContactInfo {
       email?: string;
       school?: string;
     };
+    supervisor?: {
+      name: string;
+      phone?: string;
+      email?: string;
+    };
   };
 }
 
@@ -189,12 +196,33 @@ export interface MainProblem {
 }
 
 // ============================================================================
-// Complete Client Data (Lapsi 1)
+// Organization and User Roles
+// ============================================================================
+
+export interface UserRole {
+  userId: string;
+  userEmail: string;
+  role: 'oma_työntekijä' | 'vastuullinen_sosiaalityöntekijä' | 'sosiaalipalvelun_esimies';
+}
+
+export interface ClientOrganization {
+  clientId: string; // Technical key (UUID)
+  clientName: string;
+  socialSecurityNumber?: string; // SOTU (optional, sensitive data)
+  roles: UserRole[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ============================================================================
+// Complete Client Data (Multi-client support)
 // ============================================================================
 
 export interface LSClientData {
-  clientId: string;
+  clientId: string; // Technical key (UUID)
   clientName: string;
+  socialSecurityNumber?: string; // SOTU (optional)
+  organization: ClientOrganization;
   mainProblem: MainProblem;
   notifications: LSNotification[];
   caseNotes: CaseNote[];
