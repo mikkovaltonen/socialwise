@@ -66,13 +66,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           </div>
         </div>
 
-        {/* Client Name */}
-        {clientName && (
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <p className="text-xs text-white/60 uppercase tracking-wide mb-1">Asiakkaana:</p>
-            <p className="text-sm font-medium text-white">{clientName}</p>
-          </div>
-        )}
       </div>
 
       {/* Navigation Menu */}

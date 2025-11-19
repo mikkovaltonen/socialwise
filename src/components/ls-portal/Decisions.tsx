@@ -36,11 +36,12 @@ import { preprocessMarkdownForDisplay } from '@/lib/utils';
 const markdownComponents = {
   p: ({ children }: any) => <p style={{ whiteSpace: 'pre-line' }}>{children}</p>,
 };
-import { deleteMarkdownFile } from '@/lib/aineistoStorageService';
+// deleteMarkdownFile removed - now handled by MarkdownDocumentEditor
 
 interface DecisionsProps {
   decisions: Decision[];
   clientId?: string;
+  onRefresh?: () => void;
 }
 
 const decisionTypeLabels: Record<Decision['decisionType'], string> = {
@@ -61,7 +62,7 @@ const decisionTypeColors: Record<Decision['decisionType'], string> = {
   muu: 'bg-gray-100 text-gray-800 border-gray-300',
 };
 
-export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'malliasiakas' }) => {
+export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'malliasiakas', onRefresh }) => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   const [showEditor, setShowEditor] = useState(false);
@@ -74,31 +75,12 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
     return date.toLocaleDateString('fi-FI');
   };
 
+  // Deletion is now handled by MarkdownDocumentEditor
+  // This function is kept for backwards compatibility but not used
   const handleDeleteDecision = async () => {
-    if (!decisionToDelete) return;
-
-    setIsDeleting(true);
-    try {
-      // Poista tiedosto Firebase Storagesta
-      const filename = decisionToDelete.filename || `Lapsi_1_${decisionToDelete.date.replace(/-/g, '_')}_päätös.md`;
-      const success = await deleteMarkdownFile(`Päätökset/${filename}`);
-
-      if (success) {
-        // Päivitä lista poistamalla päätös
-        // TODO: Päivitä decisions lista parent komponentissa
-        setSelectedDecision(null);
-        setShowDeleteDialog(false);
-        setDecisionToDelete(null);
-        // Reload page to refresh data
-        window.location.reload();
-      } else {
-        console.error('Failed to delete decision file');
-      }
-    } catch (error) {
-      console.error('Error deleting decision:', error);
-    } finally {
-      setIsDeleting(false);
-    }
+    console.log('⚠️ [Decisions] handleDeleteDecision called - deletion should be done in editor');
+    setShowDeleteDialog(false);
+    setDecisionToDelete(null);
   };
 
   const handleEdit = () => {
@@ -118,8 +100,10 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
     setShowEditor(false);
     console.log('  - closing decision dialog');
     setSelectedDecision(null);
-    // TODO: Implement refresh mechanism similar to PTA
-    console.log('⚠️ [Decisions] Full data refresh needed - parent should implement onRefresh callback');
+    if (onRefresh) {
+      console.log('🔄 [Decisions] Calling onRefresh');
+      onRefresh();
+    }
   };
 
   // Sort by date descending

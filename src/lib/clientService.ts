@@ -201,6 +201,26 @@ export async function getAllClientsBasicInfo(): Promise<ClientBasicInfo[]> {
   }
 }
 
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Get current user email for audit trail
+ */
+function getCurrentUserEmail(): string {
+  const user = auth.currentUser;
+  if (!user) {
+    logger.warn('No authenticated user found, using "system" as updatedBy');
+    return 'system';
+  }
+  return user.email || user.uid; // Use email if available, fallback to uid
+}
+
+// ============================================================================
+// Update Operations
+// ============================================================================
+
 /**
  * Tallenna asiakkaan perustiedot
  *
@@ -209,8 +229,8 @@ export async function getAllClientsBasicInfo(): Promise<ClientBasicInfo[]> {
  */
 export async function saveClientBasicInfo(basicInfo: ClientBasicInfo): Promise<boolean> {
   try {
-    const userId = auth.currentUser?.uid;
-    if (!userId) {
+    const userEmail = getCurrentUserEmail();
+    if (userEmail === 'system') {
       logger.error('User not authenticated');
       return false;
     }
@@ -220,7 +240,7 @@ export async function saveClientBasicInfo(basicInfo: ClientBasicInfo): Promise<b
     await setDoc(infoRef, {
       ...basicInfo,
       updatedAt: Timestamp.now(),
-      updatedBy: userId,
+      updatedBy: userEmail,
     });
 
     return true;
@@ -242,8 +262,8 @@ export async function updateClientBasicInfo(
   updates: Partial<Omit<ClientBasicInfo, 'clientId'>>
 ): Promise<boolean> {
   try {
-    const userId = auth.currentUser?.uid;
-    if (!userId) {
+    const userEmail = getCurrentUserEmail();
+    if (userEmail === 'system') {
       logger.error('User not authenticated');
       return false;
     }
@@ -253,7 +273,7 @@ export async function updateClientBasicInfo(
     await updateDoc(infoRef, {
       ...updates,
       updatedAt: Timestamp.now(),
-      updatedBy: userId,
+      updatedBy: userEmail,
     });
 
     return true;

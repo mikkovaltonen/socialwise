@@ -59,13 +59,16 @@ export const PTADocumentDialog: React.FC<PTADocumentDialogProps> = ({
     console.log('🔵 [PTADocumentDialog] handleEditorSaved called from MarkdownDocumentEditor');
     console.log('  - closing editor');
     setShowEditor(false);
-    console.log('  - closing PTADocumentDialog');
-    onClose();
-    // Data will be refreshed by parent component
+
+    // IMPORTANT: Call onSaved BEFORE onClose to ensure data refresh happens
+    // onClose will unmount this component, so onSaved must be called first
     if (onSaved) {
       console.log('🔄 [PTADocumentDialog] Calling parent onSaved (will trigger data refresh)');
       onSaved();
     }
+
+    console.log('  - closing PTADocumentDialog');
+    onClose();
   };
 
   if (!document) return null;
@@ -93,6 +96,26 @@ export const PTADocumentDialog: React.FC<PTADocumentDialogProps> = ({
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
+            {/* Audit Info */}
+            {(document.updatedBy || document.updatedAt) && (
+              <Card className="bg-gray-50">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    {document.updatedBy && (
+                      <span>
+                        <strong>Viimeisin muuttaja:</strong> {document.updatedBy}
+                      </span>
+                    )}
+                    {document.updatedAt && (
+                      <span>
+                        <strong>Muutettu:</strong> {new Date(document.updatedAt).toLocaleString('fi-FI')}
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Metadata */}
             <div className="grid grid-cols-2 gap-4">
               {/* Participants */}

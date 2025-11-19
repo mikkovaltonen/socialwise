@@ -149,29 +149,8 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
             });
           }
 
-          // Generate PTA summaries using LLM (non-blocking)
-          // PTA records are already loaded with placeholder summaries
-          // Now we generate real summaries in the background
-          if (data.ptaRecords && data.ptaRecords.length > 0) {
-            try {
-              // CRITICAL: Wait 3 seconds before starting PTA summaries
-              // This prevents rate limiting when client summary is still processing
-              await new Promise(resolve => setTimeout(resolve, 3000));
-
-              const updatedRecords = await AineistoParser.generatePTASummaries(data.ptaRecords);
-
-              // Update clientData with new summaries
-              setClientData(prevData => {
-                if (!prevData) return prevData;
-                return {
-                  ...prevData,
-                  ptaRecords: updatedRecords,
-                };
-              });
-            } catch (ptaError) {
-              logger.error('PTA-yhteenvetojen generointi epäonnistui:', ptaError);
-            }
-          }
+          // NOTE: PTA summaries are now generated automatically on document save
+          // No need to regenerate them here
         } else {
           // No data found - show empty state but don't crash
           setClientData({
@@ -203,33 +182,22 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
       }
     };
 
-    // Light refresh: Only reload PTA documents, skip summary regeneration
-    const refreshPTADocuments = async () => {
-      console.log('🔄 [LSPortal] refreshPTADocuments - LIGHT REFRESH (no LLM calls)');
+    // Refresh all client data (Firestore-based)
+    // This is simpler than before - Firestore queries are fast and summaries are cached
+    const refreshClientData = async () => {
+      console.log('🔄 [LSPortal] refreshClientData - Full reload from Firestore');
       console.log('  - selectedClientId:', selectedClientId);
 
       if (!selectedClientId) {
-        logger.warn('No client selected for PTA refresh');
+        logger.warn('No client selected for refresh');
         return;
       }
 
       try {
-        // Load only PTA records from storage, skip summary generation
-        const ptaRecords = await AineistoParser.loadPTARecords(selectedClientId);
-
-        // Update only PTA records, keep all other data and summaries intact
-        setClientData(prevData => {
-          if (!prevData) return prevData;
-          return {
-            ...prevData,
-            ptaRecords: ptaRecords, // Update document list
-            // All summaries preserved - no LLM calls!
-          };
-        });
-
-        console.log('✅ [LSPortal] PTA documents refreshed successfully');
+        await loadClientData();
+        console.log('✅ [LSPortal] Client data refreshed successfully');
       } catch (error) {
-        logger.error('Error refreshing PTA documents:', error);
+        logger.error('Error refreshing client data:', error);
       }
     };
 
@@ -306,23 +274,23 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
             >
               {/* Lastensuojeluilmoitukset + Asiakaskirjaukset (side by side) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <LSNotifications notifications={clientData.notifications} clientId={selectedClientId} />
-                <CaseNotes caseNotes={clientData.caseNotes} clientId={selectedClientId} onRefresh={loadClientData} />
+                <LSNotifications notifications={clientData.notifications} clientId={selectedClientId} onRefresh={refreshClientData} />
+                <CaseNotes caseNotes={clientData.caseNotes} clientId={selectedClientId} onRefresh={refreshClientData} />
               </div>
 
               {/* Päätökset + Yhteystiedot (side by side) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Decisions decisions={clientData.decisions} clientId={selectedClientId} />
+                <Decisions decisions={clientData.decisions} clientId={selectedClientId} onRefresh={refreshClientData} />
                 <ContactInfo
                   contactInfo={clientData.contactInfo}
                   clientId={selectedClientId}
-                  onUpdate={loadClientData}
+                  onUpdate={refreshClientData}
                 />
               </div>
 
               {/* PTA + Asiakassuunnitelmat (side by side) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PTA ptaRecords={clientData.ptaRecords} onRefresh={refreshPTADocuments} clientId={selectedClientId} />
+                <PTA ptaRecords={clientData.ptaRecords} onRefresh={refreshClientData} clientId={selectedClientId} />
                 <ServicePlans servicePlans={clientData.servicePlans} />
               </div>
             </ContentArea>
