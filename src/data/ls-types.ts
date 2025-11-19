@@ -69,8 +69,8 @@ export interface CaseNote {
 export interface PTARecord {
   id: string;
   date: string; // ISO date string
-  filename?: string; // Original filename in storage
-  eventType: 'kotikäynti' | 'puhelu' | 'tapaaminen' | 'neuvottelu' | 'päätös' | 'muu';
+  filename?: string; // Full storage path (e.g., 'client_xxx/PTA/2024_01_15_palvelutarpeen_arviointi.md')
+  eventType: 'kotikäynti' | 'puhelu' | 'tapaaminen' | 'neuvottelu' | 'päätös';
   participants: string[]; // e.g., ['isä', 'sosiaaliohjaaja']
   summary: string; // Brief summary
   actions: string[]; // Actions taken

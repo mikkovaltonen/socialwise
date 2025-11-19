@@ -14,27 +14,11 @@ import type { PTARecord } from '@/data/ls-types';
 
 interface PTAProps {
   ptaRecords: PTARecord[];
+  onRefresh?: () => void;
+  clientId?: string;
 }
 
-const eventTypeLabels: Record<PTARecord['eventType'], string> = {
-  kotikäynti: 'Kotikäynti',
-  puhelu: 'Puhelu',
-  tapaaminen: 'Tapaaminen',
-  neuvottelu: 'Neuvottelu',
-  päätös: 'Päätös',
-  muu: 'Muu',
-};
-
-const eventTypeColors: Record<PTARecord['eventType'], string> = {
-  kotikäynti: 'bg-green-50 text-green-700 border-green-200',
-  puhelu: 'bg-blue-50 text-blue-700 border-blue-200',
-  tapaaminen: 'bg-purple-50 text-purple-700 border-purple-200',
-  neuvottelu: 'bg-orange-50 text-orange-700 border-orange-200',
-  päätös: 'bg-red-50 text-red-700 border-red-200',
-  muu: 'bg-gray-50 text-gray-700 border-gray-200',
-};
-
-export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
+export const PTA: React.FC<PTAProps> = ({ ptaRecords, onRefresh, clientId = 'malliasiakas' }) => {
   const [selectedRecord, setSelectedRecord] = useState<PTARecord | null>(null);
   const [showEditor, setShowEditor] = useState(false);
 
@@ -77,8 +61,12 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
             ) : (
               <div className="space-y-2">
                 {recentRecords.map((record, index) => {
-                const typeLabel = eventTypeLabels[record.eventType];
-                const typeColor = eventTypeColors[record.eventType];
+                // Parse status from markdown content
+                const statusMatch = record.fullText?.match(/<!--\s*STATUS:\s*(Kesken|Tulostettu)\s*-->/);
+                const status = statusMatch ? statusMatch[1] : 'Kesken';
+                const statusColor = status === 'Tulostettu'
+                  ? 'bg-green-50 text-green-700 border-green-200'
+                  : 'bg-yellow-50 text-yellow-700 border-yellow-200';
 
                 return (
                   <div
@@ -93,9 +81,9 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
                             {formatDate(record.date)}
                           </span>
                           <span
-                            className={`text-xs px-2 py-0.5 rounded border ${typeColor}`}
+                            className={`text-xs px-2 py-0.5 rounded border ${statusColor}`}
                           >
-                            {typeLabel}
+                            {status}
                           </span>
                         </div>
                         <p className="text-sm text-gray-800 line-clamp-2 flex items-center gap-2">
@@ -160,8 +148,21 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
       {/* Full PTA Document Dialog */}
       <PTADocumentDialog
         open={selectedRecord !== null}
-        onClose={() => setSelectedRecord(null)}
+        onClose={() => {
+          console.log('🔵 [PTA] PTADocumentDialog onClose called');
+          setSelectedRecord(null);
+        }}
         document={selectedRecord}
+        clientId={clientId}
+        onSaved={() => {
+          console.log('🔵 [PTA] PTADocumentDialog onSaved called');
+          console.log('  - clearing selectedRecord');
+          setSelectedRecord(null);
+          if (onRefresh) {
+            console.log('🔄 [PTA] Calling onRefresh (loadClientData in LSPortal)');
+            onRefresh();
+          }
+        }}
       />
 
       {/* Document Editor */}
@@ -169,9 +170,10 @@ export const PTA: React.FC<PTAProps> = ({ ptaRecords }) => {
         open={showEditor}
         onClose={() => setShowEditor(false)}
         documentType="pta"
+        clientId={clientId}
         onSaved={() => {
           setShowEditor(false);
-          // TODO: Refresh PTA records list
+          if (onRefresh) onRefresh();
         }}
       />
     </>
