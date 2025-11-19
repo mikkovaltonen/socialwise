@@ -306,13 +306,13 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
             >
               {/* Lastensuojeluilmoitukset + Asiakaskirjaukset (side by side) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <LSNotifications notifications={clientData.notifications} />
-                <CaseNotes caseNotes={clientData.caseNotes} />
+                <LSNotifications notifications={clientData.notifications} clientId={selectedClientId} />
+                <CaseNotes caseNotes={clientData.caseNotes} clientId={selectedClientId} onRefresh={loadClientData} />
               </div>
 
               {/* Päätökset + Yhteystiedot (side by side) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Decisions decisions={clientData.decisions} />
+                <Decisions decisions={clientData.decisions} clientId={selectedClientId} />
                 <ContactInfo
                   contactInfo={clientData.contactInfo}
                   clientId={selectedClientId}

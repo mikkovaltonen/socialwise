@@ -7,16 +7,18 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus } from 'lucide-react';
-import MarkdownDocumentEditor from '../MarkdownDocumentEditor';
+import { FileText, Plus, ChevronRight } from 'lucide-react';
+import { DocumentViewDialog } from '../DocumentViewDialog';
 import type { CaseNote } from '@/data/ls-types';
 
 interface CaseNotesProps {
   caseNotes: CaseNote[];
+  clientId?: string;
+  onRefresh?: () => void;
 }
 
-export const CaseNotes: React.FC<CaseNotesProps> = ({ caseNotes }) => {
-  const [showEditor, setShowEditor] = useState(false);
+export const CaseNotes: React.FC<CaseNotesProps> = ({ caseNotes, clientId = 'malliasiakas', onRefresh }) => {
+  const [selectedNote, setSelectedNote] = useState<CaseNote | null>(null);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -53,14 +55,34 @@ export const CaseNotes: React.FC<CaseNotesProps> = ({ caseNotes }) => {
               {sortedNotes.map((note) => (
                 <div
                   key={note.id}
-                  className="flex gap-2 text-sm text-gray-800 leading-relaxed"
+                  className="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => setSelectedNote(note)}
                 >
-                  <span className="text-purple-600 font-bold">•</span>
-                  <span>
-                    <span className="font-semibold">{formatDate(note.date)}</span>
-                    {' - '}
-                    {note.notificationGround}
-                  </span>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm">
+                          {formatDate(note.date)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-800">
+                        {note.notificationGround}
+                      </p>
+                      {note.keywords && note.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {note.keywords.map((keyword, idx) => (
+                            <span
+                              key={idx}
+                              className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800"
+                            >
+                              {keyword}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -69,14 +91,22 @@ export const CaseNotes: React.FC<CaseNotesProps> = ({ caseNotes }) => {
       </CardContent>
     </Card>
 
-    {/* Document Editor */}
-    <MarkdownDocumentEditor
-      open={showEditor}
-      onClose={() => setShowEditor(false)}
+    {/* Document View Dialog */}
+    <DocumentViewDialog
+      open={selectedNote !== null}
+      onClose={() => setSelectedNote(null)}
       documentType="asiakaskirjaus"
+      document={selectedNote ? {
+        fullText: selectedNote.fullText,
+        filename: (selectedNote as any).filename, // CaseNote might have optional filename
+        date: selectedNote.date,
+      } : null}
+      clientId={clientId}
       onSaved={() => {
-        setShowEditor(false);
-        // TODO: Refresh case notes list
+        setSelectedNote(null);
+        if (onRefresh) {
+          onRefresh();
+        }
       }}
     />
     </>
