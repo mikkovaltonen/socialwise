@@ -19,10 +19,6 @@ import * as paatosYhteenvetoService from './paatosYhteenvetoService';
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Fallback model for unsupported document types
-const FALLBACK_MODEL = 'x-ai/grok-4-fast';
-const FALLBACK_TEMPERATURE = 0.3;
-
 /**
  * Generate summary for a document using LLM
  *
@@ -69,11 +65,8 @@ export async function generateDocumentSummary(
       prompt = `${basePrompt}\n\nDokumentti:\n${fullMarkdownText}`;
       logger.debug(`Using PAATOS_YHTEENVETO config: ${model} @ ${temperature}`);
     } else {
-      // Fallback: Use hardcoded configuration for unsupported types
-      model = FALLBACK_MODEL;
-      temperature = FALLBACK_TEMPERATURE;
-      prompt = buildSummaryPrompt(fullMarkdownText, category);
-      logger.debug(`Using fallback config for ${category}: ${model} @ ${temperature}`);
+      // Unsupported document type
+      throw new Error(`Unsupported document category: ${category}. No yhteenveto service configured.`);
     }
 
     const response = await fetch(OPENROUTER_API_URL, {

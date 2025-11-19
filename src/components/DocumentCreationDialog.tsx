@@ -428,9 +428,6 @@ Poimii tiedot alkuperäisestä tekstistä ja sijoita ne oikeisiin kohtiin.`,
                     <Label className="text-base font-semibold cursor-pointer group-hover:text-primary">
                       {docType.label}
                     </Label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {docType.description}
-                    </p>
                   </div>
                 </button>
 

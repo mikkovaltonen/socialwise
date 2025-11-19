@@ -249,18 +249,16 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     if (userDoc.exists()) {
       const data = userDoc.data();
       return {
-        llmModel: data.llmModel || 'x-ai/grok-4-fast',
-        temperature: data.temperature ?? 0.05,
+        llmModel: data.llmModel,
+        temperature: data.temperature,
         updatedAt: data.updatedAt
       };
     }
   } catch (error) {
     console.error('Error fetching user preferences:', error);
+    throw error;
   }
-  return {
-    llmModel: 'x-ai/grok-4-fast',
-    temperature: 0.05
-  };
+  throw new Error('User preferences not found');
 }
 
 /**
@@ -272,10 +270,11 @@ export async function getUserLLMModel(userId?: string): Promise<string> {
     if (latest && latest.llmModel) {
       return latest.llmModel;
     }
+    throw new Error('No system prompt found with LLM model');
   } catch (error) {
     console.error('Error fetching LLM model from system prompt:', error);
+    throw error;
   }
-  return 'x-ai/grok-4-fast'; // Default fallback
 }
 
 /**
@@ -287,27 +286,13 @@ export async function getUserTemperature(userId?: string): Promise<number> {
     if (latest && latest.temperature !== undefined) {
       return latest.temperature;
     }
+    throw new Error('No system prompt found with temperature');
   } catch (error) {
     console.error('Error fetching temperature from system prompt:', error);
+    throw error;
   }
-  return 0.05; // Default fallback
 }
 
-/**
- * Get LLM model for CLIENT SUMMARY generation
- * FIXED: Always uses google/gemini-2.5-flash-lite for fast, cheap summaries
- */
-export function getSummaryLLMModel(): string {
-  return 'google/gemini-2.5-flash-lite';
-}
-
-/**
- * Get LLM model for PTA SUMMARY generation
- * FIXED: Always uses google/gemini-2.5-flash-lite for fast, cheap summaries
- */
-export function getPTALLMModel(): string {
-  return 'google/gemini-2.5-flash-lite';
-}
 
 /**
  * Get temperature for summary generation
