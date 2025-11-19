@@ -106,6 +106,9 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
 
     // Load client data dynamically from Aineisto files
     const loadClientData = async () => {
+      console.log('🔄 [LSPortal] loadClientData called - THIS TRIGGERS SUMMARY REGENERATION');
+      console.log('  - selectedClientId:', selectedClientId);
+
       if (!selectedClientId) {
         logger.warn('No client selected');
         setIsLoading(false);
@@ -114,6 +117,7 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
 
       try {
         setIsLoading(true);
+        console.log('⏳ [LSPortal] Loading client data from storage...');
         // Load data from markdown files using runtime parser
         const data = await AineistoParser.loadClientData(selectedClientId);
 
@@ -196,6 +200,36 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
           timeline: [],
         });
         setIsLoading(false);
+      }
+    };
+
+    // Light refresh: Only reload PTA documents, skip summary regeneration
+    const refreshPTADocuments = async () => {
+      console.log('🔄 [LSPortal] refreshPTADocuments - LIGHT REFRESH (no LLM calls)');
+      console.log('  - selectedClientId:', selectedClientId);
+
+      if (!selectedClientId) {
+        logger.warn('No client selected for PTA refresh');
+        return;
+      }
+
+      try {
+        // Load only PTA records from storage, skip summary generation
+        const ptaRecords = await AineistoParser.loadPTARecords(selectedClientId);
+
+        // Update only PTA records, keep all other data and summaries intact
+        setClientData(prevData => {
+          if (!prevData) return prevData;
+          return {
+            ...prevData,
+            ptaRecords: ptaRecords, // Update document list
+            // All summaries preserved - no LLM calls!
+          };
+        });
+
+        console.log('✅ [LSPortal] PTA documents refreshed successfully');
+      } catch (error) {
+        logger.error('Error refreshing PTA documents:', error);
       }
     };
 
@@ -288,7 +322,7 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
 
               {/* PTA + Asiakassuunnitelmat (side by side) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PTA ptaRecords={clientData.ptaRecords} />
+                <PTA ptaRecords={clientData.ptaRecords} onRefresh={refreshPTADocuments} clientId={selectedClientId} />
                 <ServicePlans servicePlans={clientData.servicePlans} />
               </div>
             </ContentArea>

@@ -17,60 +17,54 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { FileText, Calendar, Users, CheckCircle, X, Trash2 } from 'lucide-react';
+import { FileText, Calendar, Users, CheckCircle, X, Edit3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { PTARecord } from '@/data/ls-types';
-import { preprocessMarkdownForDisplay } from '@/lib/utils';
+import MarkdownDocumentEditor from './MarkdownDocumentEditor';
 
 // Custom components for ReactMarkdown to preserve line breaks
 const markdownComponents = {
   p: ({ children }: any) => <p style={{ whiteSpace: 'pre-line' }}>{children}</p>,
 };
-import { deleteMarkdownFile } from '@/lib/aineistoStorageService';
 
 interface PTADocumentDialogProps {
   open: boolean;
   onClose: () => void;
   document: PTARecord | null;
+  clientId?: string;
+  onSaved?: () => void;
 }
 
 export const PTADocumentDialog: React.FC<PTADocumentDialogProps> = ({
   open,
   onClose,
   document,
+  clientId = 'malliasiakas',
+  onSaved,
 }) => {
-  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [showEditor, setShowEditor] = React.useState(false);
 
-  const handleDeletePTA = async () => {
-    setIsDeleting(true);
-    try {
-      // Poista tiedosto Firebase Storagesta
-      const filename = document.filename || `PTA_malliasiakas.md`;
-      const success = await deleteMarkdownFile(`PTA/${filename}`);
+  const handleEdit = () => {
+    console.log('🔵 [PTADocumentDialog] handleEdit called - opening editor');
+    console.log('  - document.filename:', document?.filename);
+    setShowEditor(true);
+  };
 
-      if (success) {
-        onClose();
-        setShowDeleteDialog(false);
-        // Reload page to refresh data
-        window.location.reload();
-      } else {
-        console.error('Failed to delete PTA file');
-      }
-    } catch (error) {
-      console.error('Error deleting PTA:', error);
-    } finally {
-      setIsDeleting(false);
+  const handleEditorClose = () => {
+    console.log('🔵 [PTADocumentDialog] handleEditorClose called');
+    setShowEditor(false);
+  };
+
+  const handleEditorSaved = () => {
+    console.log('🔵 [PTADocumentDialog] handleEditorSaved called from MarkdownDocumentEditor');
+    console.log('  - closing editor');
+    setShowEditor(false);
+    console.log('  - closing PTADocumentDialog');
+    onClose();
+    // Data will be refreshed by parent component
+    if (onSaved) {
+      console.log('🔄 [PTADocumentDialog] Calling parent onSaved (will trigger data refresh)');
+      onSaved();
     }
   };
 
@@ -90,10 +84,6 @@ export const PTADocumentDialog: React.FC<PTADocumentDialogProps> = ({
                   <DialogTitle className="text-2xl">
                     Palvelutarpeen Arviointi
                   </DialogTitle>
-                  <DialogDescription className="flex items-center gap-2 mt-1">
-                    <Calendar className="h-4 w-4" />
-                    {new Date(document.date).toLocaleDateString('fi-FI')}
-                  </DialogDescription>
                 </div>
               </div>
               <Button variant="ghost" size="icon" onClick={onClose}>
@@ -103,17 +93,6 @@ export const PTADocumentDialog: React.FC<PTADocumentDialogProps> = ({
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
-            {/* Summary Section */}
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="pt-6">
-                <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Yhteenveto
-                </h3>
-                <p className="text-sm text-blue-800">{document.summary}</p>
-              </CardContent>
-            </Card>
-
             {/* Metadata */}
             <div className="grid grid-cols-2 gap-4">
               {/* Participants */}
@@ -185,28 +164,28 @@ export const PTADocumentDialog: React.FC<PTADocumentDialogProps> = ({
 
             {/* Full Document Sections */}
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Täydellinen dokumentti
-              </h3>
-
               {document.sections && Object.keys(document.sections).length > 0 ? (
-                // Display sections if available
-                Object.entries(document.sections).map(([title, content], idx) => (
-                  <Card key={idx}>
-                    <CardContent className="pt-6">
-                      <h4 className="font-semibold text-gray-900 mb-3">{title}</h4>
-                      <div className="prose prose-sm max-w-none">
-                        <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                // Display sections if available, filter out STATUS comment
+                Object.entries(document.sections)
+                  .filter(([title]) => !title.includes('<!-- STATUS:'))
+                  .map(([title, content], idx) => (
+                    <Card key={idx}>
+                      <CardContent className="pt-6">
+                        <h4 className="font-semibold text-gray-900 mb-3">{title}</h4>
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
               ) : (
-                // Fallback to full text if sections not available
+                // Fallback to full text with STATUS filtered out
                 <Card>
                   <CardContent className="pt-6">
                    <div className="prose prose-sm max-w-none">
-                     <ReactMarkdown components={markdownComponents}>{document.fullText}</ReactMarkdown>
+                     <ReactMarkdown components={markdownComponents}>
+                       {document.fullText.replace(/<!--\s*STATUS:\s*(Kesken|Tulostettu)\s*-->\n*/g, '')}
+                     </ReactMarkdown>
                    </div>
                   </CardContent>
                 </Card>
@@ -234,13 +213,13 @@ export const PTADocumentDialog: React.FC<PTADocumentDialogProps> = ({
           {/* Footer Actions */}
           <div className="flex justify-between items-center mt-6 pt-4 border-t">
             <Button
-              variant="destructive"
+              variant="default"
               size="sm"
-              onClick={() => setShowDeleteDialog(true)}
+              onClick={handleEdit}
               className="flex items-center gap-2"
             >
-              <Trash2 className="h-4 w-4" />
-              Poista PTA
+              <Edit3 className="h-4 w-4" />
+              MUOKKAA
             </Button>
             <Button variant="outline" onClick={onClose}>
               Sulje
@@ -249,36 +228,18 @@ export const PTADocumentDialog: React.FC<PTADocumentDialogProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Poista palvelutarpeen arviointi</AlertDialogTitle>
-            <AlertDialogDescription>
-              Oletko varma että haluat poistaa tämän PTA-dokumentin? Tätä toimintoa ei voi peruuttaa.
-              {document && (
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium">
-                    {new Date(document.date).toLocaleDateString('fi-FI')} - {document.eventType}
-                  </p>
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>
-              Peruuta
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeletePTA}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {isDeleting ? 'Poistetaan...' : 'Poista'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Document Editor */}
+      {document && (
+        <MarkdownDocumentEditor
+          open={showEditor}
+          onClose={handleEditorClose}
+          documentType="pta"
+          clientId={clientId}
+          existingContent={document.fullText}
+          existingFilename={document.filename}
+          onSaved={handleEditorSaved}
+        />
+      )}
     </>
   );
 };

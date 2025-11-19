@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, FileText, Sparkles, Upload, Users } from "lucide-react";
+import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, FileText, Sparkles, Upload, Users, BookOpen } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
@@ -20,6 +20,7 @@ import IlmoitusYhteenvetoPromptManager from "../components/IlmoitusYhteenvetoPro
 import OrganizationManager from "../components/OrganizationManager";
 import BotInstructionManager from "../components/BotInstructionManager";
 import UserRegistration from "@/components/UserRegistration";
+import { DocumentStructureViewer } from "../components/DocumentStructureViewer";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -340,6 +341,51 @@ const Admin = () => {
                 Lataa PDF-dokumentteja (esim. lastensuojelulaki, sosiaalihuoltolaki), jotka parsitaan tekstiksi ja lisätään chatbotin kontekstiin. Näet tokenitilaston ja voit aktivoida/deaktivoida dokumentteja tarpeen mukaan. Konteksti-ikkuna: 1M tokensia.
               </p>
               <BotInstructionManager />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Document Structure Documentation */}
+        <div className="mb-8">
+          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-emerald-600 to-teal-600 text-white p-8">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <BookOpen className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold mb-2">
+                    Dokumenttirakenteet
+                  </CardTitle>
+                  <p className="text-emerald-100 text-lg">
+                    Näytä kaikki dokumenttityyppien pakolliset otsikkorakenteet
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 bg-white">
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                Kaikki dokumentit (PTA, LS-ilmoitus, Päätös, Asiakassuunnitelma, Asiakaskirjaus, Yhteystiedot) käyttävät pakollista otsikkorakennetta. Otsikot ovat lukittuja ja ei-muokattavia, käyttäjä täyttää vain sisällöt.
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 py-6 text-lg font-medium shadow-lg shadow-emerald-600/25"
+                  >
+                    <BookOpen className="mr-2 h-5 w-5" />
+                    Näytä dokumenttirakenteet
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-hidden">
+                  <DialogHeader>
+                    <DialogTitle>Dokumenttien otsikkorakenteet</DialogTitle>
+                    <DialogDescription>
+                      Näytä kaikki dokumenttityyppien pakolliset otsikot ja rakenteet. Otsikot ovat kovakoodattuja ja lukittuja editorissa.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DocumentStructureViewer />
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </div>

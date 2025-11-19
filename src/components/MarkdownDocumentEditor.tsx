@@ -10,8 +10,8 @@
  * - Yhteystiedot (Contact Information)
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { uploadMarkdownFile } from '@/lib/aineistoStorageService';
+import React, { useState, useEffect } from 'react';
+import { uploadMarkdownFile, deleteMarkdownFile } from '@/lib/aineistoStorageService';
 import {
   Dialog,
   DialogContent,
@@ -20,12 +20,28 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Save, X, Eye, Edit3, AlertCircle, Check, Loader2, Maximize2, Minimize2, Upload } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { Save, X, Edit3, AlertCircle, Check, Loader2, Maximize2, Minimize2, Trash2 } from 'lucide-react';
 
 // Document type definitions
 export type DocumentType =
@@ -35,6 +51,13 @@ export type DocumentType =
   | 'asiakassuunnitelma'
   | 'asiakaskirjaus'
   | 'yhteystiedot';
+
+interface DocumentSection {
+  heading: string;
+  content: string;
+  locked: boolean;
+  isMetadata?: boolean;
+}
 
 interface MarkdownDocumentEditorProps {
   open: boolean;
@@ -46,123 +69,66 @@ interface MarkdownDocumentEditorProps {
   onSaved?: () => void;
 }
 
-// Document templates
-const TEMPLATES: Record<DocumentType, string> = {
-  'ls-ilmoitus': `# Lastensuojeluilmoitus
+// Structured document templates with locked headings
+const DOCUMENT_STRUCTURES: Record<DocumentType, DocumentSection[]> = {
+  'ls-ilmoitus': [
+    { heading: '# Lastensuojeluilmoitus', content: '', locked: true },
+    { heading: `**Päiväys:** ${new Date().toLocaleDateString('fi-FI')}`, content: '', locked: true, isMetadata: true },
+    { heading: '## Ilmoittajan tiedot', content: '- **Nimi:**\n- **Ammatti/Asema:**\n- **Yhteystiedot:**', locked: true },
+    { heading: '## Huolen aihe', content: '', locked: true },
+    { heading: '## Havaitut seikat', content: '', locked: true },
+    { heading: '## Toimenpiteet', content: '', locked: true },
+  ],
 
-**Päiväys:** ${new Date().toLocaleDateString('fi-FI')}
+  'päätös': [
+    { heading: '# Päätös', content: '', locked: true },
+    { heading: `**Päiväysmäärä:** ${new Date().toLocaleDateString('fi-FI')}`, content: '', locked: true, isMetadata: true },
+    { heading: '## Tausta', content: '', locked: true },
+    { heading: '## Päätös', content: '', locked: true },
+    { heading: '## Perustelut', content: '', locked: true },
+    { heading: '## Muutoksenhaku', content: '', locked: true },
+  ],
 
-## Ilmoittajan tiedot
-- **Nimi:**
-- **Ammatti/Asema:**
-- **Yhteystiedot:**
+  'pta': [
+    { heading: '# Palvelutarpeen arviointi', content: '', locked: true },
+    { heading: '<!-- STATUS: Kesken -->', content: '', locked: true, isMetadata: true },
+    { heading: '## Päiväys', content: '', locked: true },
+    { heading: '## PERHE', content: '', locked: true },
+    { heading: '## TAUSTA', content: '', locked: true },
+    { heading: '## PALVELUT', content: '', locked: true },
+    { heading: '## YHTEISTYÖTAHOT ja VERKOSTO', content: '', locked: true },
+    { heading: '## LAPSEN JA PERHEEN TAPAAMINEN', content: '', locked: true },
+    { heading: '## ASIAKKAAN MIELIPIDE JA NÄKEMYS PALVELUTARPEESEEN', content: '', locked: true },
+    { heading: '## SOSIAALIHUOLLON AMMATTIHENKILÖN JOHTOPÄÄTÖKSET', content: '', locked: true },
+    { heading: '## ARIO OMATYÖNTEKIJÄN TARPEESTA', content: '', locked: true },
+    { heading: '## JAKELU JA ALLEKIRJOITUS', content: '', locked: true },
+  ],
 
-## Huolen aihe
-Kuvaa tilanne ja huolen aihe tähän...
+  'asiakassuunnitelma': [
+    { heading: '# Asiakassuunnitelma', content: '', locked: true },
+    { heading: `**Päiväys:** ${new Date().toLocaleDateString('fi-FI')}`, content: '', locked: true, isMetadata: true },
+    { heading: '## Lähtötilanne', content: '', locked: true },
+    { heading: '## Tavoitteet', content: '', locked: true },
+    { heading: '## Toimenpiteet', content: '', locked: true },
+    { heading: '## Seuranta ja arviointi', content: '', locked: true },
+  ],
 
-## Havaitut seikat
--
--
+  'asiakaskirjaus': [
+    { heading: '# Asiakaskirjaus', content: '', locked: true },
+    { heading: `**Päiväys:** ${new Date().toLocaleDateString('fi-FI')}`, content: '', locked: true, isMetadata: true },
+    { heading: '## Tapaamisen tiedot', content: '', locked: true },
+    { heading: '## Keskustelun aiheet', content: '', locked: true },
+    { heading: '## Havainnot', content: '', locked: true },
+    { heading: '## Jatkotoimet', content: '', locked: true },
+  ],
 
-## Toimenpiteet
--
-`,
-
-  'päätös': `# Päätös
-
-**Päiväysmäärä:** ${new Date().toLocaleDateString('fi-FI')}
-
-## Päätöksen tyyppi
-Valitse: Asiakkuuden avaaminen / Jatkaminen / Lopettaminen / Muu
-
-## Päätöksen sisältö
-Kirjoita päätöksen sisältö tähän...
-
-## Perustelut
--
--
-
-## Jatkotoimenpiteet
--
-`,
-
-  'pta': `# Palvelutarpeen arviointi
-
-**Päiväys:** ${new Date().toLocaleDateString('fi-FI')}
-
-## Osallistujat
--
--
-
-## Tilanteen kuvaus
-Kuvaa perheen ja lapsen tilanne...
-
-## Tuen tarve
--
--
-
-## Suunnitellut toimenpiteet
--
-`,
-
-  'asiakassuunnitelma': `# Asiakassuunnitelma
-
-**Päiväys:** ${new Date().toLocaleDateString('fi-FI')}
-**Voimassaolo:**
-
-## Tavoitteet
-1.
-2.
-
-## Sovitut toimenpiteet
-- **Toimenpide:**
-  - Vastuuhenkilö:
-  - Aikataulu:
-
-## Seuranta
-Seuraava arviointi:
-`,
-
-  'asiakaskirjaus': `# Asiakaskirjaus
-
-**Päiväys:** ${new Date().toLocaleDateString('fi-FI')}
-
-## Tapaamisen tyyppi
-Valitse: Kotikäynti / Tapaaminen toimistolla / Puhelinkeskustelu / Muu
-
-## Tapaamisen sisältö
-Kuvaa tapaaminen tai tapahtuma...
-
-## Huomiot
--
--
-
-## Jatkotoimenpiteet
--
-`,
-
-  'yhteystiedot': `# Yhteystiedot
-
-## Lapsi
-- **Nimi:**
-- **Henkilötunnus:**
-- **Osoite:**
-- **Puhelin:**
-
-## Huoltajat
-### Huoltaja 1
-- **Nimi:**
-- **Puhelin:**
-- **Sähköposti:**
-
-### Huoltaja 2
-- **Nimi:**
-- **Puhelin:**
-- **Sähköposti:**
-
-## Muut tärkeät yhteystiedot
--
-`,
+  'yhteystiedot': [
+    { heading: '# Yhteystiedot', content: '', locked: true },
+    { heading: '## Asiakas', content: '', locked: true },
+    { heading: '## Yhteyshenkilöt', content: '', locked: true },
+    { heading: '## Verkosto', content: '', locked: true },
+    { heading: '## Huomioitavaa', content: '', locked: true },
+  ],
 };
 
 // Generate filename based on document type and date
@@ -193,6 +159,59 @@ function generateFilename(type: DocumentType, clientId: string, existingFilename
   return `${clientId}/${folder}/${dateStr}_${suffix}.md`;
 }
 
+// Helper function to parse existing content into sections
+function parseContentIntoSections(content: string, structure: DocumentSection[]): DocumentSection[] {
+  if (!content) return structure;
+
+  const lines = content.split('\n');
+  const sections = [...structure];
+  let currentSectionIndex = -1;
+  let currentContent: string[] = [];
+
+  for (const line of lines) {
+    // Check if this line is a heading from our structure
+    const headingMatch = sections.findIndex((s, idx) =>
+      line.trim() === s.heading.trim() && idx > currentSectionIndex
+    );
+
+    if (headingMatch !== -1) {
+      // Save previous section's content
+      if (currentSectionIndex >= 0 && !sections[currentSectionIndex].isMetadata) {
+        sections[currentSectionIndex].content = currentContent.join('\n').trim();
+      }
+      currentSectionIndex = headingMatch;
+      currentContent = [];
+    } else if (currentSectionIndex >= 0 && !sections[currentSectionIndex].isMetadata) {
+      // Add to current section content (skip metadata sections)
+      if (line.trim() !== '' || currentContent.length > 0) {
+        currentContent.push(line);
+      }
+    }
+  }
+
+  // Save last section's content
+  if (currentSectionIndex >= 0 && !sections[currentSectionIndex].isMetadata) {
+    sections[currentSectionIndex].content = currentContent.join('\n').trim();
+  }
+
+  return sections;
+}
+
+// Helper function to combine sections back into markdown
+function combineSectionsToMarkdown(sections: DocumentSection[]): string {
+  return sections
+    .map((section) => {
+      if (section.isMetadata) {
+        return section.heading;
+      }
+      if (section.content.trim()) {
+        return `${section.heading}\n${section.content}`;
+      }
+      return section.heading;
+    })
+    .join('\n\n');
+}
+
 export default function MarkdownDocumentEditor({
   open,
   onClose,
@@ -202,52 +221,83 @@ export default function MarkdownDocumentEditor({
   existingFilename,
   onSaved,
 }: MarkdownDocumentEditorProps) {
-  const [content, setContent] = useState('');
-  const [previewMode, setPreviewMode] = useState(false);
+  const [sections, setSections] = useState<DocumentSection[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [ptaStatus, setPtaStatus] = useState<'Kesken' | 'Tulostettu'>('Kesken');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Initialize content when dialog opens
+  const handleClose = () => {
+    console.log('🔵 [MarkdownDocumentEditor] handleClose called');
+    console.log('  - hasUnsavedChanges:', hasUnsavedChanges);
+    console.log('  - will call onSaved:', hasUnsavedChanges && !!onSaved);
+
+    // Call onSaved only when closing if there were changes
+    if (hasUnsavedChanges && onSaved) {
+      console.log('🔄 [MarkdownDocumentEditor] Calling onSaved callback');
+      onSaved();
+    }
+    console.log('🚪 [MarkdownDocumentEditor] Calling onClose to close dialog');
+    onClose();
+  };
+
+  // Initialize sections when dialog opens
   useEffect(() => {
     if (open) {
+      console.log('🔵 [MarkdownDocumentEditor] Dialog opened');
+      console.log('  - documentType:', documentType);
+      console.log('  - existingFilename:', existingFilename);
+      console.log('  - existingContent length:', existingContent?.length || 0);
+      console.log('  - Delete button will show:', !!existingFilename);
+
+      const structure = DOCUMENT_STRUCTURES[documentType] || [];
       if (existingContent) {
-        setContent(existingContent);
+        setSections(parseContentIntoSections(existingContent, structure));
+
+        // Extract PTA status if exists
+        if (documentType === 'pta') {
+          const statusMatch = existingContent.match(/<!--\s*STATUS:\s*(Kesken|Tulostettu)\s*-->/);
+          if (statusMatch) {
+            setPtaStatus(statusMatch[1] as 'Kesken' | 'Tulostettu');
+          }
+        }
       } else {
-        setContent(TEMPLATES[documentType] || '');
+        setSections(structure);
+        setPtaStatus('Kesken');
       }
       setMessage('');
       setError('');
-      setPreviewMode(false);
+      setHasUnsavedChanges(false);
     }
   }, [open, documentType, existingContent]);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.name.endsWith('.md')) {
-      setError('Vain .md tiedostot ovat sallittuja');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      setContent(text);
-      setMessage('✅ Tiedosto ladattu onnistuneesti!');
-      setTimeout(() => setMessage(''), 3000);
-    };
-    reader.onerror = () => {
-      setError('Virhe tiedoston lukemisessa');
-    };
-    reader.readAsText(file);
+  const updateSectionContent = (index: number, newContent: string) => {
+    setSections((prev) =>
+      prev.map((section, i) => (i === index ? { ...section, content: newContent } : section))
+    );
   };
 
   const handleSave = async () => {
-    if (!content.trim()) {
+    console.log('🔵 [MarkdownDocumentEditor] handleSave called');
+    console.log('  - documentType:', documentType);
+    console.log('  - clientId:', clientId);
+    console.log('  - existingFilename:', existingFilename);
+
+    let combinedContent = combineSectionsToMarkdown(sections);
+
+    // Update PTA status in content
+    if (documentType === 'pta') {
+      combinedContent = combinedContent.replace(
+        /<!--\s*STATUS:\s*(Kesken|Tulostettu)\s*-->/,
+        `<!-- STATUS: ${ptaStatus} -->`
+      );
+    }
+
+    if (!combinedContent.trim()) {
       setError('Dokumentti ei voi olla tyhjä');
       return;
     }
@@ -258,22 +308,56 @@ export default function MarkdownDocumentEditor({
 
     try {
       const filename = generateFilename(documentType, clientId, existingFilename);
-      const success = await uploadMarkdownFile(filename, content);
+      console.log('  - generated filename:', filename);
+      console.log('  - is editing existing?', !!existingFilename);
+
+      const success = await uploadMarkdownFile(filename, combinedContent);
 
       if (success) {
-        setMessage('✅ Dokumentti tallennettu onnistuneesti!');
-        setTimeout(() => {
-          if (onSaved) onSaved();
-          onClose();
-        }, 1500);
+        console.log('✅ [MarkdownDocumentEditor] Save successful, NOT closing dialog');
+        setMessage('✅ Dokumentti tallennettu onnistuneesti! Voit jatkaa muokkausta tai sulkea ikkunan.');
+        setHasUnsavedChanges(true);
+        // Don't close automatically - let user decide
+        // User can continue editing or close manually
       } else {
+        console.error('❌ [MarkdownDocumentEditor] Save failed');
         setError('Tallennus epäonnistui. Tarkista että olet kirjautunut sisään.');
       }
     } catch (err) {
-      console.error('Error saving document:', err);
+      console.error('❌ [MarkdownDocumentEditor] Error saving document:', err);
       setError('Virhe tallennuksessa. Yritä uudelleen.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!existingFilename) {
+      setError('Ei tiedostoa poistettavaksi');
+      return;
+    }
+
+    setIsDeleting(true);
+    setError('');
+
+    try {
+      const success = await deleteMarkdownFile(existingFilename);
+
+      if (success) {
+        setMessage('✅ Dokumentti poistettu onnistuneesti!');
+        // Don't trigger refresh - just close smoothly
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        setError('Poisto epäonnistui. Tarkista että olet kirjautunut sisään.');
+      }
+    } catch (err) {
+      console.error('Error deleting document:', err);
+      setError('Virhe poistossa. Yritä uudelleen.');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -287,7 +371,8 @@ export default function MarkdownDocumentEditor({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
         className={`${
           isFullscreen
@@ -339,86 +424,133 @@ export default function MarkdownDocumentEditor({
           </Alert>
         )}
 
-        {/* View Mode Toggle */}
+        {/* Toolbar */}
         <div className="flex gap-2 border-b pb-2">
-          <Button
-            variant={!previewMode ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setPreviewMode(false)}
-          >
-            <Edit3 className="w-4 h-4 mr-2" />
-            Muokkaa
-          </Button>
-          <Button
-            variant={previewMode ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setPreviewMode(true)}
-          >
-            <Eye className="w-4 h-4 mr-2" />
-            Esikatselu
-          </Button>
-          <div className="ml-auto">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".md"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Lataa tiedosto
-            </Button>
-          </div>
-        </div>
-
-        {/* Editor / Preview */}
-        <div className="flex-1 overflow-hidden">
-          {!previewMode ? (
-            <div className="h-full">
-              <Label htmlFor="markdown-editor" className="text-sm text-gray-600 mb-2 block">
-                Markdown-sisältö (Käytä # otsikkoja, ** lihavointi, - luettelot)
-              </Label>
-              <Textarea
-                id="markdown-editor"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="h-[calc(100%-2rem)] font-mono text-sm resize-none"
-                placeholder="Kirjoita dokumentin sisältö Markdown-muodossa..."
-              />
-            </div>
-          ) : (
-            <div className="h-full overflow-y-auto border rounded-md p-6 bg-white prose prose-sm max-w-none">
-              <ReactMarkdown>{content}</ReactMarkdown>
+          {/* PTA Status Selector */}
+          {documentType === 'pta' && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="pta-status" className="text-sm">Status:</Label>
+              <Select value={ptaStatus} onValueChange={(value) => setPtaStatus(value as 'Kesken' | 'Tulostettu')}>
+                <SelectTrigger id="pta-status" className="h-8 w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Kesken">Kesken</SelectItem>
+                  <SelectItem value="Tulostettu">Tulostettu</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
         </div>
 
+        {/* Structured Editor */}
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+          {sections
+            .filter(section => !section.isMetadata)
+            .map((section, index) => (
+            <div key={index} className="space-y-2">
+              {/* Locked Heading */}
+              <div
+                className={`
+                  ${section.heading.startsWith('#') ? 'bg-primary/10 border-l-4 border-primary' : 'bg-blue-50 border-l-4 border-blue-400'}
+                  p-3 rounded-md
+                `}
+              >
+                <div className="flex-1">
+                  {section.heading.startsWith('#') ? (
+                    <h3
+                      className={`
+                        font-semibold
+                        ${section.heading.startsWith('# ') ? 'text-xl' : 'text-lg'}
+                      `}
+                    >
+                      {section.heading.replace(/^#+\s*/, '')}
+                    </h3>
+                  ) : (
+                    <div className="text-sm font-mono">{section.heading}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Editable Content (only for non-metadata sections) */}
+              {!section.isMetadata && (
+                <Textarea
+                  value={section.content}
+                  onChange={(e) => updateSectionContent(index, e.target.value)}
+                  className="min-h-[120px] resize-y"
+                  placeholder={`Kirjoita sisältö osioon: ${section.heading.replace(/^#+\s*/, '')}...`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
         {/* Footer */}
-        <DialogFooter className="flex gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            <X className="w-4 h-4 mr-2" />
-            Peruuta
-          </Button>
-          <Button onClick={handleSave} disabled={saving || !content.trim()}>
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Tallennetaan...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Tallenna
-              </>
+        <DialogFooter className="flex justify-between items-center pt-4 border-t">
+          <div>
+            {existingFilename && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={saving || isDeleting}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Poista
+              </Button>
             )}
-          </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleClose} disabled={saving || isDeleting}>
+              <X className="w-4 h-4 mr-2" />
+              Sulje
+            </Button>
+            <Button onClick={handleSave} disabled={saving || isDeleting}>
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Tallennetaan...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Tallenna
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Poista dokumentti</AlertDialogTitle>
+          <AlertDialogDescription>
+            Oletko varma että haluat poistaa tämän dokumentin? Tätä toimintoa ei voi peruuttaa.
+            {existingFilename && (
+              <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium">{existingFilename}</p>
+              </div>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>
+            Peruuta
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {isDeleting ? 'Poistetaan...' : 'Poista'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

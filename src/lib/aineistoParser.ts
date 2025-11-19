@@ -630,21 +630,25 @@ export async function loadDecisions(
  * YKSINKERTAISTETTU: Poimii vain päivämäärän ja raaka markdown.
  * Yhteenveto tehdään LLM-kutsulla erikseen.
  */
-function parsePTARecord(filename: string, markdown: string): PTARecord {
+function parsePTARecord(fullPath: string, markdown: string): PTARecord {
   const { frontmatter, content } = parseFrontmatter(markdown);
+
+  // Extract bare filename from full path for date parsing
+  const bareFilename = fullPath.split('/').pop() || fullPath;
 
   // Poimii päivämäärän (yrittää ensin sisällöstä, sitten tiedostonimestä)
   const dateMatch = content.match(/\*\*Päiväys:\*\*\s*(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-  let date = parseDateFromFilename(filename);
+  let date = parseDateFromFilename(bareFilename);
   if (dateMatch) {
     const [, day, month, year] = dateMatch;
     date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
   return {
-    id: filename.replace('.md', ''),
+    id: bareFilename.replace('.md', ''),
     date,
-    eventType: 'muu',
+    filename: fullPath, // Store FULL path for editing and deleting
+    eventType: 'tapaaminen',
     participants: [],
     summary: '', // Täytetään LLM:llä erikseen
     actions: [],
@@ -936,7 +940,9 @@ export async function loadPTARecords(
       try {
         const markdown = await fetchMarkdownFile(clientId, category, filename);
         if (markdown) {
-          const record = parsePTARecord(filename, markdown);
+          // Construct full path for storage operations (edit/delete)
+          const fullPath = `${clientId}/${category}/${filename}`;
+          const record = parsePTARecord(fullPath, markdown);
           // Ei generoi yhteenvetoa tässä - palauttaa placeholder
           record.summary = 'Ladataan yhteenvetoa...';
           records.push(record);
