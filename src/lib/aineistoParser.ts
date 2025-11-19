@@ -187,14 +187,12 @@ function extractSection(content: string, sectionTitle: string): string {
 
 /**
  * Parsii päivämäärän tiedostonimestä (esim. "2016_08_03_Lastensuojeluilmoitus.md")
+ * HUOM: Palauttaa AINA placeholder-arvon, koska päivämäärän pitää tulla LLM:ltä dokumentin sisällöstä
  */
 function parseDateFromFilename(filename: string): string {
-  const dateMatch = filename.match(/^(\d{4})_(\d{2})_(\d{2})/);
-  if (dateMatch) {
-    const [, year, month, day] = dateMatch;
-    return `${year}-${month}-${day}`;
-  }
-  return new Date().toISOString().split('T')[0];
+  // Placeholder päivämäärä - LLM:n täytyy löytää oikea päivämäärä dokumentista
+  // EI käytetä tiedostonimen päivämäärää, koska se ei välttämättä ole dokumentin todellinen päivämäärä
+  return '1900-01-01';
 }
 
 
@@ -270,6 +268,7 @@ function parseLSNotification(filename: string, markdown: string): LSNotification
     reason,
     highlights,
     summary: reason.substring(0, 150) + (reason.length > 150 ? '...' : ''),
+    urgency: undefined, // LLM asettaa oikean arvon myöhemmin
     fullText: markdown
   };
 }
@@ -700,11 +699,11 @@ async function generateSummaryWithLLM(markdown: string): Promise<PtaAnalysisResu
             },
             {
               role: 'user',
-              content: `Dokumentti:\n${markdown.substring(0, 3000)}` // Rajoita 3000 merkkiin kustannusten säästämiseksi
+              content: `Dokumentti:\n${markdown.substring(0, 8000)}` // Rajoita 8000 merkkiin, riittävä päivämäärän löytämiseen
             }
           ],
-          temperature: llmTemperature, // Globaalit PTA-yhteenveto asetukset
-          max_tokens: 100
+          temperature: llmTemperature // Globaalit PTA-yhteenveto asetukset
+          // EI max_tokens rajoitusta - LLM voi generoida niin pitkän vastauksen kuin tarvitsee
         })
       });
 
@@ -787,7 +786,9 @@ async function generateSummaryWithLLM(markdown: string): Promise<PtaAnalysisResu
 interface IlmoitusAnalysisResult {
   date: string | null; // YYYY-MM-DD tai null jos ei löydy
   reporter: string; // Ilmoittajan ammatti
-  summary: string; // Yhteenveto
+  summary: string; // Lyhyt yhteenveto (max 100 merkkiä)
+  reason: string; // Ilmoituksen perusta/syy (200-500 merkkiä)
+  urgency: 'kriittinen' | 'kiireellinen' | 'normaali' | 'ei_kiireellinen'; // Kiireellisyys
 }
 
 /**
@@ -829,11 +830,11 @@ async function generateIlmoitusSummaryWithLLM(markdown: string): Promise<Ilmoitu
             },
             {
               role: 'user',
-              content: `Ilmoitus:\n${markdown.substring(0, 3000)}` // Rajoita 3000 merkkiin kustannusten säästämiseksi
+              content: `Ilmoitus:\n${markdown.substring(0, 8000)}` // Rajoita 8000 merkkiin, riittävä päivämäärän löytämiseen
             }
           ],
-          temperature: llmTemperature, // Globaalit ilmoitus-yhteenveto asetukset
-          max_tokens: 100
+          temperature: llmTemperature // Globaalit ilmoitus-yhteenveto asetukset
+          // EI max_tokens rajoitusta - LLM voi generoida niin pitkän vastauksen kuin tarvitsee
         })
       });
 
@@ -877,11 +878,11 @@ async function generateIlmoitusSummaryWithLLM(markdown: string): Promise<Ilmoitu
           const result = JSON.parse(cleanContent) as IlmoitusAnalysisResult;
 
           // Validoi että pakolliset kentät on olemassa (date voi olla null)
-          if (result.reporter && result.summary) {
+          if (result.reporter && result.summary && result.reason && result.urgency) {
             return result;
           }
 
-          logger.warn('Invalid JSON structure from LLM (missing reporter or summary):', result);
+          logger.warn('Invalid JSON structure from LLM (missing required fields):', result);
         } catch (parseError) {
           logger.error('Failed to parse JSON from LLM:', parseError);
           logger.debug('Raw content:', content);
@@ -1032,22 +1033,12 @@ export async function generateIlmoitusSummaries(notifications: LSNotification[])
         const analysis = await generateIlmoitusSummaryWithLLM(notification.fullText);
 
         if (analysis) {
-          // Päivitä ilmoitus LLM:n analyysillä
-          // Jos LLM ei löytänyt päivämäärää, käytä alkuperäistä (tiedostonimestä)
-          if (analysis.date) {
-            notification.date = analysis.date;
-          }
-          notification.reporter.profession = analysis.reporter; // Käytä LLM:n tulkitsemaa ilmoittajaa
+          // Päivitä ilmoitus LLM:n analyysillä - kaikki kentät tulevat JSON:sta
+          notification.date = analysis.date || notification.date; // Jos null, säilytä placeholder
+          notification.reporter.profession = analysis.reporter;
           notification.summary = analysis.summary;
-
-          // Aseta kiireellisyys perustuen yhteenvetoon (yksinkertainen heuristiikka)
-          if (analysis.summary.toLowerCase().includes('väkivalta') || analysis.summary.toLowerCase().includes('vaara') || analysis.summary.toLowerCase().includes('uhka')) {
-            notification.urgency = 'kriittinen';
-          } else if (analysis.summary.toLowerCase().includes('päihteet') || analysis.summary.toLowerCase().includes('hoito') || analysis.summary.toLowerCase().includes('terveys')) {
-            notification.urgency = 'kiireellinen';
-          } else {
-            notification.urgency = 'normaali';
-          }
+          notification.reason = analysis.reason; // Ilmoituksen perusta LLM:ltä
+          notification.urgency = analysis.urgency; // Kiireellisyys LLM:n arvioimana
         } else {
           logger.warn(`LLM analysis failed for notification ${notification.id}, using fallback`);
           notification.summary = 'Yhteenvedon generointi epäonnistui';

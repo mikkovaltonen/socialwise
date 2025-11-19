@@ -33,17 +33,6 @@ export async function loadAineistoContext(clientId: string): Promise<AineistoCon
   let fullContent = '# ASIAKKAAN TIEDOT - TÄYDELLINEN KONTEKSTI\n\n';
   let fileCount = 0;
 
-  // Load documentation
-  try {
-    const docResponse = await fetch('/Aineisto/DATA_PARSING_DOKUMENTAATIO.md');
-    if (docResponse.ok) {
-      const docContent = await docResponse.text();
-      fullContent += `## Aineiston Rakenne\n\n${docContent}\n\n---\n\n`;
-    }
-  } catch (error) {
-    logger.warn('Could not load documentation file');
-  }
-
   // Load files from each category for this specific client
   for (const category of categories) {
     fullContent += `## ${category}\n\n`;

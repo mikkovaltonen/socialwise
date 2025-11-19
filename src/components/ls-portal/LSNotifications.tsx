@@ -91,6 +91,10 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
   }, [notifications]);
 
   const formatDate = (dateStr: string) => {
+    // Jos päivämäärä on placeholder ja LLM on vielä analysoimassa, näytä "Ladataan..."
+    if (dateStr === '1900-01-01') {
+      return isGeneratingSummaries ? 'Ladataan...' : 'Ei päivämäärää';
+    }
     const date = new Date(dateStr);
     return date.toLocaleDateString('fi-FI');
   };
@@ -267,6 +271,21 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
                   <p className="text-sm text-orange-800">{selectedNotification.summary}</p>
                 </CardContent>
               </Card>
+
+              {/* Reason Section */}
+              {selectedNotification.reason && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      Ilmoituksen perusta
+                    </h3>
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {selectedNotification.reason}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Reporter Info */}
               <Card>
