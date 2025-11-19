@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, ChevronRight } from 'lucide-react';
+import { StickyNote, Plus, ChevronRight } from 'lucide-react';
 import { DocumentViewDialog } from '../DocumentViewDialog';
 import type { CaseNote } from '@/data/ls-types';
 
@@ -35,7 +35,7 @@ export const CaseNotes: React.FC<CaseNotesProps> = ({ caseNotes, clientId = 'mal
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+            <StickyNote className="h-5 w-5" />
             <CardTitle>Asiakaskirjaukset</CardTitle>
             <span className="ml-auto text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
               {caseNotes.length} kpl
@@ -46,7 +46,7 @@ export const CaseNotes: React.FC<CaseNotesProps> = ({ caseNotes, clientId = 'mal
         <ScrollArea className="h-[280px] pr-4">
           {sortedNotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
-              <FileText className="h-12 w-12 text-gray-300 mb-3" />
+              <StickyNote className="h-12 w-12 text-gray-300 mb-3" />
               <p className="text-sm text-gray-500 mb-2">Ei asiakaskirjauksia</p>
               <p className="text-xs text-gray-400">Luo uusi asiakaskirjaus "Luo uusi asiakirja" -painikkeesta</p>
             </div>

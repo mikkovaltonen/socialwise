@@ -123,10 +123,11 @@ export async function getLLMModel(): Promise<string> {
     if (latest && latest.llmModel) {
       return latest.llmModel;
     }
+    throw new Error('No Asiakas yhteenveto prompt found with LLM model');
   } catch (error) {
     console.error('Error fetching LLM model:', error);
+    throw error;
   }
-  return 'google/gemini-2.5-flash-lite'; // Default
 }
 
 /**
@@ -138,10 +139,11 @@ export async function getTemperature(): Promise<number> {
     if (latest && latest.temperature !== undefined) {
       return latest.temperature;
     }
+    throw new Error('No Asiakas yhteenveto prompt found with temperature');
   } catch (error) {
     console.error('Error fetching temperature:', error);
+    throw error;
   }
-  return 0.3; // Default
 }
 
 /**

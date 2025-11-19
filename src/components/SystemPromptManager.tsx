@@ -44,6 +44,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+// Helper function to get display name for model
+const getModelDisplayName = (model: string): string => {
+  switch (model) {
+    case 'x-ai/grok-4-fast': return 'Grok-4-Fast';
+    case 'x-ai/grok-4': return 'Grok-4';
+    case 'google/gemini-2.5-flash': return 'Gemini 2.5 Flash';
+    case 'google/gemini-2.5-pro': return 'Gemini 2.5 Pro';
+    case 'google/gemini-3-pro-preview': return 'Gemini 3 Pro Preview';
+    default: return model;
+  }
+};
+
 export default function SystemPromptManager() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -161,15 +173,12 @@ export default function SystemPromptManager() {
         temperature,
         promptVersion,
         user.email || '',
-        `LLM model changed to ${model.includes('grok') ? 'Grok-4-Fast' : model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' : 'Gemini 2.5 Pro'}`
+        `LLM model changed to ${getModelDisplayName(model)}`
       );
 
       if (id) {
         setSelectedModel(model);
-        const modelName = model.includes('grok') ? 'Grok-4-Fast' :
-                         model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' :
-                         'Gemini 2.5 Pro';
-        setMessage(`Global LLM model updated to ${modelName} (affects all users)`);
+        setMessage(`Global LLM model updated to ${getModelDisplayName(model)} (affects all users)`);
         await loadPrompt(); // Reload to update current prompt reference
       } else {
         setError('Failed to update model');
@@ -333,17 +342,15 @@ export default function SystemPromptManager() {
           <Select value={selectedModel} onValueChange={handleModelChange}>
             <SelectTrigger className="w-48">
               <SelectValue>
-                {selectedModel.includes('grok')
-                  ? 'Grok-4-Fast'
-                  : selectedModel === 'google/gemini-2.5-flash'
-                    ? 'Gemini 2.5 Flash'
-                    : 'Gemini 2.5 Pro'}
+                {getModelDisplayName(selectedModel)}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="x-ai/grok-4-fast">Grok-4-Fast</SelectItem>
+              <SelectItem value="x-ai/grok-4">Grok-4</SelectItem>
               <SelectItem value="google/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
               <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+              <SelectItem value="google/gemini-3-pro-preview">Gemini 3 Pro Preview</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2">
@@ -529,10 +536,7 @@ export default function SystemPromptManager() {
                         </span>
                       </TableCell>
                       <TableCell className="text-xs">
-                        {prompt.llmModel?.includes('grok') ? 'Grok-4' :
-                         prompt.llmModel === 'google/gemini-2.5-flash' ? 'Gemini Flash' :
-                         prompt.llmModel === 'google/gemini-2.5-pro' ? 'Gemini Pro' :
-                         prompt.llmModel || '-'}
+                        {prompt.llmModel ? getModelDisplayName(prompt.llmModel) : '-'}
                       </TableCell>
                       <TableCell className="text-xs">{prompt.temperature ?? '-'}</TableCell>
                       <TableCell className="text-xs">{prompt.description || '-'}</TableCell>

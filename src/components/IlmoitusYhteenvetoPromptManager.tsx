@@ -336,10 +336,12 @@ export default function IlmoitusYhteenvetoPromptManager() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="x-ai/grok-4-fast">Grok-4-Fast</SelectItem>
+              <SelectItem value="x-ai/grok-4">Grok-4</SelectItem>
               <SelectItem value="google/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
               <SelectItem value="google/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
               <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-              <SelectItem value="x-ai/grok-4-fast">Grok-4-Fast</SelectItem>
+              <SelectItem value="google/gemini-3-pro-preview">Gemini 3 Pro Preview</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2">
