@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Scale, ChevronRight, Plus, Calendar, FileText, X, Trash2 } from 'lucide-react';
+import { Scale, ChevronRight, Plus, Calendar, FileText, X, Trash2, Edit3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { Decision } from '@/data/ls-types';
 import MarkdownDocumentEditor from '../MarkdownDocumentEditor';
@@ -40,6 +40,7 @@ import { deleteMarkdownFile } from '@/lib/aineistoStorageService';
 
 interface DecisionsProps {
   decisions: Decision[];
+  clientId?: string;
 }
 
 const decisionTypeLabels: Record<Decision['decisionType'], string> = {
@@ -60,7 +61,7 @@ const decisionTypeColors: Record<Decision['decisionType'], string> = {
   muu: 'bg-gray-100 text-gray-800 border-gray-300',
 };
 
-export const Decisions: React.FC<DecisionsProps> = ({ decisions }) => {
+export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'malliasiakas' }) => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   const [showEditor, setShowEditor] = useState(false);
@@ -98,6 +99,27 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions }) => {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleEdit = () => {
+    console.log('🔵 [Decisions] handleEdit called - opening editor');
+    console.log('  - selectedDecision.filename:', selectedDecision?.filename);
+    setShowEditor(true);
+  };
+
+  const handleEditorClose = () => {
+    console.log('🔵 [Decisions] handleEditorClose called');
+    setShowEditor(false);
+  };
+
+  const handleEditorSaved = () => {
+    console.log('🔵 [Decisions] handleEditorSaved called from MarkdownDocumentEditor');
+    console.log('  - closing editor');
+    setShowEditor(false);
+    console.log('  - closing decision dialog');
+    setSelectedDecision(null);
+    // TODO: Implement refresh mechanism similar to PTA
+    console.log('⚠️ [Decisions] Full data refresh needed - parent should implement onRefresh callback');
   };
 
   // Sort by date descending
@@ -253,18 +275,29 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions }) => {
 
               {/* Footer Actions */}
               <div className="flex justify-between items-center mt-6 pt-4 border-t">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setDecisionToDelete(selectedDecision);
-                    setShowDeleteDialog(true);
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Poista päätös
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleEdit}
+                    className="flex items-center gap-2"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                    MUOKKAA
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setDecisionToDelete(selectedDecision);
+                      setShowDeleteDialog(true);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Poista päätös
+                  </Button>
+                </div>
                 <Button variant="outline" onClick={() => setSelectedDecision(null)}>
                   Sulje
                 </Button>
@@ -306,15 +339,17 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions }) => {
       </AlertDialog>
 
       {/* Document Editor */}
-      <MarkdownDocumentEditor
-        open={showEditor}
-        onClose={() => setShowEditor(false)}
-        documentType="päätös"
-        onSaved={() => {
-          setShowEditor(false);
-          // TODO: Refresh decisions list
-        }}
-      />
+      {selectedDecision && (
+        <MarkdownDocumentEditor
+          open={showEditor}
+          onClose={handleEditorClose}
+          documentType="päätös"
+          clientId={clientId}
+          existingContent={selectedDecision.fullText}
+          existingFilename={selectedDecision.filename}
+          onSaved={handleEditorSaved}
+        />
+      )}
     </>
   );
 };

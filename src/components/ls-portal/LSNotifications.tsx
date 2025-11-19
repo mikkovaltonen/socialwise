@@ -11,11 +11,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { FileText, ChevronDown, ChevronUp, AlertTriangle, Plus, Loader2, ChevronRight, Calendar, User, Users, Phone, Mail, MapPin, X, Trash2 } from 'lucide-react';
+import { FileText, AlertTriangle, Loader2, ChevronRight, X, Trash2, Edit3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { LSNotification } from '@/data/ls-types';
 import MarkdownDocumentEditor from '../MarkdownDocumentEditor';
@@ -41,9 +38,10 @@ import { deleteMarkdownFile } from '@/lib/aineistoStorageService';
 
 interface LSNotificationsProps {
   notifications: LSNotification[];
+  clientId?: string;
 }
 
-export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications }) => {
+export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications, clientId = 'malliasiakas' }) => {
   const [selectedNotification, setSelectedNotification] = useState<LSNotification | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [processedNotifications, setProcessedNotifications] = useState<LSNotification[]>([]);
@@ -156,6 +154,27 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
     }
   };
 
+  const handleEdit = () => {
+    console.log('🔵 [LSNotifications] handleEdit called - opening editor');
+    console.log('  - selectedNotification.filename:', selectedNotification?.filename);
+    setShowEditor(true);
+  };
+
+  const handleEditorClose = () => {
+    console.log('🔵 [LSNotifications] handleEditorClose called');
+    setShowEditor(false);
+  };
+
+  const handleEditorSaved = () => {
+    console.log('🔵 [LSNotifications] handleEditorSaved called from MarkdownDocumentEditor');
+    console.log('  - closing editor');
+    setShowEditor(false);
+    console.log('  - closing notification dialog');
+    setSelectedNotification(null);
+    // TODO: Implement refresh mechanism similar to PTA
+    console.log('⚠️ [LSNotifications] Full data refresh needed - parent should implement onRefresh callback');
+  };
+
   return (
     <>
       <Card>
@@ -239,18 +258,6 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
                   <DialogTitle className="text-2xl">
                     Lastensuojeluilmoitus
                   </DialogTitle>
-                  <DialogDescription className="flex items-center gap-2 mt-1">
-                    <Calendar className="h-4 w-4" />
-                    {selectedNotification && formatDate(selectedNotification.date)}
-                    {selectedNotification?.urgency && (
-                      <Badge
-                        variant="secondary"
-                        className={`ml-2 ${getUrgencyColor(selectedNotification.urgency)}`}
-                      >
-                        {getUrgencyLabel(selectedNotification.urgency)}
-                      </Badge>
-                    )}
-                  </DialogDescription>
                 </div>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setSelectedNotification(null)}>
@@ -261,192 +268,40 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
 
           {selectedNotification && (
             <div className="space-y-6 mt-4">
-              {/* Summary Section */}
-              <Card className="bg-orange-50 border-orange-200">
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold text-orange-900 mb-2 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Yhteenveto
-                  </h3>
-                  <p className="text-sm text-orange-800">{selectedNotification.summary}</p>
-                </CardContent>
-              </Card>
-
-              {/* Reason Section */}
-              {selectedNotification.reason && (
-                <Card>
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      Ilmoituksen perusta
-                    </h3>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                      {selectedNotification.reason}
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Reporter Info */}
-              <Card>
-                <CardContent className="pt-6">
-                  <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Ilmoittaja
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-600">Nimi:</span>
-                      <p className="text-gray-900">{selectedNotification.reporter.name}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600">Ammatti:</span>
-                      <p className="text-gray-900">{selectedNotification.reporter.profession}</p>
-                    </div>
-                    {selectedNotification.reporter.isOfficial && (
-                      <div className="col-span-2">
-                        <Badge variant="outline" className="text-xs">
-                          Viranomainen
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Child Info */}
-              <Card>
-                <CardContent className="pt-6">
-                  <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Lapsi
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-600">Nimi:</span>
-                      <p className="text-gray-900">{selectedNotification.child.name}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600">Henkilötunnus:</span>
-                      <p className="text-gray-900">{selectedNotification.child.socialSecurityNumber}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-600">Osoite:</span>
-                      <p className="text-gray-900">{selectedNotification.child.address}</p>
-                    </div>
-                    {selectedNotification.child.school && (
-                      <div>
-                        <span className="font-medium text-gray-600">Koulu:</span>
-                        <p className="text-gray-900">{selectedNotification.child.school}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Guardians Info */}
-              {(selectedNotification.guardians.mother || selectedNotification.guardians.father) && (
-                <Card>
-                  <CardContent className="pt-6">
-                    <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Huoltajat
-                    </h4>
-                    <div className="space-y-4">
-                      {selectedNotification.guardians.mother && (
-                        <div className="border-l-2 border-blue-200 pl-4">
-                          <h5 className="font-medium text-blue-900 mb-2">Äiti</h5>
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-600">Nimi:</span>
-                              <p className="text-gray-900">{selectedNotification.guardians.mother.name}</p>
-                            </div>
-                            {selectedNotification.guardians.mother.socialSecurityNumber && (
-                              <div>
-                                <span className="font-medium text-gray-600">Henkilötunnus:</span>
-                                <p className="text-gray-900">{selectedNotification.guardians.mother.socialSecurityNumber}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {selectedNotification.guardians.father && (
-                        <div className="border-l-2 border-green-200 pl-4">
-                          <h5 className="font-medium text-green-900 mb-2">Isä</h5>
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-600">Nimi:</span>
-                              <p className="text-gray-900">{selectedNotification.guardians.father.name}</p>
-                            </div>
-                            {selectedNotification.guardians.father.socialSecurityNumber && (
-                              <div>
-                                <span className="font-medium text-gray-600">Henkilötunnus:</span>
-                                <p className="text-gray-900">{selectedNotification.guardians.father.socialSecurityNumber}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Highlights */}
-              {selectedNotification.highlights && selectedNotification.highlights.length > 0 && (
-                <Card className="bg-orange-50 border-orange-200">
-                  <CardContent className="pt-6">
-                    <h4 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      Keskeiset huolet
-                    </h4>
-                    <div className="space-y-2">
-                      {selectedNotification.highlights.map((highlight, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-start gap-2 bg-white border border-orange-200 rounded-lg p-3"
-                        >
-                          <AlertTriangle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-orange-800 italic">
-                            {highlight}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              <Separator />
-
               {/* Full Document */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Täydellinen ilmoitus
-                </h3>
-                <Card>
-                  <CardContent className="pt-6">
-             <div className="prose prose-sm max-w-none">
-               <ReactMarkdown components={markdownComponents}>{selectedNotification.fullText}</ReactMarkdown>
-             </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown components={markdownComponents}>{selectedNotification.fullText}</ReactMarkdown>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Footer Actions */}
               <div className="flex justify-between items-center mt-6 pt-4 border-t">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setNotificationToDelete(selectedNotification);
-                    setShowDeleteDialog(true);
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Poista ilmoitus
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleEdit}
+                    className="flex items-center gap-2"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                    MUOKKAA
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setNotificationToDelete(selectedNotification);
+                      setShowDeleteDialog(true);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Poista ilmoitus
+                  </Button>
+                </div>
                 <Button variant="outline" onClick={() => setSelectedNotification(null)}>
                   Sulje
                 </Button>
@@ -488,15 +343,17 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications 
       </AlertDialog>
 
       {/* Document Editor */}
-      <MarkdownDocumentEditor
-        open={showEditor}
-        onClose={() => setShowEditor(false)}
-        documentType="ls-ilmoitus"
-        onSaved={() => {
-          setShowEditor(false);
-          // TODO: Refresh notifications list
-        }}
-      />
+      {selectedNotification && (
+        <MarkdownDocumentEditor
+          open={showEditor}
+          onClose={handleEditorClose}
+          documentType="ls-ilmoitus"
+          clientId={clientId}
+          existingContent={selectedNotification.fullText}
+          existingFilename={selectedNotification.filename}
+          onSaved={handleEditorSaved}
+        />
+      )}
     </>
   );
 };

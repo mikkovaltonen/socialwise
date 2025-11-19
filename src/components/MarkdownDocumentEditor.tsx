@@ -73,11 +73,11 @@ interface MarkdownDocumentEditorProps {
 const DOCUMENT_STRUCTURES: Record<DocumentType, DocumentSection[]> = {
   'ls-ilmoitus': [
     { heading: '# Lastensuojeluilmoitus', content: '', locked: true },
-    { heading: `**Päiväys:** ${new Date().toLocaleDateString('fi-FI')}`, content: '', locked: true, isMetadata: true },
-    { heading: '## Ilmoittajan tiedot', content: '- **Nimi:**\n- **Ammatti/Asema:**\n- **Yhteystiedot:**', locked: true },
-    { heading: '## Huolen aihe', content: '', locked: true },
-    { heading: '## Havaitut seikat', content: '', locked: true },
-    { heading: '## Toimenpiteet', content: '', locked: true },
+    { heading: '## Päiväys', content: '', locked: true },
+    { heading: '## Ilmoittajan tiedot', content: '', locked: true },
+    { heading: '## Lapsen tiedot', content: '', locked: true },
+    { heading: '## Huoltajien tiedot', content: '', locked: true },
+    { heading: '## Ilmoituksen peruste', content: '', locked: true },
   ],
 
   'päätös': [
