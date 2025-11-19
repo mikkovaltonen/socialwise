@@ -20,7 +20,6 @@ import IlmoitusYhteenvetoPromptManager from "../components/IlmoitusYhteenvetoPro
 import OrganizationManager from "../components/OrganizationManager";
 import BotInstructionManager from "../components/BotInstructionManager";
 import UserRegistration from "@/components/UserRegistration";
-import AineistoParsingDocumentation from "@/components/AineistoParsingDocumentation";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -384,52 +383,6 @@ const Admin = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <UserRegistration />
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Aineisto Parsing Documentation Section */}
-        <div className="mb-8">
-          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-            <CardHeader className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-8">
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-2xl font-bold mb-2">
-                    Aineisto Data Parsing
-                  </CardTitle>
-                  <p className="text-blue-100 text-lg">
-                    Tekninen dokumentaatio parsing-logiikasta
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-8 bg-white">
-              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Katso miten lastensuojelun asiakastiedot parsitaan dynaamisesti markdown-tiedostoista runtime-aikana.
-                Sisältää yksityiskohtaiset parsing-säännöt, tiedostoformaatit ja esimerkkikoodit jokaiselle highlight boxille.
-              </p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-6 text-lg font-medium shadow-lg shadow-blue-500/25"
-                  >
-                    <FileText className="mr-2 h-5 w-5" />
-                    Näytä parsing-dokumentaatio
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Aineisto Data Parsing - Tekninen Dokumentaatio</DialogTitle>
-                    <DialogDescription>
-                      Runtime parsing-logiikka, tiedostoformaatit ja apufunktiot
-                    </DialogDescription>
-                  </DialogHeader>
-                  <AineistoParsingDocumentation />
                 </DialogContent>
               </Dialog>
             </CardContent>

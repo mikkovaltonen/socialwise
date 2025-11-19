@@ -74,13 +74,31 @@ export default function AsiakasYhteenvetoPromptManager() {
       await initializePrompts(user.uid);
       const latest = await getLatestPrompt();
       setCurrentPrompt(latest);
-      setContent(latest?.content || '');
 
       // Load all global settings from latest prompt
       if (latest) {
         setSelectedModel(latest.llmModel || 'google/gemini-2.5-flash-lite');
         setTemperature(latest.temperature ?? 0.3);
         setPromptVersionState(latest.promptVersion || 'production');
+
+        // If test version, load from file instead of database
+        if (latest.promptVersion === 'test') {
+          try {
+            const response = await fetch('/ASIAKAS_YHTEENVETO_PROMPT.md');
+            if (response.ok) {
+              const fileContent = await response.text();
+              setContent(fileContent);
+            } else {
+              setContent(latest?.content || '');
+            }
+          } catch (err) {
+            console.warn('Could not load test prompt file, using database version');
+            setContent(latest?.content || '');
+          }
+        } else {
+          // Production version - use database content
+          setContent(latest?.content || '');
+        }
       }
     } catch (error) {
       console.error('Error loading asiakas yhteenveto prompt:', error);
@@ -367,9 +385,18 @@ export default function AsiakasYhteenvetoPromptManager() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {promptVersion === 'test' && (
+            <Alert className="bg-yellow-50 border-yellow-200">
+              <AlertCircle className="w-4 h-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                Test-versio: Prompti luetaan tiedostosta <code className="px-1 py-0.5 bg-yellow-100 rounded text-xs">/public/ASIAKAS_YHTEENVETO_PROMPT.md</code> eikä sitä voi muokata täällä.
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-2">
             <div className="text-xs text-gray-500">
               {content.split('\n').length} riviä • {content.length} merkkiä
+              {promptVersion === 'test' && <span className="ml-2 text-yellow-600 font-medium">• Read-only (tiedostosta)</span>}
             </div>
             <Textarea
               value={content}
@@ -377,12 +404,13 @@ export default function AsiakasYhteenvetoPromptManager() {
               placeholder="Kirjoita järjestelmäprompt..."
               className="min-h-[500px] font-mono text-sm"
               id="asiakas-yhteenveto-prompt-editor"
+              disabled={promptVersion === 'test'}
             />
           </div>
           <div className="flex gap-2">
             <Button
               onClick={handleSavePrompt}
-              disabled={saving}
+              disabled={saving || promptVersion === 'test'}
             >
               <Save className="w-4 h-4 mr-2" />
               Save New Version
@@ -422,6 +450,8 @@ export default function AsiakasYhteenvetoPromptManager() {
         onSave={handleSavePrompt}
         title="Asiakas Yhteenveto Prompt"
         saving={saving}
+        disabled={promptVersion === 'test'}
+        readOnlyMessage={promptVersion === 'test' ? 'Test-versio: Prompti luetaan tiedostosta /public/ASIAKAS_YHTEENVETO_PROMPT.md' : undefined}
       />
 
       {/* Description Dialog */}

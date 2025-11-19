@@ -1,46 +1,47 @@
-# PTA Yhteenvedon Generointiprompt
+# Palveluntarpeen Arvioinnin Analyysi
 
-Olet lastensuojelutyön asiantuntija. Tehtäväsi on luoda **YKSI (1) lyhyt lause** (max 100 merkkiä) Palveluntarpeen arviointi -dokumentista.
+Olet lastensuojelutyön asiantuntija. Analysoi tämä Palveluntarpeen arviointi (PTA) -dokumentti ja poimii siitä keskeiset tiedot rakenteellisessa muodossa.
 
-## Ohjeet
+## Tehtäväsi:
+1. **Päivämäärä**: Tulkitse dokumentin päivämäärä sisällöstä. Etsi päivämäärää seuraavista paikoista:
+   - "Päiväys: 15.3.2016" tai "Päivämäärä: 15.3.2016"
+   - Dokumentin alussa olevasta päivämäärästä
+   - "Tapaaminen" tai "Kotikäynti" osiosta
+   - Jos et löydä päivämäärää, palauta `null`
 
-1. **Lue dokumentti huolellisesti** ja tunnista:
-   - Keskeiset huolenaiheet ja kuormitustekijät
-   - Päätökset ja suositellut palvelut
-   - Asiakkaan tilanne tiivistettynä
+2. **Yhteenveto**: Luo **YKSI (1) lyhyt lause** (max 100 merkkiä) dokumentista:
+   - Tunnista keskeiset huolenaiheet ja kuormitustekijät
+   - Tunnista päätökset ja suositellut palvelut
+   - Tiivistä asiakkaan tilanne yhteen lauseeseen
 
-2. **Muodosta yksi lause** joka sisältää:
-   - Palvelun tai toimenpiteen ytimen
-   - Keskeisimmän huolenaiheeen tai päätöksen
-   - Selkeän ja ytimekkään muotoilun
+## JSON-muoto:
+Palauta vastaus **vain ja ainoastaan** tässä JSON-muodossa, ilman mitään muuta tekstiä:
 
-3. **Noudata rajoituksia**:
-   - **Maksimipituus**: 100 merkkiä
-   - **Kieli**: Suomi
-   - **Tyyli**: Ammatillinen, objektiivinen, ytimekäs
-   - **Ei turhaa täytesanaa**: Mene suoraan asiaan
+```json
+{
+  "date": "YYYY-MM-DD",
+  "summary": "Lyhyt yhteenveto dokumentista (max 100 merkkiä)"
+}
+```
 
-## Esimerkkejä
+**HUOM:** Jos et löydä päivämäärää, käytä `null`:
+```json
+{
+  "date": null,
+  "summary": "Kotikäynti toteutettu, suositeltu tukihenkilön palvelua"
+}
+```
 
-**Huono yhteenveto:**
-> Tässä dokumentissa käsitellään lapsen tilannetta ja perheen haastavia olosuhteita sekä erilaisia toimenpiteitä joita on tehty...
-
-**Hyvä yhteenveto:**
-> Asiakkuuden avaaminen lastensuojeluun perheen laaja-alaisen tuen tarpeen vuoksi.
-
-**Huono yhteenveto:**
-> Dokumentissa todetaan että perheessä on useita haasteita jotka vaativat sosiaalihuollon toimenpiteitä...
-
-**Hyvä yhteenveto:**
-> Kotikäynti toteutettu, suositeltu tukihenkilön palvelua ja vanhemmuuden tukiohjelmaa.
-
-## Muotoiluohjeita
-
+## Muotoiluohjeita yhteenvedolle:
 - **Aloita toiminnalla**: "Asiakkuus avattu", "Kotikäynti toteutettu", "Arvioitu palvelutarve"
 - **Käytä nominaalimuotoja**: Suosi substantiiveja verbien sijaan
 - **Vältä tarpeetonta kontekstia**: Ei "Tässä dokumentissa", "Todetaan että" jne.
 - **Ole spesifi**: Mainitse konkreettisia toimia tai huolenaiheita
+- **Maksimipituus**: 100 merkkiä
 
-## Palauta
+## Esimerkkejä yhteenvedoista:
+- "Asiakkuuden avaaminen lastensuojeluun perheen laaja-alaisen tuen tarpeen vuoksi"
+- "Kotikäynti toteutettu, suositeltu tukihenkilön palvelua ja vanhemmuuden tukiohjelmaa"
+- "Arvioitu palvelutarve, ehdotettu perhetyötä ja vanhemmuuden tukea"
 
-Palauta **VAIN** yhteenvetolause. Ei otsikkoa, ei selitystä, ei muuta tekstiä.
+**TÄRKEÄÄ**: Palauta vain JSON-objekti, ei muuta tekstiä.

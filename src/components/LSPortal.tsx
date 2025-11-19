@@ -26,6 +26,7 @@ import { Decisions } from './ls-portal/Decisions';
 import { ContactInfo } from './ls-portal/ContactInfo';
 import { PTA } from './ls-portal/PTA';
 import { ServicePlans } from './ls-portal/ServicePlans';
+import AllChildrenDashboard from './ls-portal/AllChildrenDashboard';
 import DocumentCreationDialog from './DocumentCreationDialog';
 
 // ============================================================================
@@ -255,37 +256,43 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
           />
         }
         mainContent={
-          <ContentArea
-            clientName={clientData?.clientName}
-            selectedClientId={selectedClientId}
-            onClientChange={setSelectedClientId}
-            onClientCreated={loadAvailableClients}
-            availableClients={availableClients}
-            isLoadingClients={isLoadingClients}
-            clientSummary={clientSummary}
-          >
-            {/* Lastensuojeluilmoitukset + Asiakaskirjaukset (side by side) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <LSNotifications notifications={clientData.notifications} />
-              <CaseNotes caseNotes={clientData.caseNotes} />
-            </div>
+          currentView === 'all-children' ? (
+            // Kaikki lapset -näkymä
+            <AllChildrenDashboard />
+          ) : (
+            // Yksittäisen lapsen tarkastelunäkymä
+            <ContentArea
+              clientName={clientData?.clientName}
+              selectedClientId={selectedClientId}
+              onClientChange={setSelectedClientId}
+              onClientCreated={loadAvailableClients}
+              availableClients={availableClients}
+              isLoadingClients={isLoadingClients}
+              clientSummary={clientSummary}
+            >
+              {/* Lastensuojeluilmoitukset + Asiakaskirjaukset (side by side) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <LSNotifications notifications={clientData.notifications} />
+                <CaseNotes caseNotes={clientData.caseNotes} />
+              </div>
 
-            {/* Päätökset + Yhteystiedot (side by side) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Decisions decisions={clientData.decisions} />
-              <ContactInfo
-                contactInfo={clientData.contactInfo}
-                clientId={selectedClientId}
-                onUpdate={loadClientData}
-              />
-            </div>
+              {/* Päätökset + Yhteystiedot (side by side) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Decisions decisions={clientData.decisions} />
+                <ContactInfo
+                  contactInfo={clientData.contactInfo}
+                  clientId={selectedClientId}
+                  onUpdate={loadClientData}
+                />
+              </div>
 
-            {/* PTA + Asiakassuunnitelmat (side by side) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <PTA ptaRecords={clientData.ptaRecords} />
-              <ServicePlans servicePlans={clientData.servicePlans} />
-            </div>
-          </ContentArea>
+              {/* PTA + Asiakassuunnitelmat (side by side) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <PTA ptaRecords={clientData.ptaRecords} />
+                <ServicePlans servicePlans={clientData.servicePlans} />
+              </div>
+            </ContentArea>
+          )
         }
         />
 

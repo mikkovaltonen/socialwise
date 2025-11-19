@@ -16,43 +16,42 @@ interface AineistoContext {
 }
 
 /**
- * Load all Aineisto files and format as context
+ * Load all client files from Firebase Storage and format as context
  * This provides full client data context to AI
+ *
+ * @param clientId - Client ID to load files for (e.g., 'client_1731878400000_abc123def')
  */
-export async function loadAineistoContext(): Promise<AineistoContext> {
+export async function loadAineistoContext(clientId: string): Promise<AineistoContext> {
   const categories = [
     'LS-ilmoitukset',
     'Päätökset',
+    'PTA',
+    'Asiakassuunnitelmat',
     'Yhteystiedot',
   ];
 
   let fullContent = '# ASIAKKAAN TIEDOT - TÄYDELLINEN KONTEKSTI\n\n';
   let fileCount = 0;
 
-  // Load documentation
-  try {
-    const docResponse = await fetch('/Aineisto/DATA_PARSING_DOKUMENTAATIO.md');
-    if (docResponse.ok) {
-      const docContent = await docResponse.text();
-      fullContent += `## Aineiston Rakenne\n\n${docContent}\n\n---\n\n`;
-    }
-  } catch (error) {
-    logger.warn('Could not load documentation file');
-  }
-
-  // Load files from each category
+  // Load files from each category for this specific client
   for (const category of categories) {
     fullContent += `## ${category}\n\n`;
 
     try {
-      // Try to load Lapsi_1 files from this category
-      // Note: We need to know the file names in advance or use a file listing API
-      const files = await loadCategoryFiles(category);
+      // List all files in this category for the client
+      const filenames = await StorageService.listDocuments(clientId, category);
 
-      if (files.length > 0) {
-        for (const file of files) {
-          fullContent += `### ${file.name}\n\n${file.content}\n\n`;
-          fileCount++;
+      if (filenames.length > 0) {
+        logger.debug(`Loading ${filenames.length} files from ${clientId}/${category}`);
+
+        for (const filename of filenames) {
+          const filePath = `${clientId}/${category}/${filename}`;
+          const content = await StorageService.fetchMarkdownFile(filePath);
+
+          if (content) {
+            fullContent += `### ${filename}\n\n${content}\n\n`;
+            fileCount++;
+          }
         }
       } else {
         fullContent += `_Ei tiedostoja tässä kategoriassa_\n\n`;
@@ -65,6 +64,8 @@ export async function loadAineistoContext(): Promise<AineistoContext> {
     fullContent += '---\n\n';
   }
 
+  logger.debug(`📁 Loaded ${fileCount} files from client ${clientId}`);
+
   return {
     content: fullContent,
     fileCount,
@@ -72,46 +73,14 @@ export async function loadAineistoContext(): Promise<AineistoContext> {
   };
 }
 
-/**
- * Load files from a specific category (from Firebase Storage)
- * Note: This is a simplified version that tries known file patterns
- */
-async function loadCategoryFiles(category: string): Promise<Array<{ name: string; content: string }>> {
-  const files: Array<{ name: string; content: string }> = [];
-
-  // Get known file patterns from StorageService
-  const categoryFiles = StorageService.KNOWN_FILES[category as keyof typeof StorageService.KNOWN_FILES];
-
-  if (!categoryFiles || categoryFiles.length === 0) {
-    return files;
-  }
-
-  // Load files from Firebase Storage
-  for (const filePath of categoryFiles) {
-    try {
-      const content = await StorageService.fetchMarkdownFile(filePath);
-      if (content) {
-        // Extract just the filename from the path
-        const fileName = filePath.split('/').pop() || filePath;
-        files.push({
-          name: fileName,
-          content,
-        });
-      }
-    } catch (error) {
-      // File doesn't exist, skip
-      logger.debug(`File not found in Storage: ${filePath}`);
-    }
-  }
-
-  return files;
-}
 
 /**
- * Get a summary of available Aineisto files
+ * Get a summary of available Aineisto files for a client
+ *
+ * @param clientId - Client ID to get summary for
  */
-export async function getAineistoSummary(): Promise<string> {
-  const context = await loadAineistoContext();
+export async function getAineistoSummary(clientId: string): Promise<string> {
+  const context = await loadAineistoContext(clientId);
 
   return `Käytettävissä olevia asiakastietoja:
 - ${context.fileCount} tiedostoa ladattu
@@ -123,9 +92,11 @@ Voit viitata näihin tietoihin vastauksissasi käyttämällä tarkkoja päiväm�
 /**
  * Simplified loader that returns just the essential context
  * without full file contents (for shorter prompts)
+ *
+ * @param clientId - Client ID
  */
-export async function loadAineistoContextSummary(): Promise<string> {
-  const summary = await getAineistoSummary();
+export async function loadAineistoContextSummary(clientId: string): Promise<string> {
+  const summary = await getAineistoSummary(clientId);
   return summary;
 }
 
