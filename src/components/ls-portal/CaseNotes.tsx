@@ -66,7 +66,7 @@ export const CaseNotes: React.FC<CaseNotesProps> = ({ caseNotes, clientId = 'mal
                         </span>
                       </div>
                       <p className="text-sm text-gray-800">
-                        {note.notificationGround}
+                        {note.summary || 'Ei yhteenvetoa'}
                       </p>
                       {note.keywords && note.keywords.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -100,6 +100,8 @@ export const CaseNotes: React.FC<CaseNotesProps> = ({ caseNotes, clientId = 'mal
         fullText: selectedNote.fullText,
         filename: (selectedNote as any).filename, // CaseNote might have optional filename
         date: selectedNote.date,
+        updatedBy: selectedNote.updatedBy,
+        updatedAt: selectedNote.updatedAt,
       } : null}
       clientId={clientId}
       onSaved={() => {

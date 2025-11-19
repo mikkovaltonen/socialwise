@@ -1,12 +1,11 @@
 /**
  * Aineisto Context Loader
  *
- * Loads documentation from local /public/Aineisto directory
- * Loads client data files from Firebase Storage
- * Formats them as context for AI prompts
+ * REFACTORED: Now loads from Firestore collections instead of Storage
+ * Formats client data as context for AI prompts
  */
 
-import * as StorageService from './aineistoStorageService';
+import * as FirestoreService from './firestoreDocumentService';
 import { logger } from './logger';
 
 interface AineistoContext {
@@ -16,10 +15,10 @@ interface AineistoContext {
 }
 
 /**
- * Load all client files from Firebase Storage and format as context
+ * Load all client documents from Firestore and format as context
  * This provides full client data context to AI
  *
- * @param clientId - Client ID to load files for (e.g., 'client_1731878400000_abc123def')
+ * @param clientId - Client ID to load documents for
  */
 export async function loadAineistoContext(clientId: string): Promise<AineistoContext> {
   const categories = [
@@ -27,44 +26,73 @@ export async function loadAineistoContext(clientId: string): Promise<AineistoCon
     'Päätökset',
     'PTA',
     'Asiakassuunnitelmat',
-    'Yhteystiedot',
   ];
 
   let fullContent = '# ASIAKKAAN TIEDOT - TÄYDELLINEN KONTEKSTI\n\n';
   let fileCount = 0;
 
-  // Load files from each category for this specific client
-  for (const category of categories) {
-    fullContent += `## ${category}\n\n`;
+  try {
+    // Load all documents from Firestore
+    const allDocs = await FirestoreService.getAllClientDocuments(clientId);
 
-    try {
-      // List all files in this category for the client
-      const filenames = await StorageService.listDocuments(clientId, category);
-
-      if (filenames.length > 0) {
-        logger.debug(`Loading ${filenames.length} files from ${clientId}/${category}`);
-
-        for (const filename of filenames) {
-          const filePath = `${clientId}/${category}/${filename}`;
-          const content = await StorageService.fetchMarkdownFile(filePath);
-
-          if (content) {
-            fullContent += `### ${filename}\n\n${content}\n\n`;
-            fileCount++;
-          }
-        }
-      } else {
-        fullContent += `_Ei tiedostoja tässä kategoriassa_\n\n`;
-      }
-    } catch (error) {
-      logger.debug(`Could not load files from category: ${category}`);
-      fullContent += `_Virhe ladattaessa tiedostoja_\n\n`;
+    // LS-ilmoitukset
+    fullContent += `## LS-ilmoitukset\n\n`;
+    if (allDocs.notifications.length > 0) {
+      logger.debug(`Loading ${allDocs.notifications.length} LS notifications for ${clientId}`);
+      allDocs.notifications.forEach(doc => {
+        fullContent += `### ${doc.date} - ${doc.documentKey}\n\n${doc.fullMarkdownText}\n\n`;
+        fileCount++;
+      });
+    } else {
+      fullContent += `_Ei tiedostoja tässä kategoriassa_\n\n`;
     }
-
     fullContent += '---\n\n';
+
+    // Päätökset
+    fullContent += `## Päätökset\n\n`;
+    if (allDocs.decisions.length > 0) {
+      logger.debug(`Loading ${allDocs.decisions.length} decisions for ${clientId}`);
+      allDocs.decisions.forEach(doc => {
+        fullContent += `### ${doc.date} - ${doc.documentKey}\n\n${doc.fullMarkdownText}\n\n`;
+        fileCount++;
+      });
+    } else {
+      fullContent += `_Ei tiedostoja tässä kategoriassa_\n\n`;
+    }
+    fullContent += '---\n\n';
+
+    // PTA
+    fullContent += `## PTA\n\n`;
+    if (allDocs.ptaRecords.length > 0) {
+      logger.debug(`Loading ${allDocs.ptaRecords.length} PTA records for ${clientId}`);
+      allDocs.ptaRecords.forEach(doc => {
+        fullContent += `### ${doc.date} - ${doc.documentKey}\n\n${doc.fullMarkdownText}\n\n`;
+        fileCount++;
+      });
+    } else {
+      fullContent += `_Ei tiedostoja tässä kategoriassa_\n\n`;
+    }
+    fullContent += '---\n\n';
+
+    // Asiakassuunnitelmat
+    fullContent += `## Asiakassuunnitelmat\n\n`;
+    if (allDocs.servicePlans.length > 0) {
+      logger.debug(`Loading ${allDocs.servicePlans.length} service plans for ${clientId}`);
+      allDocs.servicePlans.forEach(doc => {
+        fullContent += `### ${doc.date} - ${doc.documentKey}\n\n${doc.fullMarkdownText}\n\n`;
+        fileCount++;
+      });
+    } else {
+      fullContent += `_Ei tiedostoja tässä kategoriassa_\n\n`;
+    }
+    fullContent += '---\n\n';
+
+  } catch (error) {
+    logger.error(`Error loading client documents from Firestore:`, error);
+    fullContent += `_Virhe ladattaessa tiedostoja Firestoresta_\n\n`;
   }
 
-  logger.debug(`📁 Loaded ${fileCount} files from client ${clientId}`);
+  logger.debug(`📁 Loaded ${fileCount} documents from Firestore for client ${clientId}`);
 
   return {
     content: fullContent,
@@ -75,7 +103,7 @@ export async function loadAineistoContext(clientId: string): Promise<AineistoCon
 
 
 /**
- * Get a summary of available Aineisto files for a client
+ * Get a summary of available documents for a client
  *
  * @param clientId - Client ID to get summary for
  */
@@ -83,7 +111,7 @@ export async function getAineistoSummary(clientId: string): Promise<string> {
   const context = await loadAineistoContext(clientId);
 
   return `Käytettävissä olevia asiakastietoja:
-- ${context.fileCount} tiedostoa ladattu
+- ${context.fileCount} dokumenttia ladattu Firestoresta
 - Kategoriat: ${context.categories.join(', ')}
 
 Voit viitata näihin tietoihin vastauksissasi käyttämällä tarkkoja päivämääriä ja lähteitä.`;

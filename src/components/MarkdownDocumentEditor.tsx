@@ -11,7 +11,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { uploadMarkdownFile, deleteMarkdownFile } from '@/lib/aineistoStorageService';
+import * as FirestoreService from '@/lib/firestoreDocumentService';
+import { extractDateFromMarkdown } from '@/lib/aineistoParser';
+import type { DocumentCategory } from '@/lib/firestoreDocumentService';
 import {
   Dialog,
   DialogContent,
@@ -72,7 +74,7 @@ interface MarkdownDocumentEditorProps {
 // Structured document templates with locked headings
 const DOCUMENT_STRUCTURES: Record<DocumentType, DocumentSection[]> = {
   'ls-ilmoitus': [
-    { heading: '# Lastensuojeluilmoitus', content: '', locked: true },
+    { heading: '# Lastensuojeluilmoitus', content: '', locked: true, isMetadata: true },
     { heading: '## Päiväys', content: '', locked: true },
     { heading: '## Ilmoittajan tiedot', content: '', locked: true },
     { heading: '## Lapsen tiedot', content: '', locked: true },
@@ -91,7 +93,6 @@ const DOCUMENT_STRUCTURES: Record<DocumentType, DocumentSection[]> = {
 
   'pta': [
     { heading: '# Palvelutarpeen arviointi', content: '', locked: true },
-    { heading: '<!-- STATUS: Kesken -->', content: '', locked: true, isMetadata: true },
     { heading: '## Päiväys', content: '', locked: true },
     { heading: '## PERHE', content: '', locked: true },
     { heading: '## TAUSTA', content: '', locked: true },
@@ -131,34 +132,6 @@ const DOCUMENT_STRUCTURES: Record<DocumentType, DocumentSection[]> = {
   ],
 };
 
-// Generate filename based on document type and date
-function generateFilename(type: DocumentType, clientId: string, existingFilename?: string): string {
-  if (existingFilename) {
-    return existingFilename;
-  }
-
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  const hours = String(today.getHours()).padStart(2, '0');
-  const minutes = String(today.getMinutes()).padStart(2, '0');
-  const seconds = String(today.getSeconds()).padStart(2, '0');
-  const dateStr = `${year}_${month}_${day}_${hours}${minutes}${seconds}`;
-
-  const typeMap: Record<DocumentType, { folder: string; suffix: string }> = {
-    'ls-ilmoitus': { folder: 'LS-ilmoitukset', suffix: 'Lastensuojeluilmoitus' },
-    'päätös': { folder: 'Päätökset', suffix: 'päätös' },
-    'pta': { folder: 'PTA', suffix: 'palvelutarpeen_arviointi' },
-    'asiakassuunnitelma': { folder: 'Asiakassuunnitelmat', suffix: 'asiakassuunnitelma' },
-    'asiakaskirjaus': { folder: 'Asiakaskirjaukset', suffix: 'asiakaskirjaus' },
-    'yhteystiedot': { folder: 'Yhteystiedot', suffix: 'yhteystiedot' },
-  };
-
-  const { folder, suffix } = typeMap[type];
-  return `${clientId}/${folder}/${dateStr}_${suffix}.md`;
-}
-
 // Helper function to parse existing content into sections
 function parseContentIntoSections(content: string, structure: DocumentSection[]): DocumentSection[] {
   if (!content) return structure;
@@ -170,9 +143,19 @@ function parseContentIntoSections(content: string, structure: DocumentSection[])
 
   for (const line of lines) {
     // Check if this line is a heading from our structure
-    const headingMatch = sections.findIndex((s, idx) =>
+    // For flexible matching, try exact match first, then partial match for non-metadata sections
+    let headingMatch = sections.findIndex((s, idx) =>
       line.trim() === s.heading.trim() && idx > currentSectionIndex
     );
+
+    // If no exact match and line is a heading, try to find by heading text (ignoring # symbols)
+    if (headingMatch === -1 && line.trim().startsWith('#')) {
+      const lineHeadingText = line.trim().replace(/^#+\s*/, '').toLowerCase();
+      headingMatch = sections.findIndex((s, idx) => {
+        const sectionHeadingText = s.heading.replace(/^#+\s*/, '').toLowerCase();
+        return lineHeadingText === sectionHeadingText && idx > currentSectionIndex && !s.isMetadata;
+      });
+    }
 
     if (headingMatch !== -1) {
       // Save previous section's content
@@ -230,6 +213,7 @@ export default function MarkdownDocumentEditor({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [manualSummary, setManualSummary] = useState('');
 
   const handleClose = () => {
     console.log('🔵 [MarkdownDocumentEditor] handleClose called');
@@ -265,15 +249,32 @@ export default function MarkdownDocumentEditor({
             setPtaStatus(statusMatch[1] as 'Kesken' | 'Tulostettu');
           }
         }
+
+        // Load manual summary for case notes when editing
+        if (documentType === 'asiakaskirjaus' && existingFilename) {
+          const loadManualSummary = async () => {
+            try {
+              const docId = existingFilename.replace('.md', '');
+              const doc = await FirestoreService.getDocument('ASIAKASKIRJAUKSET', docId);
+              if (doc && (doc as FirestoreService.CaseNoteDocument).manualSummary) {
+                setManualSummary((doc as FirestoreService.CaseNoteDocument).manualSummary || '');
+              }
+            } catch (error) {
+              console.error('Error loading manual summary:', error);
+            }
+          };
+          loadManualSummary();
+        }
       } else {
         setSections(structure);
         setPtaStatus('Kesken');
+        setManualSummary(''); // Reset manual summary for new case notes
       }
       setMessage('');
       setError('');
       setHasUnsavedChanges(false);
     }
-  }, [open, documentType, existingContent]);
+  }, [open, documentType, existingContent, existingFilename]);
 
   const updateSectionContent = (index: number, newContent: string) => {
     setSections((prev) =>
@@ -289,39 +290,92 @@ export default function MarkdownDocumentEditor({
 
     let combinedContent = combineSectionsToMarkdown(sections);
 
-    // Update PTA status in content
-    if (documentType === 'pta') {
-      combinedContent = combinedContent.replace(
-        /<!--\s*STATUS:\s*(Kesken|Tulostettu)\s*-->/,
-        `<!-- STATUS: ${ptaStatus} -->`
-      );
-    }
-
     if (!combinedContent.trim()) {
       setError('Dokumentti ei voi olla tyhjä');
       return;
     }
 
+    // Validate manual summary for case notes
+    if (documentType === 'asiakaskirjaus' && !manualSummary.trim()) {
+      setError('Lyhyt yhteenveto on pakollinen asiakaskirjauksille');
+      return;
+    }
+
     setSaving(true);
-    setMessage('');
+    setMessage('Luodaan yhteenvetoa...');
     setError('');
 
     try {
-      const filename = generateFilename(documentType, clientId, existingFilename);
-      console.log('  - generated filename:', filename);
-      console.log('  - is editing existing?', !!existingFilename);
+      // Map documentType to Firestore collection
+      const categoryMap: Record<DocumentType, DocumentCategory> = {
+        'ls-ilmoitus': 'ls-ilmoitus',
+        'päätös': 'päätös',
+        'pta': 'pta-record',
+        'asiakassuunnitelma': 'asiakassuunnitelma',
+        'asiakaskirjaus': 'asiakaskirjaus', // Case notes stored in ASIAKASKIRJAUKSET
+        'yhteystiedot': 'ls-ilmoitus', // Contact info stored as LS notification
+      };
 
-      const success = await uploadMarkdownFile(filename, combinedContent);
+      const category = categoryMap[documentType];
+      const collectionName = FirestoreService.getCollectionFromCategory(category);
 
-      if (success) {
-        console.log('✅ [MarkdownDocumentEditor] Save successful, NOT closing dialog');
+      // Extract date from markdown content
+      const extractedDate = extractDateFromMarkdown(combinedContent);
+
+      // Clean fullMarkdownText: Remove STATUS comments (now stored in separate field)
+      const cleanedMarkdown = combinedContent.replace(/<!--\s*STATUS:\s*(Kesken|Tulostettu)\s*-->\n*/g, '');
+
+      // Prepare document data
+      const documentData: Partial<FirestoreService.FirestoreDocument> = {
+        clientId,
+        fullMarkdownText: cleanedMarkdown,
+        date: extractedDate,
+        category,
+      };
+
+      // Add PTA-specific fields
+      if (documentType === 'pta') {
+        (documentData as Partial<FirestoreService.PTADocument>).status = ptaStatus;
+      }
+
+      // Add CaseNote-specific fields
+      if (documentType === 'asiakaskirjaus') {
+        (documentData as Partial<FirestoreService.CaseNoteDocument>).manualSummary = manualSummary;
+      }
+
+      // Extract docId from existingFilename if editing
+      let docId: string | undefined;
+      if (existingFilename) {
+        // existingFilename format: "{clientId}_{timestamp}.md"
+        docId = existingFilename.replace('.md', '');
+      }
+
+      console.log('  - Saving to Firestore collection:', collectionName);
+      console.log('  - Document ID:', docId || 'new document');
+      console.log('  - Generating LLM summary...');
+
+      // Save to Firestore (generates LLM summary automatically)
+      const savedDocId = await FirestoreService.saveDocument(
+        collectionName,
+        documentData,
+        docId
+      );
+
+      console.log('✅ [MarkdownDocumentEditor] Save successful, document ID:', savedDocId);
+
+      // For case notes, close automatically after save
+      if (documentType === 'asiakaskirjaus') {
+        setMessage('✅ Asiakaskirjaus tallennettu!');
+        setTimeout(() => {
+          if (onSaved) {
+            onSaved(); // Trigger parent refresh
+          }
+          onClose(); // Close the editor dialog
+        }, 800);
+      } else {
         setMessage('✅ Dokumentti tallennettu onnistuneesti! Voit jatkaa muokkausta tai sulkea ikkunan.');
         setHasUnsavedChanges(true);
-        // Don't close automatically - let user decide
-        // User can continue editing or close manually
-      } else {
-        console.error('❌ [MarkdownDocumentEditor] Save failed');
-        setError('Tallennus epäonnistui. Tarkista että olet kirjautunut sisään.');
+        // Don't close automatically for other document types - let user decide
       }
     } catch (err) {
       console.error('❌ [MarkdownDocumentEditor] Error saving document:', err);
@@ -341,14 +395,39 @@ export default function MarkdownDocumentEditor({
     setError('');
 
     try {
-      const success = await deleteMarkdownFile(existingFilename);
+      // Map documentType to Firestore collection
+      const categoryMap: Record<DocumentType, DocumentCategory> = {
+        'ls-ilmoitus': 'ls-ilmoitus',
+        'päätös': 'päätös',
+        'pta': 'pta-record',
+        'asiakassuunnitelma': 'asiakassuunnitelma',
+        'asiakaskirjaus': 'asiakaskirjaus', // Case notes stored in ASIAKASKIRJAUKSET
+        'yhteystiedot': 'ls-ilmoitus',
+      };
+
+      const category = categoryMap[documentType];
+      const collectionName = FirestoreService.getCollectionFromCategory(category);
+
+      // Extract docId from existingFilename
+      const docId = existingFilename.replace('.md', '');
+
+      console.log('🔵 [MarkdownDocumentEditor] Deleting from Firestore');
+      console.log('  - Collection:', collectionName);
+      console.log('  - Document ID:', docId);
+
+      const success = await FirestoreService.deleteDocument(collectionName, docId);
 
       if (success) {
         setMessage('✅ Dokumentti poistettu onnistuneesti!');
-        // Don't trigger refresh - just close smoothly
+        console.log('🔵 [MarkdownDocumentEditor] Document deleted, closing both dialogs');
+        // Close both dialogs and trigger data refresh
         setTimeout(() => {
-          onClose();
-        }, 1500);
+          if (onSaved) {
+            console.log('🔄 [MarkdownDocumentEditor] Calling onSaved to close parent dialog');
+            onSaved(); // This closes PTADocumentDialog and refreshes data
+          }
+          onClose(); // Close MarkdownDocumentEditor
+        }, 1000);
       } else {
         setError('Poisto epäonnistui. Tarkista että olet kirjautunut sisään.');
       }
@@ -425,7 +504,7 @@ export default function MarkdownDocumentEditor({
         )}
 
         {/* Toolbar */}
-        <div className="flex gap-2 border-b pb-2">
+        <div className="flex flex-col gap-3 border-b pb-3">
           {/* PTA Status Selector */}
           {documentType === 'pta' && (
             <div className="flex items-center gap-2">
@@ -441,48 +520,70 @@ export default function MarkdownDocumentEditor({
               </Select>
             </div>
           )}
+
+          {/* Manual Summary for Case Notes */}
+          {documentType === 'asiakaskirjaus' && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="manual-summary" className="text-sm font-semibold">
+                Lyhyt yhteenveto (pakollinen)
+              </Label>
+              <Textarea
+                id="manual-summary"
+                value={manualSummary}
+                onChange={(e) => setManualSummary(e.target.value)}
+                placeholder="Kirjoita lyhyt yhteenveto asiakaskirjauksesta (esim. 'Kotikäynti, keskusteltu koulunkäynnistä')"
+                className="min-h-[60px] resize-none"
+                maxLength={200}
+              />
+              <p className="text-xs text-gray-500">
+                {manualSummary.length}/200 merkkiä
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Structured Editor */}
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-          {sections
-            .filter(section => !section.isMetadata)
-            .map((section, index) => (
-            <div key={index} className="space-y-2">
-              {/* Locked Heading */}
-              <div
-                className={`
-                  ${section.heading.startsWith('#') ? 'bg-primary/10 border-l-4 border-primary' : 'bg-blue-50 border-l-4 border-blue-400'}
-                  p-3 rounded-md
-                `}
-              >
-                <div className="flex-1">
-                  {section.heading.startsWith('#') ? (
-                    <h3
-                      className={`
-                        font-semibold
-                        ${section.heading.startsWith('# ') ? 'text-xl' : 'text-lg'}
-                      `}
-                    >
-                      {section.heading.replace(/^#+\s*/, '')}
-                    </h3>
-                  ) : (
-                    <div className="text-sm font-mono">{section.heading}</div>
-                  )}
-                </div>
-              </div>
+        {/* Structured Editor - Word-like Layout */}
+        <div className="flex-1 overflow-y-auto pr-2 bg-white">
+          <div className="max-w-4xl mx-auto p-8 space-y-6">
+            {sections.map((section, originalIndex) => {
+              // Skip metadata sections in rendering
+              if (section.isMetadata) return null;
 
-              {/* Editable Content (only for non-metadata sections) */}
-              {!section.isMetadata && (
-                <Textarea
-                  value={section.content}
-                  onChange={(e) => updateSectionContent(index, e.target.value)}
-                  className="min-h-[120px] resize-y"
-                  placeholder={`Kirjoita sisältö osioon: ${section.heading.replace(/^#+\s*/, '')}...`}
-                />
-              )}
-            </div>
-          ))}
+              return (
+                <div key={originalIndex} className="space-y-3">
+                  {/* Heading as styled text (Word-like) */}
+                  {section.heading.startsWith('# ') && (
+                    <h1 className="text-2xl font-bold text-gray-900 mt-6 mb-3">
+                      {section.heading.replace(/^# /, '')}
+                    </h1>
+                  )}
+                  {section.heading.startsWith('## ') && (
+                    <h2 className="text-xl font-semibold text-gray-800 mt-5 mb-2 uppercase tracking-wide">
+                      {section.heading.replace(/^## /, '')}
+                    </h2>
+                  )}
+                  {section.heading.startsWith('### ') && (
+                    <h3 className="text-lg font-medium text-gray-700 mt-4 mb-2">
+                      {section.heading.replace(/^### /, '')}
+                    </h3>
+                  )}
+                  {!section.heading.startsWith('#') && (
+                    <div className="text-sm font-mono text-gray-600">
+                      {section.heading}
+                    </div>
+                  )}
+
+                  {/* Editable Content - Clean textarea */}
+                  <Textarea
+                    value={section.content}
+                    onChange={(e) => updateSectionContent(originalIndex, e.target.value)}
+                    className="min-h-[120px] resize-y border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    placeholder={`Kirjoita sisältö...`}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Footer */}
@@ -530,12 +631,12 @@ export default function MarkdownDocumentEditor({
           <AlertDialogTitle>Poista dokumentti</AlertDialogTitle>
           <AlertDialogDescription>
             Oletko varma että haluat poistaa tämän dokumentin? Tätä toimintoa ei voi peruuttaa.
-            {existingFilename && (
-              <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm font-medium">{existingFilename}</p>
-              </div>
-            )}
           </AlertDialogDescription>
+          {existingFilename && (
+            <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm font-medium">{existingFilename}</p>
+            </div>
+          )}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>

@@ -6,49 +6,28 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { FileText, AlertTriangle, Loader2, ChevronRight, X, Trash2, Edit3 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { FileText, Loader2, ChevronRight } from 'lucide-react';
 import type { LSNotification } from '@/data/ls-types';
-import MarkdownDocumentEditor from '../MarkdownDocumentEditor';
+import LSNotificationDialog from '../LSNotificationDialog';
 import { generateIlmoitusSummaries } from '@/lib/aineistoParser';
 import { preprocessMarkdownForDisplay } from '@/lib/utils';
-
-// Custom components for ReactMarkdown to preserve line breaks
-const markdownComponents = {
-  p: ({ children }: any) => <p style={{ whiteSpace: 'pre-line' }}>{children}</p>,
-};
-import { deleteMarkdownFile } from '@/lib/aineistoStorageService';
 
 interface LSNotificationsProps {
   notifications: LSNotification[];
   clientId?: string;
+  onRefresh?: () => void;
 }
 
-export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications, clientId = 'malliasiakas' }) => {
-  const [selectedNotification, setSelectedNotification] = useState<LSNotification | null>(null);
-  const [showEditor, setShowEditor] = useState(false);
+export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications, clientId = 'malliasiakas', onRefresh }) => {
+  const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
   const [processedNotifications, setProcessedNotifications] = useState<LSNotification[]>([]);
   const [isGeneratingSummaries, setIsGeneratingSummaries] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [notificationToDelete, setNotificationToDelete] = useState<LSNotification | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Get current notification from processedNotifications (always fresh)
+  const selectedNotification = selectedNotificationId
+    ? processedNotifications.find(n => n.id === selectedNotificationId) || null
+    : null;
 
   // Generoi yhteenvetoja ilmoituksille kun ne muuttuvat
   useEffect(() => {
@@ -127,52 +106,12 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications,
     }
   };
 
-  const handleDeleteNotification = async () => {
-    if (!notificationToDelete) return;
-
-    setIsDeleting(true);
-    try {
-      // Poista tiedosto Firebase Storagesta
-      const filename = notificationToDelete.filename;
-      const success = await deleteMarkdownFile(`LS-ilmoitukset/${filename}`);
-
-      if (success) {
-        // Päivitä lista poistamalla ilmoitus
-        setProcessedNotifications(prev =>
-          prev.filter(n => n.id !== notificationToDelete.id)
-        );
-        setSelectedNotification(null);
-        setShowDeleteDialog(false);
-        setNotificationToDelete(null);
-      } else {
-        console.error('Failed to delete notification file');
-      }
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-    } finally {
-      setIsDeleting(false);
+  const handleNotificationDialogSaved = () => {
+    console.log('🔄 [LSNotifications] handleNotificationDialogSaved - closing dialog and refreshing');
+    setSelectedNotificationId(null);
+    if (onRefresh) {
+      onRefresh();
     }
-  };
-
-  const handleEdit = () => {
-    console.log('🔵 [LSNotifications] handleEdit called - opening editor');
-    console.log('  - selectedNotification.filename:', selectedNotification?.filename);
-    setShowEditor(true);
-  };
-
-  const handleEditorClose = () => {
-    console.log('🔵 [LSNotifications] handleEditorClose called');
-    setShowEditor(false);
-  };
-
-  const handleEditorSaved = () => {
-    console.log('🔵 [LSNotifications] handleEditorSaved called from MarkdownDocumentEditor');
-    console.log('  - closing editor');
-    setShowEditor(false);
-    console.log('  - closing notification dialog');
-    setSelectedNotification(null);
-    // TODO: Implement refresh mechanism similar to PTA
-    console.log('⚠️ [LSNotifications] Full data refresh needed - parent should implement onRefresh callback');
   };
 
   return (
@@ -204,7 +143,7 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications,
                   <div
                     key={notification.id}
                     className="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedNotification(notification)}
+                    onClick={() => setSelectedNotificationId(notification.id)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -221,7 +160,7 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications,
                           )}
                         </div>
                         <div className="text-xs text-gray-600 mb-2">
-                          Ilmoittaja: {notification.reporter.profession}
+                          Ilmoittaja: {notification.reporterSummary || notification.reporter.profession}
                         </div>
                         <p className="text-sm text-gray-800 line-clamp-2">
                           {notification.summary === 'Ladataan yhteenvetoa...' && (
@@ -242,118 +181,14 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications,
         </CardContent>
       </Card>
 
-      {/* Full Notification Dialog */}
-      <Dialog
+      {/* LS Notification Dialog */}
+      <LSNotificationDialog
         open={selectedNotification !== null}
-        onOpenChange={(open) => !open && setSelectedNotification(null)}
-      >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <AlertTriangle className="h-6 w-6 text-orange-600" />
-                </div>
-                <div>
-                  <DialogTitle className="text-2xl">
-                    Lastensuojeluilmoitus
-                  </DialogTitle>
-                </div>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setSelectedNotification(null)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </DialogHeader>
-
-          {selectedNotification && (
-            <div className="space-y-6 mt-4">
-              {/* Full Document */}
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="prose prose-sm max-w-none">
-                    <ReactMarkdown components={markdownComponents}>{selectedNotification.fullText}</ReactMarkdown>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Footer Actions */}
-              <div className="flex justify-between items-center mt-6 pt-4 border-t">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleEdit}
-                    className="flex items-center gap-2"
-                  >
-                    <Edit3 className="h-4 w-4" />
-                    MUOKKAA
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      setNotificationToDelete(selectedNotification);
-                      setShowDeleteDialog(true);
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Poista ilmoitus
-                  </Button>
-                </div>
-                <Button variant="outline" onClick={() => setSelectedNotification(null)}>
-                  Sulje
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Poista lastensuojeluilmoitus</AlertDialogTitle>
-            <AlertDialogDescription>
-              Oletko varma että haluat poistaa tämän ilmoituksen? Tätä toimintoa ei voi peruuttaa.
-              {notificationToDelete && (
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium">
-                    {formatDate(notificationToDelete.date)} - {notificationToDelete.reporter.profession}
-                  </p>
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>
-              Peruuta
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteNotification}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {isDeleting ? 'Poistetaan...' : 'Poista'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Document Editor */}
-      {selectedNotification && (
-        <MarkdownDocumentEditor
-          open={showEditor}
-          onClose={handleEditorClose}
-          documentType="ls-ilmoitus"
-          clientId={clientId}
-          existingContent={selectedNotification.fullText}
-          existingFilename={selectedNotification.filename}
-          onSaved={handleEditorSaved}
-        />
-      )}
+        onClose={() => setSelectedNotificationId(null)}
+        document={selectedNotification}
+        clientId={clientId}
+        onSaved={handleNotificationDialogSaved}
+      />
     </>
   );
 };

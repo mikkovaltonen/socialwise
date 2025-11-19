@@ -30,6 +30,8 @@ interface DocumentData {
   sections?: Record<string, string>;
   filename?: string;
   date?: string;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 interface DocumentViewDialogProps {
@@ -114,6 +116,26 @@ export const DocumentViewDialog: React.FC<DocumentViewDialogProps> = ({
 
           <div className="space-y-6 mt-4">
             <Separator />
+
+            {/* Audit Info */}
+            {(document.updatedBy || document.updatedAt) && (
+              <Card className="bg-gray-50">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    {document.updatedBy && (
+                      <span>
+                        <strong>Viimeisin muuttaja:</strong> {document.updatedBy}
+                      </span>
+                    )}
+                    {document.updatedAt && (
+                      <span>
+                        <strong>Muutettu:</strong> {new Date(document.updatedAt).toLocaleString('fi-FI')}
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Full Document Sections */}
             <div className="space-y-6">
