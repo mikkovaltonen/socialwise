@@ -26,8 +26,14 @@ Analysoi annettu asiakasaineisto ja palauta **VAIN JSON-muotoinen vastaus** seur
 
 ### 2. Aikaväli (timePeriod)
 - **Muoto**: `DD.MM.YYYY - DD.MM.YYYY`
-- **Alku**: Ensimmäinen dokumentti/ilmoitus
-- **Loppu**: Viimeisin tapahtuma
+- **TÄRKEÄÄ**: Etsi päivämäärät **dokumenttien sisällöstä**, EI tiedostonimistä
+- **Lähteet**: Lue dokumenttien sisältö ja etsi:
+  - Lastensuojeluilmoituksista: "Päiväys:", "Päivämäärä:" kentät
+  - PTA-kirjauksista: Tapaamisen/kotikäynnin päivämäärät
+  - Päätöksistä: Päätöksen päivämäärät
+  - Kaikista dokumenteista: Ensimmäinen ja viimeisin maininta
+- **Alku**: Varhaisin päivämäärä dokumenttien **sisällöstä**
+- **Loppu**: Myöhäisin päivämäärä dokumenttien **sisällöstä**
 - **Esimerkki**: "15.09.2015 - 20.03.2025"
 
 ## Tärkeää
@@ -35,22 +41,50 @@ Analysoi annettu asiakasaineisto ja palauta **VAIN JSON-muotoinen vastaus** seur
 - **Palauta VAIN JSON** - ei muuta tekstiä
 - **Älä lisää omia tulkintoja** - käytä vain aineiston tietoja
 - **Ole ytimekäs** - mainProblems max 60 merkkiä
-- **Tarkista päivämäärät** - käytä aineiston ensimmäistä ja viimeisintä päivämäärää
+- **KRIITTISTÄ**: Etsi päivämäärät lukemalla dokumenttien sisältö kokonaisuudessaan, älä käytä tiedostonimistä poimittuja päivämääriä
 
 ## Esimerkki
 
 **Aineisto:**
 ```
-Lastensuojeluilmoitukset (3 kpl):
-- 2016-08-03: Opettaja - Lapsi on usein likainen ja väsynyt
-- 2017-11-16: Naapuri - Perheen kotioloissa huolta
-- 2018-04-26: Koulu - Poissaoloja ja väkivaltaa
+## LS-ilmoitukset
 
-Päätökset:
-- 2018-05-10: Asiakkuuden avaaminen
+### Lastensuojeluilmoitus_1.md
 
-Palveluntarvearviointi:
-- 2019-03-15: Kotikäynti toteutettu
+Päiväys: 3.8.2016
+Ilmoittaja: Opettaja, Koiviston koulu
+
+ILMOITUKSEN PERUSTE:
+Lapsi on usein likainen ja väsynyt koulussa...
+
+---
+
+### Lastensuojeluilmoitus_2.md
+
+Päiväys: 16.11.2017
+Ilmoittaja: Naapuri
+
+ILMOITUKSEN PERUSTE:
+Perheen kotioloissa on huolta...
+
+---
+
+## Päätökset
+
+### Päätös_1.md
+
+Päivämäärä: 10.5.2018
+Päätöstyyppi: Asiakkuuden avaaminen
+...
+
+---
+
+## PTA
+
+### PTA_1.md
+
+Kotikäynti toteutettu 15.3.2019
+...
 ```
 
 **Vastaus:**
@@ -60,6 +94,10 @@ Palveluntarvearviointi:
   "timePeriod": "03.08.2016 - 15.03.2019"
 }
 ```
+
+**Selitys**: LLM löytää päivämäärät dokumenttien sisällöstä:
+- Varhaisin: "Päiväys: 3.8.2016" → 03.08.2016
+- Myöhäisin: "toteutettu 15.3.2019" → 15.03.2019
 
 ## Palauta
 

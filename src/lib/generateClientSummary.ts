@@ -53,8 +53,8 @@ export async function generateClientSummary(clientData: LSClientData): Promise<C
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      // Load Aineisto context (full client data from markdown files)
-      const aineistoContext = await loadAineistoContext();
+      // Load Aineisto context (full client data from markdown files) for this specific client
+      const aineistoContext = await loadAineistoContext(clientData.clientId);
       logger.debug(`📁 Loaded ${aineistoContext.fileCount} files from Aineisto`);
 
       // Prepare context from all client data
@@ -192,32 +192,23 @@ function prepareClientContext(clientData: LSClientData): string {
     servicePlans,
   } = clientData;
 
-  // Extract key information
+  // Extract key information - use summaries without dates to let LLM find dates from full documents
   const notificationSummaries = notifications.map(n =>
-    `- ${n.date}: ${n.reporter.profession} - ${n.highlights[0] || n.summary}`
+    `- ${n.reporter.profession}: ${n.highlights[0] || n.summary}`
   ).join('\n');
 
   const decisionSummaries = decisions.length > 0
-    ? decisions.map(d => `- ${d.date}: ${d.decisionType} - ${d.summary}`).join('\n')
+    ? decisions.map(d => `- ${d.decisionType}: ${d.summary}`).join('\n')
     : 'Ei päätöksiä';
 
   const ptaSummaries = ptaRecords.length > 0
-    ? ptaRecords.slice(0, 3).map(p => `- ${p.date}: ${p.eventType} - ${p.summary}`).join('\n')
+    ? ptaRecords.slice(0, 3).map(p => `- ${p.eventType}: ${p.summary}`).join('\n')
     : 'Ei kirjauksia';
-
-  // Get earliest and latest dates
-  const allDates = [
-    ...notifications.map(n => n.date),
-    ...decisions.map(d => d.date),
-    ...ptaRecords.map(p => p.date),
-  ].sort();
-
-  const earliestDate = allDates[0] || '';
-  const latestDate = allDates[allDates.length - 1] || '';
 
   return `Asiakkaan nimi: ${clientName}
 
-Aikaväli: ${earliestDate} - ${latestDate}
+HUOM: Kaikki dokumentit ovat saatavilla täydellisessä muodossa kontekstissa yllä.
+Etsi päivämäärät lukemalla dokumenttien sisältöä (esim. "Päiväys:", "Päivämäärä:" kentät).
 
 Lastensuojeluilmoitukset (${notifications.length} kpl):
 ${notificationSummaries}
@@ -230,7 +221,7 @@ ${ptaSummaries}
 
 Asiakassuunnitelmat: ${servicePlans.length} kpl
 
-Analysoi tiedot ja tunnista:
+Analysoi dokumenttien sisältö ja tunnista:
 1. Pääongelmat (max 60 merkkiä, pilkulla eroteltu lista)
-2. Aikaväli (muodossa DD.MM.YYYY - DD.MM.YYYY)`;
+2. Aikaväli - ETSI päivämäärät dokumenttien sisällöstä, ei tiedostonimistä (muodossa DD.MM.YYYY - DD.MM.YYYY)`;
 }

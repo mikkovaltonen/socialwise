@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
   FileText,
-  Gavel,
+  Scale,
   ClipboardList,
   StickyNote,
 } from 'lucide-react';
@@ -54,7 +54,7 @@ const DOCUMENT_TYPES: DocumentTypeOption[] = [
     type: 'päätös',
     label: 'Päätös',
     description: 'Virallinen päätös',
-    icon: <Gavel className="h-6 w-6" />,
+    icon: <Scale className="h-6 w-6" />,
   },
   {
     type: 'asiakaskirjaus',

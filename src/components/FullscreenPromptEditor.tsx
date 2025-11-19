@@ -6,8 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import MarkdownEditor from './MarkdownEditor';
-import { X, Save } from 'lucide-react';
+import { X, Save, AlertCircle } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 interface FullscreenPromptEditorProps {
@@ -18,6 +19,8 @@ interface FullscreenPromptEditorProps {
   onSave: () => void;
   title: string;
   saving?: boolean;
+  disabled?: boolean;
+  readOnlyMessage?: string;
 }
 
 export function FullscreenPromptEditor({
@@ -27,7 +30,9 @@ export function FullscreenPromptEditor({
   onChange,
   onSave,
   title,
-  saving = false
+  saving = false,
+  disabled = false,
+  readOnlyMessage
 }: FullscreenPromptEditorProps) {
   const [localContent, setLocalContent] = useState(content);
 
@@ -67,13 +72,16 @@ export function FullscreenPromptEditor({
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
-            <h2 className="text-lg font-semibold">{title}</h2>
+            <div>
+              <h2 className="text-lg font-semibold">{title}</h2>
+              {disabled && <span className="text-xs text-yellow-600">Read-only mode</span>}
+            </div>
             <div className="flex items-center gap-2">
               {/* Action Buttons */}
               <Button
                 size="sm"
                 onClick={onSave}
-                disabled={saving}
+                disabled={saving || disabled}
                 className="h-8"
               >
                 <Save className="w-4 h-4 mr-1" />
@@ -92,7 +100,15 @@ export function FullscreenPromptEditor({
 
           {/* Content Area */}
           <div className="flex-1 overflow-hidden">
-            <div className="h-full p-6">
+            <div className="h-full p-6 space-y-4">
+              {readOnlyMessage && (
+                <Alert className="bg-yellow-50 border-yellow-200">
+                  <AlertCircle className="w-4 h-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    {readOnlyMessage}
+                  </AlertDescription>
+                </Alert>
+              )}
               <MarkdownEditor
                 value={localContent}
                 onChange={handleChange}
@@ -101,6 +117,7 @@ export function FullscreenPromptEditor({
                 label=""
                 minHeight="calc(100% - 2rem)"
                 className="h-full"
+                disabled={disabled}
               />
             </div>
           </div>
