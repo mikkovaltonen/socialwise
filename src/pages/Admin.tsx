@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, FileText, Sparkles, Upload, Users, BookOpen } from "lucide-react";
+import { LogOut, Settings, ArrowLeft, AlertTriangle, UserPlus, FileText, Sparkles, Upload, Users, BookOpen, Scale } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import PromptEditor from "../components/PromptEditor";
 import SystemPromptManager from "../components/SystemPromptManager";
 import AsiakasYhteenvetoPromptManager from "../components/AsiakasYhteenvetoPromptManager";
 import PtaYhteenvetoPromptManager from "../components/PtaYhteenvetoPromptManager";
+import PaatosYhteenvetoPromptManager from "../components/PaatosYhteenvetoPromptManager";
 import IlmoitusYhteenvetoPromptManager from "../components/IlmoitusYhteenvetoPromptManager";
 import OrganizationManager from "../components/OrganizationManager";
 import BotInstructionManager from "../components/BotInstructionManager";
@@ -269,6 +270,49 @@ const Admin = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <PtaYhteenvetoPromptManager />
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Päätös Summary Management */}
+        <div className="mb-8">
+          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-8">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <Scale className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold mb-2">Päätösten yhteenveto</CardTitle>
+                  <p className="text-white/90 text-lg leading-relaxed">
+                    Hallitse päätösdokumenttien LLM-pohjaisten yhteenvetojen luomisen järjestelmäpromptin versioita
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 bg-white">
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                Hallitse päätösdokumenttien yhteenvetojen luomisen järjestelmäpromptin versioita. Yhteenveto generoidaan automaattisesti kun dokumentti tallennetaan.
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 py-6 text-lg font-medium shadow-lg shadow-indigo-600/25"
+                  >
+                    <Scale className="mr-2 h-5 w-5" />
+                    Avaa päätösten yhteenvedon promptin hallinta
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Päätösten Yhteenvedon Promptin hallinta</DialogTitle>
+                    <DialogDescription>
+                      Hallitse päätösdokumenttien yhteenvetojen luomisen järjestelmäpromptia. Yhteenveto käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <PaatosYhteenvetoPromptManager />
                 </DialogContent>
               </Dialog>
             </CardContent>

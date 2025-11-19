@@ -84,7 +84,7 @@ const DOCUMENT_STRUCTURES: Record<DocumentType, DocumentSection[]> = {
 
   'päätös': [
     { heading: '# Päätös', content: '', locked: true },
-    { heading: `**Päiväysmäärä:** ${new Date().toLocaleDateString('fi-FI')}`, content: '', locked: true, isMetadata: true },
+    { heading: '## Päivämäärä', content: '', locked: true },
     { heading: '## Tausta', content: '', locked: true },
     { heading: '## Päätös', content: '', locked: true },
     { heading: '## Perustelut', content: '', locked: true },

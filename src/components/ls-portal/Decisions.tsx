@@ -50,7 +50,7 @@ const decisionTypeLabels: Record<Decision['decisionType'], string> = {
   selvitys_aloitetaan: 'Selvitys aloitetaan',
   kiireellinen_sijoitus: 'Kiireellinen sijoitus',
   avohuollon_tukitoimi: 'Avohuollon tukitoimi',
-  muu: 'Muu päätös',
+  muu: '',
 };
 
 const decisionTypeColors: Record<Decision['decisionType'], string> = {
@@ -136,6 +136,8 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
                 {sortedDecisions.map((decision, index) => {
                   const typeLabel = decisionTypeLabels[decision.decisionType];
                   const typeColor = decisionTypeColors[decision.decisionType];
+                  // Use summary if typeLabel is empty
+                  const displayText = typeLabel || decision.summary || 'Päätös';
 
                   return (
                     <div
@@ -148,10 +150,14 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
                           <span className="text-sm font-bold">
                             {formatDate(decision.date)}
                           </span>
-                          <span className="text-sm">-</span>
-                          <span className="text-sm font-bold">
-                            {typeLabel}
-                          </span>
+                          {displayText && (
+                            <>
+                              <span className="text-sm">-</span>
+                              <span className="text-sm font-bold line-clamp-1">
+                                {displayText}
+                              </span>
+                            </>
+                          )}
                         </div>
                         <ChevronRight className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                       </div>
@@ -167,7 +173,9 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
       {/* Full Decision Dialog */}
       <Dialog
         open={selectedDecision !== null}
-        onOpenChange={(open) => !open && setSelectedDecision(null)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedDecision(null);
+        }}
       >
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -197,24 +205,32 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
             </div>
           </DialogHeader>
 
+          {selectedDecision && (() => {
+            console.log('🔍 [Decisions] Rendering decision dialog:', {
+              id: selectedDecision.id,
+              hasSummary: !!selectedDecision.summary,
+              summaryLength: selectedDecision.summary?.length || 0,
+              summaryPreview: selectedDecision.summary?.substring(0, 50) || '(empty)',
+              hasHighlights: !!selectedDecision.highlights,
+              highlightsCount: selectedDecision.highlights?.length || 0
+            });
+            return null;
+          })()}
+
           {selectedDecision && (
             <div className="space-y-6 mt-4">
               {/* Summary Section */}
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Yhteenveto
-                  </h3>
-                  <p className="text-sm text-blue-800">{selectedDecision.summary}</p>
-                  {selectedDecision.legalBasis && (
-                    <div className="mt-3 p-3 bg-white border border-blue-200 rounded-lg">
-                      <span className="text-xs font-medium text-blue-700">LAKIPYKÄLÄ:</span>
-                      <p className="text-sm text-blue-900 font-medium">{selectedDecision.legalBasis}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              {selectedDecision.summary && selectedDecision.summary.trim() !== '' && (
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="pt-6">
+                    <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Yhteenveto
+                    </h3>
+                    <p className="text-sm text-blue-800 whitespace-pre-wrap">{selectedDecision.summary}</p>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Highlights */}
               {selectedDecision.highlights && selectedDecision.highlights.length > 0 && (
