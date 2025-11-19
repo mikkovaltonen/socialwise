@@ -60,11 +60,17 @@ function extractSection(content: string, sectionTitle: string): string {
 
 /**
  * Extract date from markdown content
- * Looks for "## Päiväys" section or "**Päiväys:**" field
+ * Looks for "## Päiväys", "## Päivämäärä" section or "**Päiväys:**" field
  */
 export function extractDateFromMarkdown(markdown: string): string {
   // Try finding date in Päiväys section first
-  const dateSection = extractSection(markdown, 'Päiväys');
+  let dateSection = extractSection(markdown, 'Päiväys');
+
+  // Also try Päivämäärä (used in päätös documents)
+  if (!dateSection) {
+    dateSection = extractSection(markdown, 'Päivämäärä');
+  }
+
   if (dateSection) {
     const dateMatch = dateSection.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
     if (dateMatch) {
@@ -74,9 +80,9 @@ export function extractDateFromMarkdown(markdown: string): string {
   }
 
   // Try finding date in inline field
-  const dateFieldMatch = markdown.match(/\*\*Päiväys:\*\*\s*(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  const dateFieldMatch = markdown.match(/\*\*Päiv[äa](ys|määrä):\*\*\s*(\d{1,2})\.(\d{1,2})\.(\d{4})/);
   if (dateFieldMatch) {
-    const [, day, month, year] = dateFieldMatch;
+    const [, , , day, month, year] = dateFieldMatch;
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
@@ -203,16 +209,25 @@ function convertPTARecord(doc: PTADocument): PTARecord {
  * Convert Firestore DecisionDocument to UI Decision type
  */
 function convertDecision(doc: DecisionDocument): Decision {
-  return {
+  const decision = {
     id: doc.id || doc.documentKey,
     date: doc.date,
     filename: doc.id ? `${doc.id}.md` : `${doc.documentKey}.md`,  // Use Firestore document ID
     decisionType: doc.decisionType || 'muu',
-    summary: doc.summary,
-    legalBasis: doc.legalBasis,
-    highlights: doc.highlights,
+    summary: doc.summary || '',
+    legalBasis: doc.legalBasis || '',
+    highlights: doc.highlights || [],
     fullText: doc.fullMarkdownText
   };
+
+  // Debug logging for summary
+  if (!decision.summary || decision.summary.trim() === '') {
+    logger.warn(`Decision ${decision.id} has empty summary`);
+  } else {
+    logger.debug(`Decision ${decision.id} summary: ${decision.summary.substring(0, 50)}...`);
+  }
+
+  return decision;
 }
 
 /**

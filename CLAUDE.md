@@ -34,6 +34,99 @@ This is SocialWise - Sosiaalityön teknologiakumppani (Social Work Technology Pa
 - **Case Notes**: Structured templates for different case types
 - **Decision Support**: AI-powered recommendations with legal references
 - **Quality Assurance**: Automated checks for completeness and accuracy
+- **Document Upload**: PDF and text file upload with AI-powered structuring
+
+#### Document Types and Structures
+
+All documents follow a strict markdown structure with dedicated sections. When uploading documents (PDF, TXT, MD), the system:
+1. Converts document to markdown (if needed)
+2. Uses Grok-4-Fast LLM to parse and structure content into correct sections
+3. Presents editable markdown in the document editor
+4. Saves to Firestore with full audit trail
+
+**Key Points:**
+- Date fields are editable (not automatic)
+- All section headers (##) are required and standardized
+- Main title (#) is locked for each document type
+- Content within sections is fully editable
+
+**Päätös (Decision)**
+```markdown
+# Päätös
+
+## Päivämäärä
+[DD.MM.YYYY - Muokattava kenttä]
+
+## Tausta
+[Päätöksen tausta]
+
+## Päätös
+[Varsinainen päätös]
+
+## Perustelut
+[Perustelut]
+
+## Muutoksenhaku
+[Muutoksenhakuohjeet]
+```
+
+**Lastensuojeluilmoitus (Child Protection Notification)**
+```markdown
+# Lastensuojeluilmoitus
+
+## Päiväys
+[DD.MM.YYYY]
+
+## Ilmoittajan tiedot
+**Nimi:** [Ilmoittajan nimi]
+**Ammatti/asema:** [Ammatti]
+
+## Lapsen tiedot
+**Nimi:** [Lapsen nimi]
+**Henkilötunnus:** [Henkilötunnus]
+
+## Ilmoituksen peruste
+[Ilmoituksen sisältö]
+```
+
+**Palvelutarpeen arviointi (PTA)**
+```markdown
+# Palvelutarpeen arviointi
+
+## Päiväys
+[DD.MM.YYYY]
+
+## PERHE
+[Perheen kuvaus]
+
+## TAUSTA
+[Taustatieto]
+
+## PALVELUT
+[Palvelut]
+
+## JOHTOPÄÄTÖKSET
+[Johtopäätökset]
+```
+
+**Asiakaskirjaus (Case Note)**
+```markdown
+# Asiakaskirjaus
+
+**Päiväys:** [DD.MM.YYYY]
+
+## Tapaamisen tiedot
+[Tapaamisen tiedot]
+
+## Keskustelun aiheet
+[Aiheet]
+
+## Havainnot
+[Havainnot]
+
+## Jatkotoimet
+[Jatkotoimet]
+```
 
 ### 4. System Prompt Management
 - **Versioning**: Timestamp-based system prompt versions

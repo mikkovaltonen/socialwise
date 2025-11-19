@@ -47,6 +47,7 @@ const documentStructures: DocumentStructure[] = [
     title: 'Päätös',
     mainHeading: '# Päätös',
     subHeadings: [
+      '## Päivämäärä',
       '## Tausta',
       '## Päätös',
       '## Perustelut',
@@ -128,8 +129,8 @@ export function DocumentStructureViewer() {
                   </div>
                 </div>
 
-                {/* Metadata - Only for non-PTA documents */}
-                {doc.type !== 'pta' && (
+                {/* Metadata - Only for non-PTA and non-päätös documents */}
+                {doc.type !== 'pta' && doc.type !== 'päätös' && (
                   <div className="bg-blue-50 p-2 rounded text-xs font-mono text-blue-900 border border-blue-200">
                     **Päiväys:** [automaattinen]
                   </div>
@@ -170,8 +171,8 @@ export function DocumentStructureViewer() {
             <span>Käyttäjä ei voi muokata tai poistaa otsikkorakenteita</span>
           </div>
           <div className="flex gap-2">
-            <span className="font-semibold min-w-[120px]">Automaattinen päiväys:</span>
-            <span>Päivämäärä lisätään automaattisesti luontihetkellä</span>
+            <span className="font-semibold min-w-[120px]">Päivämäärät:</span>
+            <span>Päivämäärät ovat muokattavia kenttiä (ei automaattisia)</span>
           </div>
           <div className="flex gap-2">
             <span className="font-semibold min-w-[120px]">Tallennusmuoto:</span>

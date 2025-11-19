@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import MarkdownDocumentEditor, { DocumentType } from './MarkdownDocumentEditor';
 import { logger } from '@/lib/logger';
+import { convertToMarkdown, getSupportedFileExtensions } from '@/lib/documentConverter';
 
 interface DocumentCreationDialogProps {
   open: boolean;
@@ -140,20 +141,23 @@ export default function DocumentCreationDialog({
     setError('');
 
     try {
-      // Read file content
-      const text = await file.text();
+      // Convert document to markdown first
+      logger.info(`📄 File uploaded: ${file.name}`);
+      const conversionResult = await convertToMarkdown(file);
+      const markdown = conversionResult.markdown;
 
-      logger.info(`📄 File uploaded: ${file.name} (${text.length} characters)`);
+      logger.info(`✅ Converted to markdown: ${markdown.length} characters`);
 
       // Structure the document using LLM
-      const structuredContent = await structureDocumentWithLLM(text, selectedType);
+      const structuredContent = await structureDocumentWithLLM(markdown, selectedType);
 
       setUploadedContent(structuredContent);
       setEditorOpen(true);
       setIsProcessing(false);
     } catch (err) {
       logger.error('Error processing uploaded file:', err);
-      setError('Virhe tiedoston käsittelyssä. Yritä uudelleen.');
+      const errorMessage = err instanceof Error ? err.message : 'Virhe tiedoston käsittelyssä. Yritä uudelleen.';
+      setError(errorMessage);
       setIsProcessing(false);
     }
 
@@ -237,25 +241,29 @@ Poimii tiedot alkuperäisestä tekstistä ja sijoita ne oikeisiin kohtiin. Jos t
 
 Poimii tiedot alkuperäisestä tekstistä ja sijoita ne oikeisiin kohtiin.`,
 
-      'päätös': `Jäsennä seuraava päätös oikeaan rakenteeseen:
+      'päätös': `Jäsennä seuraava päätös TÄSMÄLLEEN tähän rakenteeseen. ÄLÄ MUUTA OTSIKKORAKENTEITA:
 
 # Päätös
 
-**Päiväysmäärä:** [Päivämäärä]
+## Päivämäärä
+[Poimii päivämäärä muodossa DD.MM.YYYY - TÄMÄN ON OLTAVA OMA OTSIKKO, EI **Päivämäärä:** kenttä]
 
 ## Tausta
-[Päätöksen tausta]
+[Päätöksen tausta ja syyt]
 
 ## Päätös
-[Varsinainen päätös]
+[Varsinainen päätös ja toimenpiteet]
 
 ## Perustelut
-[Perustelut]
+[Päätöksen perustelut ja lakiviitteet]
 
 ## Muutoksenhaku
 [Muutoksenhakuohjeet]
 
-Poimii tiedot alkuperäisestä tekstistä ja sijoita ne oikeisiin kohtiin.`,
+TÄRKEÄÄ:
+- Käytä VAIN näitä otsikkoja (##), ei ** kenttiä
+- Päivämäärä on OMA OTSIKKO (## Päivämäärä), ei inline-kenttä
+- Poimii sisältö alkuperäisestä tekstistä otsikkojen alle`,
 
       'asiakaskirjaus': `Jäsennä seuraava asiakaskirjaus oikeaan rakenteeseen:
 
@@ -382,7 +390,7 @@ Poimii tiedot alkuperäisestä tekstistä ja sijoita ne oikeisiin kohtiin.`,
             <Alert>
               <Loader2 className="h-4 w-4 animate-spin" />
               <AlertDescription>
-                🤖 Jäsennetään dokumenttia Grok-4-Fast-mallilla...
+                Muunnetaan dokumentti markdown-muotoon ja jäsennetään AI:lla...
               </AlertDescription>
             </Alert>
           )}
@@ -391,7 +399,7 @@ Poimii tiedot alkuperäisestä tekstistä ja sijoita ne oikeisiin kohtiin.`,
           <input
             ref={fileInputRef}
             type="file"
-            accept=".txt,.md,.doc,.docx"
+            accept={getSupportedFileExtensions()}
             onChange={handleFileUpload}
             disabled={isProcessing}
             className="hidden"

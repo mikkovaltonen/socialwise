@@ -7,12 +7,14 @@
  * Uses Firestore-based configuration from Admin panel:
  * - LS-ilmoitus: ilmoitusYhteenvetoService (ILMOITUS_YHTEENVETO)
  * - PTA: ptaYhteenvetoService (PALVELUNTARPEEN_ARVIOINTI_YHTEENVETO)
+ * - Päätös: paatosYhteenvetoService (PAATOS_YHTEENVETO)
  */
 
 import { logger } from './logger';
 import type { DocumentCategory } from './firestoreDocumentService';
 import * as ilmoitusYhteenvetoService from './ilmoitusYhteenvetoService';
 import * as ptaYhteenvetoService from './ptaYhteenvetoService';
+import * as paatosYhteenvetoService from './paatosYhteenvetoService';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -59,6 +61,13 @@ export async function generateDocumentSummary(
       const basePrompt = await ptaYhteenvetoService.getPromptForGeneration();
       prompt = `${basePrompt}\n\nDokumentti:\n${fullMarkdownText}`;
       logger.debug(`Using PALVELUNTARPEEN_ARVIOINTI_YHTEENVETO config: ${model} @ ${temperature}`);
+    } else if (category === 'päätös') {
+      // Use Firestore-based configuration for Päätös
+      model = await paatosYhteenvetoService.getLLMModel();
+      temperature = await paatosYhteenvetoService.getTemperature();
+      const basePrompt = await paatosYhteenvetoService.getPromptForGeneration();
+      prompt = `${basePrompt}\n\nDokumentti:\n${fullMarkdownText}`;
+      logger.debug(`Using PAATOS_YHTEENVETO config: ${model} @ ${temperature}`);
     } else {
       // Fallback: Use hardcoded configuration for unsupported types
       model = FALLBACK_MODEL;
