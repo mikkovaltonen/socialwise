@@ -231,9 +231,7 @@ function convertPTARecord(doc: PTADocument): PTARecord {
   let fullText: string;
   if (doc.paivays || doc.perhe) {
     // New format: build from structured fields
-    fullText = `# Palvelutarpeen arviointi
-
-## Päiväys
+    fullText = `## Päiväys
 ${doc.paivays || ''}
 
 ## PERHE
@@ -292,9 +290,7 @@ function convertDecision(doc: DecisionDocument): Decision {
   let fullText: string;
   if (doc.ratkaisuTaiPaatos || doc.asianKeskeinenSisalto) {
     // New format: build from structured fields
-    fullText = `# Päätös
-
-## RATKAISU TAI PÄÄTÖS
+    fullText = `## RATKAISU TAI PÄÄTÖS
 ${doc.ratkaisuTaiPaatos || ''}
 
 ## ASIAN VIREILLETULOPÄIVÄ
@@ -309,10 +305,10 @@ ${doc.paatoksenPerustelutJaToimeenpano || ''}
 ## RATKAISU VOIMASSA
 ${doc.ratkaisuVoimassa || ''}
 
-## VALMISTELIJA JA SOSIAALITYÖNTEKIJÄ
+## VALMISTELIJA / LAPSEN ASIOISTA VASTAAVA SOSIAALITYÖNTEKIJÄ
 ${doc.valmistelijaJaSosiaalityontekija || ''}
 
-## RATKAISIJA
+## RATKAISIJA / VASTUUSOSIAALITYÖNTEKIJÄ / JOHTAVA SOSIAALITYÖNTEKIJÄ
 ${doc.ratkaisija || ''}
 
 ## TIEDOKSIANTO PMV

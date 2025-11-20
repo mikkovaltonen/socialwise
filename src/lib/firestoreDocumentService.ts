@@ -217,6 +217,20 @@ export async function saveDocument(
     const category = getCategoryFromCollection(collectionName);
     const userId = getCurrentUserId();
 
+    // For päätös documents: check if we need to read existing doc to get editor field
+    let existingEditor: 'botti' | 'ihminen' | undefined;
+    if (category === 'päätös' && docId && !data.editor) {
+      try {
+        const existingDoc = await getDocument(collectionName, docId);
+        if (existingDoc) {
+          existingEditor = (existingDoc as any).editor;
+          logger.debug(`Found existing päätös editor: ${existingEditor}`);
+        }
+      } catch (error) {
+        logger.warn('Could not read existing document for editor field:', error);
+      }
+    }
+
     // Generate LLM summary if needed (and no summary exists)
     let summaryData: any = {};
     if (!data.summary) {
@@ -262,14 +276,34 @@ export async function saveDocument(
           };
           logger.debug('Using PTA structured fields (JSON) for summary generation');
         }
+      } else if (category === 'päätös') {
+        const paatosData = data as Partial<DecisionDocument>;
+        if (paatosData.ratkaisuTaiPaatos || paatosData.asianKeskeinenSisalto) {
+          // Send structured fields directly as JSON object
+          contentForSummary = {
+            ratkaisuTaiPaatos: paatosData.ratkaisuTaiPaatos,
+            asianVireilletulopaiva: paatosData.asianVireilletulopaiva,
+            asianKeskeinenSisalto: paatosData.asianKeskeinenSisalto,
+            paatoksenPerustelutJaToimeenpano: paatosData.paatoksenPerustelutJaToimeenpano,
+            ratkaisuVoimassa: paatosData.ratkaisuVoimassa,
+            valmistelijaJaSosiaalityontekija: paatosData.valmistelijaJaSosiaalityontekija,
+            ratkaisija: paatosData.ratkaisija,
+            tiedoksiantoPMV: paatosData.tiedoksiantoPMV,
+          };
+          logger.debug('Using Päätös structured fields (JSON) for summary generation');
+        }
       }
-      // Päätös documents skip summary generation (wizard generates it)
       // Other document types use fullMarkdownText
 
       // Generate summary from content (if we have any)
       if (contentForSummary) {
         logger.debug(`Generating LLM summary for ${category}...`);
-        const summaryObj = await generateDocumentSummary(contentForSummary, category);
+
+        // Pass editor field to skip botti-created päätös documents
+        // Use existing editor if we read it from Firestore (for päätös edits)
+        const editor = (data as any).editor || existingEditor;
+        logger.debug(`Editor for summary generation: ${editor}`);
+        const summaryObj = await generateDocumentSummary(contentForSummary, category, editor);
 
         // summaryObj is now a parsed JSON object (e.g., {date, summary, reporter, reason} for LS)
         summaryData = summaryObj;
@@ -292,10 +326,10 @@ export async function saveDocument(
       updatedBy: userId,
     };
 
-    // Fix null date from LLM summary (use fallback from data.date or today)
-    if (documentData.date === null || documentData.date === undefined) {
-      documentData.date = data.date || new Date().toISOString().split('T')[0];
-      logger.debug(`Date was null from LLM, using fallback: ${documentData.date}`);
+    // Fix null date from LLM summary (use fallback to today, ignore placeholder "1900-01-01")
+    if (documentData.date === null || documentData.date === undefined || documentData.date === '1900-01-01') {
+      documentData.date = new Date().toISOString().split('T')[0];
+      logger.debug(`Date was null/placeholder from LLM, using today's date: ${documentData.date}`);
     }
 
     logger.debug(`Document data after spreading summary:`, {

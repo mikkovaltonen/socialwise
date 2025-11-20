@@ -1,7 +1,7 @@
 /**
  * Päätös Yhteenveto Prompt Management Service
  *
- * Manages Decision summary prompts with global LLM settings
+ * Manages decision summary prompts with global LLM settings
  * Collection: PAATOS_YHTEENVETO
  * Test file: /public/PAATOS_YHTEENVETO_PROMPT.md
  */
@@ -39,7 +39,7 @@ export async function getDefaultPrompt(): Promise<string> {
   try {
     const response = await fetch('/PAATOS_YHTEENVETO_PROMPT.md');
     if (response.ok) {
-      console.log('✅ Loaded Päätös yhteenveto prompt from /PAATOS_YHTEENVETO_PROMPT.md');
+      console.log('✅ Loaded päätös yhteenveto prompt from /PAATOS_YHTEENVETO_PROMPT.md');
       return await response.text();
     }
   } catch (error) {
@@ -74,90 +74,68 @@ export async function getLatestPrompt(): Promise<PaatosYhteenvetoPrompt | null> 
 
     return null;
   } catch (error) {
-    console.error('Error fetching latest Päätös yhteenveto prompt:', error);
+    console.error('Error fetching latest päätös yhteenveto prompt:', error);
     return null;
   }
 }
 
 /**
- * Get prompt content for generation (respects promptVersion)
+ * Get the production prompt for generation
  */
 export async function getPromptForGeneration(): Promise<string> {
-  try {
-    const latest = await getLatestPrompt();
+  const latestPrompt = await getLatestPrompt();
 
-    if (latest && latest.promptVersion === 'test') {
-      // Load from file
-      console.log('📝 Using test Päätös yhteenveto prompt from file');
-      try {
-        const response = await fetch('/PAATOS_YHTEENVETO_PROMPT.md');
-        if (response.ok) {
-          return await response.text();
-        }
-      } catch (error) {
-        console.warn('Could not load test prompt file, falling back to production');
-      }
-    }
-
-    // Load from Firestore (production)
-    if (latest) {
-      console.log(`📝 Using production Päätös yhteenveto prompt from ${latest.createdAt.toDate().toLocaleString()}`);
-      return latest.content;
-    }
-
-    // Fallback to default
-    console.log('📝 Using default Päätös yhteenveto prompt');
-    return await getDefaultPrompt();
-  } catch (error) {
-    console.error('Error getting Päätös yhteenveto prompt for generation:', error);
-    return await getDefaultPrompt();
+  if (latestPrompt && latestPrompt.promptVersion === 'production') {
+    const timestamp = latestPrompt.createdAt?.toDate().toLocaleString('fi-FI');
+    console.log(`📝 Using production päätös yhteenveto prompt from ${timestamp}`);
+    return latestPrompt.content;
   }
+
+  // Fallback to default
+  console.log('⚠️ No production prompt found, using default PAATOS_YHTEENVETO_PROMPT.md');
+  return getDefaultPrompt();
 }
 
 /**
- * Get LLM model from latest prompt
+ * Get LLM model from latest prompt, fallback to default
  */
 export async function getLLMModel(): Promise<string> {
-  try {
-    const latest = await getLatestPrompt();
-    if (latest && latest.llmModel) {
-      return latest.llmModel;
-    }
-    throw new Error('No Päätös yhteenveto prompt found with LLM model');
-  } catch (error) {
-    console.error('Error fetching LLM model:', error);
-    throw error;
+  const latestPrompt = await getLatestPrompt();
+
+  if (latestPrompt && latestPrompt.promptVersion === 'production') {
+    return latestPrompt.llmModel;
   }
+
+  // Default model
+  return 'x-ai/grok-4-fast';
 }
 
 /**
- * Get temperature from latest prompt
+ * Get temperature from latest prompt, fallback to default
  */
 export async function getTemperature(): Promise<number> {
-  try {
-    const latest = await getLatestPrompt();
-    if (latest && latest.temperature !== undefined) {
-      return latest.temperature;
-    }
-    throw new Error('No Päätös yhteenveto prompt found with temperature');
-  } catch (error) {
-    console.error('Error fetching temperature:', error);
-    throw error;
+  const latestPrompt = await getLatestPrompt();
+
+  if (latestPrompt && latestPrompt.promptVersion === 'production') {
+    return latestPrompt.temperature;
   }
+
+  // Default temperature
+  return 0.05;
 }
 
 /**
- * Save a new prompt (creates new document)
+ * Save a new prompt version
  */
 export async function savePrompt(
   content: string,
-  userId: string,
   llmModel: string,
   temperature: number,
   promptVersion: 'test' | 'production',
+  userId: string,
   userEmail?: string,
   description?: string
-): Promise<string | null> {
+): Promise<string> {
   try {
     const promptsRef = collection(db, PROMPTS_COLLECTION);
 
@@ -168,63 +146,42 @@ export async function savePrompt(
       promptVersion,
       createdAt: serverTimestamp(),
       createdBy: userId,
-      createdByEmail: userEmail || '',
-      description: description || 'Päätös yhteenveto prompt update'
+      createdByEmail: userEmail,
+      description: description || `${promptVersion} version created`
     });
 
-    console.log(`✅ New Päätös yhteenveto prompt saved with ID: ${docRef.id} (Model: ${llmModel}, Temp: ${temperature}, Version: ${promptVersion})`);
+    console.log(`✅ Saved new ${promptVersion} päätös yhteenveto prompt:`, docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error('Error saving Päätös yhteenveto prompt:', error);
-    return null;
+    console.error('Error saving päätös yhteenveto prompt:', error);
+    throw error;
   }
 }
 
 /**
- * Get prompt history (last N prompts)
+ * Initialize collection with default prompt if empty
  */
-export async function getPromptHistory(limitCount: number = 50): Promise<PaatosYhteenvetoPrompt[]> {
+export async function initializePrompts(userId: string, userEmail?: string): Promise<void> {
   try {
-    const promptsRef = collection(db, PROMPTS_COLLECTION);
-    const q = query(
-      promptsRef,
-      orderBy('createdAt', 'desc'),
-      limit(limitCount)
-    );
+    const latestPrompt = await getLatestPrompt();
 
-    const snapshot = await getDocs(q);
+    if (!latestPrompt) {
+      console.log('📝 Initializing PAATOS_YHTEENVETO collection with default prompt...');
+      const defaultPrompt = await getDefaultPrompt();
 
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as PaatosYhteenvetoPrompt));
-  } catch (error) {
-    console.error('Error fetching Päätös yhteenveto prompt history:', error);
-    return [];
-  }
-}
-
-/**
- * Initialize prompts if collection is empty
- */
-export async function initializePrompts(userId: string): Promise<void> {
-  try {
-    const latest = await getLatestPrompt();
-
-    if (!latest) {
-      const content = await getDefaultPrompt();
       await savePrompt(
-        content,
+        defaultPrompt,
+        'x-ai/grok-4-fast',
+        0.05,
+        'production',
         userId,
-        'google/gemini-2.5-flash-lite', // Default LLM model
-        0.3, // Default temperature
-        'production', // Default prompt version
-        '',
-        'Initial Päätös yhteenveto prompt'
+        userEmail,
+        'Initial päätös yhteenveto prompt from PAATOS_YHTEENVETO_PROMPT.md'
       );
-      console.log('✅ Päätös yhteenveto prompts initialized');
+
+      console.log('✅ PAATOS_YHTEENVETO collection initialized');
     }
   } catch (error) {
-    console.error('Error initializing Päätös yhteenveto prompts:', error);
+    console.error('Error initializing PAATOS_YHTEENVETO prompts:', error);
   }
 }

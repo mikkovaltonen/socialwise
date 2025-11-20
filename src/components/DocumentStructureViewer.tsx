@@ -15,7 +15,7 @@ const documentStructures: DocumentStructure[] = [
   {
     type: 'pta',
     title: 'Palvelutarpeen arviointi (PTA)',
-    mainHeading: '# Palvelutarpeen arviointi',
+    mainHeading: '',
     subHeadings: [
       '## Päiväys',
       '## PERHE',
@@ -122,14 +122,16 @@ export function DocumentStructureViewer() {
             <CardContent>
               <div className="space-y-3">
                 {/* Main Heading */}
-                <div className="bg-primary/5 p-3 rounded-md border-l-4 border-primary">
-                  <code className="text-sm font-mono font-semibold text-primary">
-                    {doc.mainHeading}
-                  </code>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Pääotsikko (lukittu)
+                {doc.mainHeading && (
+                  <div className="bg-primary/5 p-3 rounded-md border-l-4 border-primary">
+                    <code className="text-sm font-mono font-semibold text-primary">
+                      {doc.mainHeading}
+                    </code>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Pääotsikko (lukittu)
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Metadata - Only for non-PTA and non-päätös documents */}
                 {doc.type !== 'pta' && doc.type !== 'päätös' && (

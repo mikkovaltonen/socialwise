@@ -16,6 +16,7 @@ import type { DocumentCategory } from './firestoreDocumentService';
 import * as ilmoitusYhteenvetoService from './ilmoitusYhteenvetoService';
 import * as ptaYhteenvetoService from './ptaYhteenvetoService';
 import * as asiakaskirjausYhteenvetoService from './asiakaskirjausYhteenvetoService';
+import * as paatosYhteenvetoService from './paatosYhteenvetoService';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -26,16 +27,18 @@ const FALLBACK_MODEL = 'google/gemini-2.5-flash-lite'; // For urgency/decision t
  *
  * @param documentContent - Complete markdown document (string) OR structured fields (object)
  * @param category - Document category (determines prompt and configuration)
+ * @param editor - Optional editor field ('botti' or 'ihminen') - päätös documents skip if 'botti'
  * @returns Parsed JSON object with summary fields (date, summary, etc.) or fallback object with summary string
  */
 export async function generateDocumentSummary(
   documentContent: string | object,
-  category: DocumentCategory
+  category: DocumentCategory,
+  editor?: 'botti' | 'ihminen'
 ): Promise<any> {
   try {
-    // Skip summary generation for päätös documents
-    if (category === 'päätös') {
-      logger.debug('Skipping summary generation for päätös (wizard generates full content)');
+    // Skip summary generation for päätös documents created by botti (wizard)
+    if (category === 'päätös' && editor === 'botti') {
+      logger.debug('Skipping summary generation for botti-created päätös (wizard generates it)');
       return { summary: '' };
     }
 
@@ -69,6 +72,13 @@ export async function generateDocumentSummary(
       const basePrompt = await ptaYhteenvetoService.getPromptForGeneration();
       prompt = `${basePrompt}\n\nDokumentti:\n${documentText}`;
       logger.debug(`Using PALVELUNTARPEEN_ARVIOINTI_YHTEENVETO config: ${model} @ ${temperature}`);
+    } else if (category === 'päätös') {
+      // Use Firestore-based configuration for Päätös (only for ihminen-created)
+      model = await paatosYhteenvetoService.getLLMModel();
+      temperature = await paatosYhteenvetoService.getTemperature();
+      const basePrompt = await paatosYhteenvetoService.getPromptForGeneration();
+      prompt = `${basePrompt}\n\nDokumentti:\n${documentText}`;
+      logger.debug(`Using PAATOS_YHTEENVETO config: ${model} @ ${temperature}`);
     } else if (category === 'asiakaskirjaus') {
       // Use Firestore-based configuration for Asiakaskirjaus
       model = await asiakaskirjausYhteenvetoService.getLLMModel();
