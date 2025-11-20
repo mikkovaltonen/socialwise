@@ -18,6 +18,7 @@ import AsiakasYhteenvetoPromptManager from "../components/AsiakasYhteenvetoPromp
 import PtaYhteenvetoPromptManager from "../components/PtaYhteenvetoPromptManager";
 import PaatosYhteenvetoPromptManager from "../components/PaatosYhteenvetoPromptManager";
 import IlmoitusYhteenvetoPromptManager from "../components/IlmoitusYhteenvetoPromptManager";
+import AsiakaskirjausYhteenvetoPromptManager from "../components/AsiakaskirjausYhteenvetoPromptManager";
 import OrganizationManager from "../components/OrganizationManager";
 import BotInstructionManager from "../components/BotInstructionManager";
 import UserRegistration from "@/components/UserRegistration";
@@ -356,6 +357,49 @@ const Admin = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <IlmoitusYhteenvetoPromptManager />
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Asiakaskirjaus Summary Management */}
+        <div className="mb-8">
+          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-green-600 to-emerald-600 text-white p-8">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold mb-2">Asiakaskirjausten yhteenveto</CardTitle>
+                  <p className="text-white/90 text-lg leading-relaxed">
+                    Hallitse asiakaskirjausten LLM-pohjaisten yhteenvetojen luomisen järjestelmäpromptin versioita
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 bg-white">
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                Hallitse asiakaskirjausten yhteenvetojen luomisen järjestelmäpromptin versioita. Yhteenveto generoidaan automaattisesti kun dokumentti tallennetaan.
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-6 text-lg font-medium shadow-lg shadow-green-600/25"
+                  >
+                    <FileText className="mr-2 h-5 w-5" />
+                    Avaa asiakaskirjausten yhteenvedon promptin hallinta
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Asiakaskirjausten Yhteenvedon Promptin hallinta</DialogTitle>
+                    <DialogDescription>
+                      Hallitse asiakaskirjausten yhteenvetojen luomisen järjestelmäpromptia. Yhteenveto käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <AsiakaskirjausYhteenvetoPromptManager />
                 </DialogContent>
               </Dialog>
             </CardContent>

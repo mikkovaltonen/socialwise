@@ -74,19 +74,41 @@ All documents follow a strict markdown structure with dedicated sections. When u
 ```markdown
 # Lastensuojeluilmoitus
 
-## Päiväys
-[DD.MM.YYYY]
+## PÄIVÄYS
+[DD.MM.YYYY - Automaattinen luomispäivä, lukittu, ei muokattavissa]
 
-## Ilmoittajan tiedot
-**Nimi:** [Ilmoittajan nimi]
-**Ammatti/asema:** [Ammatti]
+## ILMOITTAJAN TIEDOT
+[Esitäytetty pohja, muokattavissa]
+**Nimi:**
+**Puhelin:**
+**Suhde lapseen:**
 
-## Lapsen tiedot
+## LAPSEN TIEDOT
+[Automaattisesti haettu ASIAKAS_PERUSTIEDOT-collectionista, lukittu]
 **Nimi:** [Lapsen nimi]
-**Henkilötunnus:** [Henkilötunnus]
+**Puhelin:** [Puhelin]
+**Koulu:** [Koulu]
 
-## Ilmoituksen peruste
-[Ilmoituksen sisältö]
+## HUOLTAJIEN TIEDOT
+[Automaattisesti haettu ASIAKAS_PERUSTIEDOT-collectionista, lukittu]
+**Äiti:**
+- Nimi: [Äidin nimi]
+- Puhelin: [Puhelin]
+**Isä:**
+- Nimi: [Isän nimi]
+- Puhelin: [Puhelin]
+
+## HUOLEN AIHEET
+[Muokattava kenttä - huolta aiheuttavat seikat]
+
+## ILMOITUKSEN PERUSTE
+[Muokattava kenttä - ilmoituksen varsinainen peruste]
+
+## TOIMENPITEET
+[Muokattava kenttä - tehdyt tai suunnitellut toimenpiteet]
+
+## ALLEKIRJOITUS JA KÄSITTELYN PÄÄTTYMISPÄIVÄMÄÄRÄ
+[Muokattava kenttä]
 ```
 
 **Palvelutarpeen arviointi (PTA)**
@@ -115,18 +137,10 @@ All documents follow a strict markdown structure with dedicated sections. When u
 
 **Päiväys:** [DD.MM.YYYY]
 
-## Tapaamisen tiedot
-[Tapaamisen tiedot]
-
-## Keskustelun aiheet
-[Aiheet]
-
-## Havainnot
-[Havainnot]
-
-## Jatkotoimet
-[Jatkotoimet]
+[Vapaa tekstialue - ei pakollisia alaotsikkoja]
 ```
+
+**Huom:** Asiakaskirjaus on yksinkertaistettu vapaamuotoiseksi dokumentiksi, jossa on vain pääotsikko ja päiväys. Sisältö kirjoitetaan vapaasti ilman pakollisia alaotsikkoja.
 
 ### 4. System Prompt Management
 - **Versioning**: Timestamp-based system prompt versions
@@ -375,6 +389,122 @@ VITE_GEMINI_MODEL=gemini-2.5-flash-preview-04-17
 - Historiakatselu palautusmahdollisuudella
 - Koko näytön muokkaustila
 - Version kuvaukset muutosten seuraamiseen
+
+### Dokumenttien Yhteenveto-Prompt-Hallinta
+
+Jokaisella dokumenttityypillä on oma yhteenveto-prompt-hallinansa LLM-generoitujen yhteenvetojen tuottamiseksi:
+
+#### **Arkkitehtuuri**
+Kaikki yhteenveto-palvelut noudattavat yhtenäistä rakennetta:
+
+**Palvelut** (`src/lib/`):
+- `ilmoitusYhteenvetoService.ts` - LS-ilmoitukset
+- `ptaYhteenvetoService.ts` - PTA-dokumentit
+- `paatosYhteenvetoService.ts` - Päätökset
+- `asiakasYhteenvetoService.ts` - Asiakaskirjaukset
+
+**Firestore-kokoelmat**:
+- `ILMOITUS_YHTEENVETO` - LS-ilmoituksen yhteenvetopromptit
+- `PALVELUNTARPEEN_ARVIOINTI_YHTEENVETO` - PTA:n yhteenvetopromptit
+- `PAATOS_YHTEENVETO` - Päätösten yhteenvetopromptit
+- `ASIAKAS_YHTEENVETO` - Asiakaskirjausten yhteenvetopromptit
+
+**Test-tiedostot** (`/public/`):
+- `ILMOITUS_YHTEENVETO_PROMPT.md`
+- `PALVELUNTARPEEN_ARVIOINTI_YHTEENVETO_PROMPT.md`
+- `PAATOS_YHTEENVETO_PROMPT.md`
+- `ASIAKAS_YHTEENVETO_PROMPT.md`
+
+**UI-komponentit** (`src/components/`):
+- `IlmoitusYhteenvetoPromptManager.tsx`
+- `PtaYhteenvetoPromptManager.tsx`
+- `PaatosYhteenvetoPromptManager.tsx`
+- `AsiakasYhteenvetoPromptManager.tsx`
+
+#### **Yhteinen Datarakenne**
+
+```typescript
+interface YhteenvetoPrompt {
+  id?: string;
+  content: string;                    // Promptin sisältö
+  llmModel: string;                   // Esim. 'google/gemini-2.5-flash-lite'
+  temperature: number;                // Esim. 0.3
+  promptVersion: 'test' | 'production';  // Test = tiedostosta, Production = Firestore
+  createdAt: Timestamp;
+  createdBy: string;
+  createdByEmail?: string;
+  description?: string;
+}
+```
+
+#### **Versioiden Logiikka**
+
+**Test-versio** (`promptVersion: 'test'`):
+- Prompti luetaan tiedostosta (esim. `/public/ASIAKAS_YHTEENVETO_PROMPT.md`)
+- Käyttöliittymässä read-only
+- Muut asetukset (LLM-malli, temperature) tallennetaan silti Firestoreen
+
+**Production-versio** (`promptVersion: 'production'`):
+- Prompti luetaan Firestoresta
+- Täysin muokattavissa käyttöliittymässä
+- Kaikki muutokset tallentuvat historiaan
+
+#### **Keskeiset Funktiot**
+
+Jokainen palvelu tarjoaa samat funktiot:
+- `getLatestPrompt()` - Hae viimeisin prompti
+- `getPromptForGeneration()` - Hae prompt generointia varten (huomioi promptVersion)
+- `getLLMModel()` - Hae LLM-malli
+- `getTemperature()` - Hae temperature-asetus
+- `savePrompt()` - Tallenna uusi prompt-versio
+- `getPromptHistory()` - Hae prompt-historia
+- `initializePrompts()` - Alusta promptit oletustiedostosta
+
+#### **UI-ominaisuudet**
+
+Kaikki yhteenveto-prompt-managerit tarjoavat:
+- LLM-mallin valinta (Grok-4-Fast, Gemini 2.5 Flash Lite/Flash/Pro, Gemini 3 Pro Preview)
+- Temperature-säätö (0 - 1)
+- Prompt-version valinta (Test/Production)
+- Prompt-editori (textarea, 500px korkea)
+- Fullscreen-tila muokkaukseen
+- Historiakatselu ja palautus (revert)
+- Version kuvaukset (description) tallennettaessa
+
+#### **Dokumenttien Yhteenvetojen Generoiminen**
+
+**Palvelu**: `documentSummaryService.ts`
+
+**Prosessi**:
+1. Käyttäjä tallentaa dokumentin
+2. `generateDocumentSummary()` kutsutaan automaattisesti
+3. Palvelu hakee dokumenttityypille määritetyt asetukset:
+   - LLM-malli (esim. `google/gemini-2.5-flash-lite`)
+   - Temperature (esim. `0.3`)
+   - Prompti (joko tiedostosta tai Firestoresta)
+4. Lähettää pyynnön OpenRouter API:iin
+5. Parsii JSON-vastauksen (esim. `{date: "2025-11-20", summary: "Kotikäynti..."}`)
+6. Tallentaa yhteenvedon dokumentin metadata-kenttiin
+
+**Esimerkkikoodi**:
+```typescript
+if (category === 'asiakaskirjaus') {
+  model = await asiakasYhteenvetoService.getLLMModel();
+  temperature = await asiakasYhteenvetoService.getTemperature();
+  const basePrompt = await asiakasYhteenvetoService.getPromptForGeneration();
+  prompt = `${basePrompt}\n\nDokumentti:\n${fullMarkdownText}`;
+}
+```
+
+#### **Yhteenvetojen Rakenne**
+
+**LS-ilmoitus & PTA & Päätös & Asiakaskirjaus**:
+```json
+{
+  "date": "YYYY-MM-DD",
+  "summary": "Lyhyt yhteenveto dokumentista (max 100 merkkiä)"
+}
+```
 
 ## Component Usage
 

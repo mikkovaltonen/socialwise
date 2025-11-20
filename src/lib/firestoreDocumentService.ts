@@ -67,6 +67,10 @@ export interface LSNotificationDocument extends BaseDocument {
     profession?: string;
     organization?: string;
   };
+  // New fields for 8-section structure
+  concerns?: string; // HUOLEN AIHEET
+  actions?: string; // TOIMENPITEET
+  signature?: string; // ALLEKIRJOITUS JA KÄSITTELYN PÄÄTTYMISPÄIVÄMÄÄRÄ
   // LLM-generated structured summary fields
   reporterSummary?: string; // Short form from LLM (e.g., "Koulupsykologi")
   reason?: string; // Longer description from LLM (200-500 chars)
@@ -100,7 +104,6 @@ export interface ServicePlanDocument extends BaseDocument {
 
 export interface CaseNoteDocument extends BaseDocument {
   category: 'asiakaskirjaus';
-  manualSummary?: string; // User-written short summary
   keywords?: string[];
 }
 
