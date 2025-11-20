@@ -113,7 +113,6 @@ const DOCUMENT_STRUCTURES: Record<DocumentType, DocumentSection[]> = {
   ],
 
   'päätös': [
-    { heading: '# Päätös', content: '', locked: true },
     { heading: '## RATKAISU TAI PÄÄTÖS', content: '', locked: true },
     { heading: '## ASIAN VIREILLETULOPÄIVÄ', content: new Date().toLocaleDateString('fi-FI'), locked: true, isMetadata: true },
     { heading: '## ASIAN KESKEINEN SISÄLTÖ', content: '', locked: true },
@@ -125,7 +124,6 @@ const DOCUMENT_STRUCTURES: Record<DocumentType, DocumentSection[]> = {
   ],
 
   'pta': [
-    { heading: '# Palvelutarpeen arviointi', content: '', locked: true },
     { heading: '## Päiväys', content: '', locked: true },
     { heading: '## PERHE', content: '', locked: true },
     { heading: '## TAUSTA', content: '', locked: true },
@@ -271,9 +269,7 @@ function parseLSIlmoitusMarkdown(markdown: string): Partial<FirestoreService.LSN
 
 // Helper function to build PTA markdown from structured Firestore fields
 function buildPTAMarkdown(doc: FirestoreService.PTADocument): string {
-  return `# Palvelutarpeen arviointi
-
-## Päiväys
+  return `## Päiväys
 ${doc.paivays || ''}
 
 ## PERHE
@@ -343,9 +339,7 @@ function parsePTAMarkdown(markdown: string): Partial<FirestoreService.PTADocumen
 
 // Helper function to build päätös markdown from structured Firestore fields
 function buildPaatosMarkdown(doc: FirestoreService.DecisionDocument): string {
-  return `# Päätös
-
-## RATKAISU TAI PÄÄTÖS
+  return `## RATKAISU TAI PÄÄTÖS
 ${doc.ratkaisuTaiPaatos || ''}
 
 ## ASIAN VIREILLETULOPÄIVÄ
@@ -717,6 +711,12 @@ export default function MarkdownDocumentEditor({
       // Add PTA-specific fields
       if (documentType === 'pta') {
         (documentData as Partial<FirestoreService.PTADocument>).status = ptaStatus;
+      }
+
+      // Add editor field for päätös documents (manual edits are always 'ihminen')
+      if (documentType === 'päätös') {
+        (documentData as Partial<FirestoreService.DecisionDocument>).editor = 'ihminen';
+        console.log('📝 [MarkdownDocumentEditor] Marking päätös as manual edit (editor: ihminen)');
       }
 
       // Extract docId from existingFilename if editing

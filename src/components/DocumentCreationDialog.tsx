@@ -244,8 +244,6 @@ TÄRKEÄÄ: Jätä PÄIVÄYS, ILMOITTAJAN TIEDOT, LAPSEN TIEDOT ja HUOLTAJIEN TI
 
       'pta': `Jäsennä seuraava palveluntarvearviointi oikeaan rakenteeseen:
 
-# Palvelutarpeen arviointi
-
 ## Päiväys
 [Päivämäärä muodossa DD.MM.YYYY]
 
