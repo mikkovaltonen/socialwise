@@ -384,7 +384,7 @@ Poimii tiedot alkuperäisestä tekstistä ja sijoita ne oikeisiin kohtiin.`,
           },
         ],
         temperature: 0.3,
-        max_tokens: 4000,
+        // No max_tokens limit - let LLM generate complete structured document
       }),
     });
 
