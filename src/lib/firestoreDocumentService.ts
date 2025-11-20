@@ -51,7 +51,7 @@ export interface BaseDocument {
   clientId: string;
   documentKey: string;
   date: string;
-  fullMarkdownText: string;
+  fullMarkdownText?: string; // Optional - päätös documents use structured fields instead
   summary: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -62,24 +62,34 @@ export interface BaseDocument {
 export interface LSNotificationDocument extends BaseDocument {
   category: 'ls-ilmoitus';
   urgency?: 'kriittinen' | 'kiireellinen' | 'normaali' | 'ei_kiireellinen';
-  reporter?: string | {  // Can be string (LLM-generated) or object (parsed from markdown)
-    name?: string;
-    profession?: string;
-    organization?: string;
-  };
-  // New fields for 8-section structure
-  concerns?: string; // HUOLEN AIHEET
-  actions?: string; // TOIMENPITEET
-  signature?: string; // ALLEKIRJOITUS JA KÄSITTELYN PÄÄTTYMISPÄIVÄMÄÄRÄ
-  // LLM-generated structured summary fields
-  reporterSummary?: string; // Short form from LLM (e.g., "Koulupsykologi")
-  reason?: string; // Longer description from LLM (200-500 chars)
+
+  // Structured fields (replaces fullMarkdownText)
+  paivays?: string;
+  ilmoittajanTiedot?: string;
+  lapsenTiedot?: string;
+  huoltajienTiedot?: string;
+  huolenAiheet?: string;
+  ilmoituksenPeruste?: string;
+  toimenpiteet?: string;
+  allekirjoitusJaKasittely?: string;
 }
 
 export interface PTADocument extends BaseDocument {
   category: 'pta-record';
   eventType?: 'tapaaminen' | 'arviointi' | 'verkostopalaveri' | 'muu';
   status?: 'Kesken' | 'Tulostettu';
+
+  // Structured fields (replaces fullMarkdownText)
+  paivays?: string;
+  perhe?: string;
+  tausta?: string;
+  palvelut?: string;
+  yhteistyotahotJaVerkosto?: string;
+  lapsenJaPerheenTapaaminen?: string;
+  asiakkaanMielipideJaNakemys?: string;
+  sosiaalityontekijanJohtopäätökset?: string;
+  arvioOmatyontekijanTarpeesta?: string;
+  jakeluJaAllekirjoitus?: string;
 }
 
 export interface DecisionDocument extends BaseDocument {
@@ -93,6 +103,17 @@ export interface DecisionDocument extends BaseDocument {
     | 'muu';
   legalBasis?: string;
   highlights?: string[];
+  editor?: 'botti' | 'ihminen'; // Tracks if created by AI wizard or manually by user
+
+  // Structured päätös fields (replaces fullMarkdownText parsing)
+  ratkaisuTaiPaatos?: string;
+  asianVireilletulopaiva?: string;
+  asianKeskeinenSisalto?: string;
+  paatoksenPerustelutJaToimeenpano?: string;
+  ratkaisuVoimassa?: string;
+  valmistelijaJaSosiaalityontekija?: string;
+  ratkaisija?: string;
+  tiedoksiantoPMV?: string;
 }
 
 export interface ServicePlanDocument extends BaseDocument {
@@ -179,7 +200,7 @@ function getCurrentUserId(): string {
  * Save document to Firestore
  * - Creates new document if docId not provided
  * - Updates existing document if docId provided
- * - Generates LLM summary if fullMarkdownText provided
+ * - Generates LLM summary if fullMarkdownText OR structured fields provided
  * - Auto-sets updatedAt and updatedBy
  *
  * @param collectionName - Firestore collection name
@@ -196,17 +217,70 @@ export async function saveDocument(
     const category = getCategoryFromCollection(collectionName);
     const userId = getCurrentUserId();
 
-    // Generate LLM summary if fullMarkdownText provided and no summary exists
+    // Generate LLM summary if needed (and no summary exists)
     let summaryData: any = {};
-    if (data.fullMarkdownText && !data.summary) {
-      logger.debug(`Generating LLM summary for ${category}...`);
-      const summaryObj = await generateDocumentSummary(data.fullMarkdownText, category);
+    if (!data.summary) {
+      let contentForSummary: string | object | null = null;
 
-      // summaryObj is now a parsed JSON object (e.g., {date, summary} for PTA)
-      summaryData = summaryObj;
+      // Check if we have fullMarkdownText (old format - markdown string)
+      if (data.fullMarkdownText) {
+        contentForSummary = data.fullMarkdownText;
+        logger.debug('Using fullMarkdownText for summary generation');
+      }
+      // Or check if we have structured fields (new format - JSON object)
+      else if (category === 'ls-ilmoitus') {
+        const lsData = data as Partial<LSNotificationDocument>;
+        if (lsData.paivays || lsData.ilmoittajanTiedot || lsData.huolenAiheet) {
+          // Send structured fields directly as JSON object
+          contentForSummary = {
+            paivays: lsData.paivays,
+            ilmoittajanTiedot: lsData.ilmoittajanTiedot,
+            lapsenTiedot: lsData.lapsenTiedot,
+            huoltajienTiedot: lsData.huoltajienTiedot,
+            huolenAiheet: lsData.huolenAiheet,
+            ilmoituksenPeruste: lsData.ilmoituksenPeruste,
+            toimenpiteet: lsData.toimenpiteet,
+            allekirjoitusJaKasittely: lsData.allekirjoitusJaKasittely,
+          };
+          logger.debug('Using LS-ilmoitus structured fields (JSON) for summary generation');
+        }
+      } else if (category === 'pta-record') {
+        const ptaData = data as Partial<PTADocument>;
+        if (ptaData.paivays || ptaData.perhe || ptaData.tausta) {
+          // Send structured fields directly as JSON object
+          contentForSummary = {
+            paivays: ptaData.paivays,
+            perhe: ptaData.perhe,
+            tausta: ptaData.tausta,
+            palvelut: ptaData.palvelut,
+            yhteistyotahotJaVerkosto: ptaData.yhteistyotahotJaVerkosto,
+            lapsenJaPerheenTapaaminen: ptaData.lapsenJaPerheenTapaaminen,
+            asiakkaanMielipideJaNakemys: ptaData.asiakkaanMielipideJaNakemys,
+            sosiaalityontekijanJohtopäätökset: ptaData.sosiaalityontekijanJohtopäätökset,
+            arvioOmatyontekijanTarpeesta: ptaData.arvioOmatyontekijanTarpeesta,
+            jakeluJaAllekirjoitus: ptaData.jakeluJaAllekirjoitus,
+          };
+          logger.debug('Using PTA structured fields (JSON) for summary generation');
+        }
+      }
+      // Päätös documents skip summary generation (wizard generates it)
+      // Other document types use fullMarkdownText
 
-      const summaryText = summaryObj.summary || JSON.stringify(summaryObj);
-      logger.debug(`Summary generated: ${summaryText.substring(0, 50)}...`);
+      // Generate summary from content (if we have any)
+      if (contentForSummary) {
+        logger.debug(`Generating LLM summary for ${category}...`);
+        const summaryObj = await generateDocumentSummary(contentForSummary, category);
+
+        // summaryObj is now a parsed JSON object (e.g., {date, summary, reporter, reason} for LS)
+        summaryData = summaryObj;
+
+        logger.debug(`Summary data received from LLM:`, summaryData);
+        logger.debug(`Summary data type:`, typeof summaryData);
+        logger.debug(`Summary data keys:`, Object.keys(summaryData));
+
+        const summaryText = summaryObj.summary || JSON.stringify(summaryObj);
+        logger.debug(`Summary generated: ${summaryText.substring(0, 50)}...`);
+      }
     }
 
     // Prepare document data - merge summary fields into document
@@ -217,6 +291,20 @@ export async function saveDocument(
       updatedAt: serverTimestamp() as any,
       updatedBy: userId,
     };
+
+    // Fix null date from LLM summary (use fallback from data.date or today)
+    if (documentData.date === null || documentData.date === undefined) {
+      documentData.date = data.date || new Date().toISOString().split('T')[0];
+      logger.debug(`Date was null from LLM, using fallback: ${documentData.date}`);
+    }
+
+    logger.debug(`Document data after spreading summary:`, {
+      hasSummary: !!documentData.summary,
+      hasReporter: !!(documentData as any).reporter,
+      hasReason: !!(documentData as any).reason,
+      summaryKeys: Object.keys(summaryData),
+      dateValue: documentData.date,
+    });
 
     // Set createdAt only for new documents
     if (!docId) {

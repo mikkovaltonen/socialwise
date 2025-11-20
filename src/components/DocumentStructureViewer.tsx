@@ -32,8 +32,8 @@ const documentStructures: DocumentStructure[] = [
   },
   {
     type: 'ls-ilmoitus',
-    title: 'Lastensuojeluilmoitus',
-    mainHeading: '# Lastensuojeluilmoitus',
+    title: 'Lastensuojeluhakemus',
+    mainHeading: '# Lastensuojeluhakemus',
     subHeadings: [
       '## PÄIVÄYS (automaattinen, lukittu)',
       '## ILMOITTAJAN TIEDOT',
@@ -44,18 +44,21 @@ const documentStructures: DocumentStructure[] = [
       '## TOIMENPITEET',
       '## ALLEKIRJOITUS JA KÄSITTELYN PÄÄTTYMISPÄIVÄMÄÄRÄ'
     ],
-    description: 'Lastensuojeluilmoituksen dokumentointi automaattisilla kentillä'
+    description: 'Lastensuojeluhakemuksen dokumentointi automaattisilla kentillä'
   },
   {
     type: 'päätös',
     title: 'Päätös',
     mainHeading: '# Päätös',
     subHeadings: [
-      '## Päivämäärä',
-      '## Tausta',
-      '## Päätös',
-      '## Perustelut',
-      '## Muutoksenhaku'
+      '## RATKAISU TAI PÄÄTÖS',
+      '## ASIAN VIREILLETULOPÄIVÄ',
+      '## ASIAN KESKEINEN SISÄLTÖ',
+      '## PÄÄTÖKSEN PERUSTELUT JA TOIMEENPANO',
+      '## RATKAISU VOIMASSA',
+      '## VALMISTELIJA / LAPSEN ASIOISTA VASTAAVA SOSIAALITYÖNTEKIJÄ',
+      '## RATKAISIJA / VASTUUSOSIAALITYÖNTEKIJÄ / JOHTAVA SOSIAALITYÖNTEKIJÄ',
+      '## TIEDOKSIANTO PMV'
     ],
     description: 'Viranomaispäätöksen dokumentointi'
   },

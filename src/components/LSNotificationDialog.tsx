@@ -1,7 +1,7 @@
 /**
  * LS Notification Document Dialog
  *
- * Full document viewer for Lastensuojeluilmoitus (Child Welfare Notification) documents
+ * Full document viewer for Lastensuojeluhakemus (Child Welfare Application) documents
  * Displays complete document with all sections in a modal dialog
  */
 
@@ -101,7 +101,7 @@ export const LSNotificationDialog: React.FC<LSNotificationDialogProps> = ({
                 </div>
                 <div>
                   <DialogTitle className="text-2xl">
-                    Lastensuojeluilmoitus
+                    Lastensuojeluhakemus
                   </DialogTitle>
                   {document.urgency && (
                     <Badge className={`mt-1 ${getUrgencyColor(document.urgency)}`}>

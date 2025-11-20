@@ -26,8 +26,10 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import MarkdownDocumentEditor, { DocumentType } from './MarkdownDocumentEditor';
+import PaatosWizardDialog from './PaatosWizardDialog';
 import { logger } from '@/lib/logger';
 import { convertToMarkdown, getSupportedFileExtensions } from '@/lib/documentConverter';
+import { getDocument } from '@/lib/firestoreDocumentService';
 
 interface DocumentCreationDialogProps {
   open: boolean;
@@ -46,8 +48,8 @@ interface DocumentTypeOption {
 const DOCUMENT_TYPES: DocumentTypeOption[] = [
   {
     type: 'ls-ilmoitus',
-    label: 'Lastensuojeluilmoitus',
-    description: 'Uusi lastensuojeluilmoitus',
+    label: 'Lastensuojeluhakemus',
+    description: 'Uusi lastensuojeluhakemus',
     icon: <FileText className="h-6 w-6" />,
   },
   {
@@ -81,6 +83,8 @@ export default function DocumentCreationDialog({
   const [uploadedContent, setUploadedContent] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string>('');
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardDocId, setWizardDocId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset state when dialog closes
@@ -94,8 +98,28 @@ export default function DocumentCreationDialog({
   }, [open]);
 
   const handleTypeSelect = (type: DocumentType) => {
+    logger.debug(`📄 [DocumentCreationDialog] Type selected: ${type}`);
     setSelectedType(type);
     setUploadedContent(''); // Clear any uploaded content
+
+    // Special handling for päätös: open wizard first
+    if (type === 'päätös') {
+      logger.info('🔮 [DocumentCreationDialog] Opening Päätös Wizard');
+      setWizardOpen(true);
+    } else {
+      // For other types: open editor directly
+      setEditorOpen(true);
+    }
+  };
+
+  const handleWizardComplete = async (docId: string) => {
+    logger.info(`✅ [DocumentCreationDialog] Wizard complete, docId: ${docId}`);
+    setWizardDocId(docId);
+    setWizardOpen(false);
+
+    // Don't load content - let MarkdownDocumentEditor load it from Firestore directly
+    // This allows editor to use structured fields instead of parsing markdown
+    logger.info('📝 [DocumentCreationDialog] Opening editor for wizard-generated document (editor will load from Firestore)');
     setEditorOpen(true);
   };
 
@@ -111,12 +135,24 @@ export default function DocumentCreationDialog({
     setEditorOpen(false);
     setSelectedType(null);
     setUploadedContent('');
+
+    // If editor was opened from wizard (wizardDocId exists), close entire dialog
+    if (wizardDocId) {
+      logger.info('🔄 [DocumentCreationDialog] Closing DocumentCreationDialog after wizard-generated document editor close');
+      setWizardDocId(null);
+      onClose(); // Close the entire DocumentCreationDialog
+      if (onSaved) {
+        logger.info('🔄 [DocumentCreationDialog] Calling onSaved after closing wizard-generated document editor');
+        onSaved();
+      }
+    }
   };
 
   const handleDocumentSaved = () => {
     setEditorOpen(false);
     setSelectedType(null);
     setUploadedContent('');
+    setWizardDocId(null);
     onClose();
     if (onSaved) onSaved();
   };
@@ -176,9 +212,9 @@ export default function DocumentCreationDialog({
 
     // Define structure templates for each document type
     const structurePrompts: Record<DocumentType, string> = {
-      'ls-ilmoitus': `Jäsennä seuraava lastensuojeluilmoitus oikeaan rakenteeseen:
+      'ls-ilmoitus': `Jäsennä seuraava lastensuojeluhakemus oikeaan rakenteeseen:
 
-# Lastensuojeluilmoitus
+# Lastensuojeluhakemus
 
 ## PÄIVÄYS
 [Päivämäärä muodossa DD.MM.YYYY - ÄLÄ täytä, tämä kenttä täytetään automaattisesti]
@@ -432,19 +468,21 @@ Poimii tiedot alkuperäisestä tekstistä ja sijoita ne oikeisiin kohtiin.`,
                   </div>
                 </button>
 
-                {/* Upload button */}
-                <div className="border-t px-4 py-2 bg-muted/30">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => handleUploadClick(docType.type, e)}
-                    disabled={isProcessing}
-                    className="w-full text-xs hover:bg-accent"
-                  >
-                    <Upload className="w-3 h-3 mr-2" />
-                    Lataa koneelta
-                  </Button>
-                </div>
+                {/* Upload button - only for ls-ilmoitus */}
+                {docType.type === 'ls-ilmoitus' && (
+                  <div className="border-t px-4 py-2 bg-muted/30">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleUploadClick(docType.type, e)}
+                      disabled={isProcessing}
+                      className="w-full text-xs hover:bg-accent"
+                    >
+                      <Upload className="w-3 h-3 mr-2" />
+                      Lataa koneelta
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -458,9 +496,18 @@ Poimii tiedot alkuperäisestä tekstistä ja sijoita ne oikeisiin kohtiin.`,
           documentType={selectedType}
           clientId={clientId}
           existingContent={uploadedContent}
+          existingFilename={wizardDocId ? `${wizardDocId}.md` : undefined}
           onSaved={handleDocumentSaved}
         />
       )}
+
+      {/* Päätös Wizard */}
+      <PaatosWizardDialog
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        clientId={clientId}
+        onDraftReady={handleWizardComplete}
+      />
     </>
   );
 }

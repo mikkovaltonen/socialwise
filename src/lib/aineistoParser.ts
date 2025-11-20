@@ -98,10 +98,44 @@ export function extractDateFromMarkdown(markdown: string): string {
  * Convert Firestore LSNotificationDocument to UI LSNotification type
  */
 function convertLSNotification(doc: LSNotificationDocument): LSNotification {
-  const content = doc.fullMarkdownText;
+  // Build fullMarkdownText from structured fields (new format)
+  // Or use legacy fullMarkdownText if structured fields don't exist
+  let content: string;
+  if (doc.paivays || doc.ilmoittajanTiedot) {
+    // New format: build from structured fields
+    content = `# Lastensuojeluhakemus
+
+## PÄIVÄYS
+${doc.paivays || ''}
+
+## ILMOITTAJAN TIEDOT
+${doc.ilmoittajanTiedot || ''}
+
+## LAPSEN TIEDOT
+${doc.lapsenTiedot || ''}
+
+## HUOLTAJIEN TIEDOT
+${doc.huoltajienTiedot || ''}
+
+## HUOLEN AIHEET
+${doc.huolenAiheet || ''}
+
+## ILMOITUKSEN PERUSTE
+${doc.ilmoituksenPeruste || ''}
+
+## TOIMENPITEET
+${doc.toimenpiteet || ''}
+
+## ALLEKIRJOITUS JA KÄSITTELYN PÄÄTTYMISPÄIVÄMÄÄRÄ
+${doc.allekirjoitusJaKasittely || ''}`;
+  } else {
+    // Old format: use legacy fullMarkdownText
+    content = doc.fullMarkdownText || '';
+  }
 
   // Poimii ilmoittajan tiedot
   const reporterSection = extractSection(content, 'ILMOITUKSEN TEKIJÄ') ||
+                          extractSection(content, 'ILMOITTAJAN TIEDOT') ||
                           extractSection(content, 'Ilmoittajan tiedot');
   const reporterName = extractFieldValue(reporterSection, 'Nimi');
   const reporterProfession = extractFieldValue(reporterSection, 'Ammatti/asema') ||
@@ -113,6 +147,7 @@ function convertLSNotification(doc: LSNotificationDocument): LSNotification {
 
   // Poimii lapsen tiedot
   const childSection = extractSection(content, 'ILMOITUKSEN KOHDE') ||
+                       extractSection(content, 'LAPSEN TIEDOT') ||
                        extractSection(content, 'Lapsen tiedot');
   const childName = extractFieldValue(childSection, 'Nimi');
   const childSSN = extractFieldValue(childSection, 'Henkilötunnus');
@@ -122,12 +157,14 @@ function convertLSNotification(doc: LSNotificationDocument): LSNotification {
 
   // Poimii huoltajien tiedot
   const guardiansSection = extractSection(content, 'HUOLTAJAT') ||
+                           extractSection(content, 'HUOLTAJIEN TIEDOT') ||
                            extractSection(content, 'Huoltajien tiedot');
   const motherInfo = extractFieldValue(guardiansSection, 'Äiti');
   const fatherInfo = extractFieldValue(guardiansSection, 'Isä');
 
   // Poimii ilmoituksen syyn
   const reason = extractSection(content, 'ILMOITUKSEN SYY') ||
+                 extractSection(content, 'ILMOITUKSEN PERUSTE') ||
                  extractSection(content, 'Ilmoituksen peruste') ||
                  '';
 
@@ -175,7 +212,7 @@ function convertLSNotification(doc: LSNotificationDocument): LSNotification {
     highlights,
     summary: doc.summary,
     urgency: doc.urgency,
-    fullText: doc.fullMarkdownText,
+    fullText: content, // Use built content instead of doc.fullMarkdownText
     // LLM-generated structured fields
     reporterSummary: typeof doc.reporter === 'string' ? doc.reporter : doc.reporterSummary,
     reasonFromLLM: doc.reason,
@@ -189,6 +226,47 @@ function convertLSNotification(doc: LSNotificationDocument): LSNotification {
  * Convert Firestore PTADocument to UI PTARecord type
  */
 function convertPTARecord(doc: PTADocument): PTARecord {
+  // Build fullMarkdownText from structured fields (new format)
+  // Or use legacy fullMarkdownText if structured fields don't exist
+  let fullText: string;
+  if (doc.paivays || doc.perhe) {
+    // New format: build from structured fields
+    fullText = `# Palvelutarpeen arviointi
+
+## Päiväys
+${doc.paivays || ''}
+
+## PERHE
+${doc.perhe || ''}
+
+## TAUSTA
+${doc.tausta || ''}
+
+## PALVELUT
+${doc.palvelut || ''}
+
+## YHTEISTYÖTAHOT ja VERKOSTO
+${doc.yhteistyotahotJaVerkosto || ''}
+
+## LAPSEN JA PERHEEN TAPAAMINEN
+${doc.lapsenJaPerheenTapaaminen || ''}
+
+## ASIAKKAAN MIELIPIDE JA NÄKEMYS PALVELUTARPEESEEN
+${doc.asiakkaanMielipideJaNakemys || ''}
+
+## SOSIAALIHUOLLON AMMATTIHENKILÖN JOHTOPÄÄTÖKSET
+${doc.sosiaalityontekijanJohtopäätökset || ''}
+
+## ARVIO OMATYÖNTEKIJÄN TARPEESTA
+${doc.arvioOmatyontekijanTarpeesta || ''}
+
+## JAKELU JA ALLEKIRJOITUS
+${doc.jakeluJaAllekirjoitus || ''}`;
+  } else {
+    // Old format: use legacy fullMarkdownText
+    fullText = doc.fullMarkdownText || '';
+  }
+
   return {
     id: doc.id || doc.documentKey,
     date: doc.date,
@@ -197,7 +275,7 @@ function convertPTARecord(doc: PTADocument): PTARecord {
     participants: [], // Not extracted from markdown
     summary: doc.summary,
     actions: [], // Not extracted from markdown
-    fullText: doc.fullMarkdownText,
+    fullText,
     status: doc.status || 'Kesken',
     // Audit fields
     updatedAt: doc.updatedAt?.toDate().toISOString(),
@@ -209,6 +287,41 @@ function convertPTARecord(doc: PTADocument): PTARecord {
  * Convert Firestore DecisionDocument to UI Decision type
  */
 function convertDecision(doc: DecisionDocument): Decision {
+  // Build fullMarkdownText from structured fields (new format)
+  // Or use legacy fullMarkdownText if structured fields don't exist
+  let fullText: string;
+  if (doc.ratkaisuTaiPaatos || doc.asianKeskeinenSisalto) {
+    // New format: build from structured fields
+    fullText = `# Päätös
+
+## RATKAISU TAI PÄÄTÖS
+${doc.ratkaisuTaiPaatos || ''}
+
+## ASIAN VIREILLETULOPÄIVÄ
+${doc.asianVireilletulopaiva || ''}
+
+## ASIAN KESKEINEN SISÄLTÖ
+${doc.asianKeskeinenSisalto || ''}
+
+## PÄÄTÖKSEN PERUSTELUT JA TOIMEENPANO
+${doc.paatoksenPerustelutJaToimeenpano || ''}
+
+## RATKAISU VOIMASSA
+${doc.ratkaisuVoimassa || ''}
+
+## VALMISTELIJA JA SOSIAALITYÖNTEKIJÄ
+${doc.valmistelijaJaSosiaalityontekija || ''}
+
+## RATKAISIJA
+${doc.ratkaisija || ''}
+
+## TIEDOKSIANTO PMV
+${doc.tiedoksiantoPMV || ''}`;
+  } else {
+    // Old format: use legacy fullMarkdownText
+    fullText = doc.fullMarkdownText || '';
+  }
+
   const decision = {
     id: doc.id || doc.documentKey,
     date: doc.date,
@@ -217,7 +330,7 @@ function convertDecision(doc: DecisionDocument): Decision {
     summary: doc.summary || '',
     legalBasis: doc.legalBasis || '',
     highlights: doc.highlights || [],
-    fullText: doc.fullMarkdownText
+    fullText
   };
 
   // Debug logging for summary
@@ -539,7 +652,7 @@ export async function loadClientData(clientId: string): Promise<LSClientData> {
         id: `notification-${n.id}`,
         date: n.date,
         type: 'notification' as const,
-        title: 'Lastensuojeluilmoitus',
+        title: 'Lastensuojeluhakemus',
         summary: n.summary,
         relatedId: n.id
       })),
@@ -575,7 +688,13 @@ export async function loadClientData(clientId: string): Promise<LSClientData> {
         summary: s.description,
         relatedId: s.id
       }))
-    ].sort((a, b) => b.date.localeCompare(a.date));
+    ].sort((a, b) => {
+      // Handle null dates by placing them at the end
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return b.date.localeCompare(a.date);
+    });
 
     // Get client name from contactInfo
     const clientName = contactInfo?.child?.name || `Asiakas ${clientId}`;

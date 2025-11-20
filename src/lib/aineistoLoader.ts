@@ -154,9 +154,9 @@ export function formatClientContext(clientData: any): string {
   }
   context += '\n';
 
-  // Lastensuojeluilmoitukset
+  // Lastensuojeluhakemukset
   if (clientData.notifications && clientData.notifications.length > 0) {
-    context += `## Lastensuojeluilmoitukset (${clientData.notifications.length} kpl)\n\n`;
+    context += `## Lastensuojeluhakemukset (${clientData.notifications.length} kpl)\n\n`;
     clientData.notifications.forEach((notif: any) => {
       context += `### ${notif.date}`;
       if (notif.reporter?.profession) {

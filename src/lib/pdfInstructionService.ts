@@ -256,25 +256,61 @@ export async function toggleInstructionActive(
 
 /**
  * Delete instruction from Storage and Firestore
+ * Returns success status and optional error message
  */
 export async function deleteInstruction(
   docId: string,
   storagePath: string
-): Promise<boolean> {
+): Promise<{ success: boolean; error?: string }> {
+  let firestoreDeleted = false;
+  let storageDeleted = false;
+  const errors: string[] = [];
+
   try {
-    // 1. Delete from Storage
-    const storageRef = ref(storage, storagePath);
-    await deleteObject(storageRef);
-    console.log(`✅ Deleted from Storage: ${storagePath}`);
+    // 1. Delete from Firestore FIRST (metadata is more critical)
+    try {
+      await deleteDoc(doc(db, COLLECTION_NAME, docId));
+      console.log(`✅ Deleted from Firestore: ${docId}`);
+      firestoreDeleted = true;
+    } catch (firestoreError) {
+      const msg = `Firestore-poisto epäonnistui: ${firestoreError instanceof Error ? firestoreError.message : 'Tuntematon virhe'}`;
+      console.error(msg);
+      errors.push(msg);
+    }
 
-    // 2. Delete from Firestore
-    await deleteDoc(doc(db, COLLECTION_NAME, docId));
-    console.log(`✅ Deleted from Firestore: ${docId}`);
+    // 2. Delete from Storage (allow to fail if file not found)
+    if (storagePath) {
+      try {
+        const storageRef = ref(storage, storagePath);
+        await deleteObject(storageRef);
+        console.log(`✅ Deleted from Storage: ${storagePath}`);
+        storageDeleted = true;
+      } catch (storageError: any) {
+        // If file not found, treat as success (already deleted)
+        if (storageError?.code === 'storage/object-not-found') {
+          console.warn(`⚠️ Storage file not found (already deleted?): ${storagePath}`);
+          storageDeleted = true;
+        } else {
+          const msg = `Storage-poisto epäonnistui: ${storageError instanceof Error ? storageError.message : 'Tuntematon virhe'}`;
+          console.error(msg);
+          errors.push(msg);
+        }
+      }
+    } else {
+      console.warn('⚠️ No storagePath provided, skipping Storage deletion');
+      storageDeleted = true; // Treat as success
+    }
 
-    return true;
+    // Success if at least Firestore was deleted
+    if (firestoreDeleted) {
+      return { success: true };
+    } else {
+      return { success: false, error: errors.join('; ') };
+    }
   } catch (error) {
-    console.error('Error deleting instruction:', error);
-    return false;
+    const msg = `Yleinen virhe poistossa: ${error instanceof Error ? error.message : 'Tuntematon virhe'}`;
+    console.error(msg);
+    return { success: false, error: msg };
   }
 }
 

@@ -7,6 +7,16 @@
 import { Timestamp } from 'firebase/firestore';
 
 /**
+ * Ammattilaisen rooli ASIAKAS_PERUSTIEDOT-kokoelmassa
+ */
+export type ProfessionalRole =
+  | 'Vastuusosiaalityöntekijä'
+  | 'Sosiaalityöntekijä'
+  | 'Sosiaalityön opiskelija'
+  | 'Omatyöntekijä sosiaaliohjaaja'
+  | 'Omatyöntekijä perhetyöntekijä';
+
+/**
  * Asiakas (Firestore: clients-kokoelma)
  *
  * Perustiedot asiakkaasta joka liitetään organisaatioon.
@@ -93,7 +103,7 @@ export interface ClientBasicInfo {
    */
   professionals?: Array<{
     nimi: string;
-    rooli: string; // "oma sosiaali työntekijä", "vastuutyöntekijä", jne.
+    rooli: ProfessionalRole;
     puhelin?: string;
     sahkoposti?: string; // HUOM: ilman ääkkösiä Firestoressa
   }>;

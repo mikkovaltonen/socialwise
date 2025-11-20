@@ -11,22 +11,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Scale, ChevronRight, Plus, Calendar, FileText, X, Trash2, Edit3 } from 'lucide-react';
+import { Scale, ChevronRight, Calendar, FileText, X, Edit3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { Decision } from '@/data/ls-types';
 import MarkdownDocumentEditor from '../MarkdownDocumentEditor';
@@ -36,7 +25,6 @@ import { preprocessMarkdownForDisplay } from '@/lib/utils';
 const markdownComponents = {
   p: ({ children }: any) => <p style={{ whiteSpace: 'pre-line' }}>{children}</p>,
 };
-// deleteMarkdownFile removed - now handled by MarkdownDocumentEditor
 
 interface DecisionsProps {
   decisions: Decision[];
@@ -63,24 +51,12 @@ const decisionTypeColors: Record<Decision['decisionType'], string> = {
 };
 
 export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'malliasiakas', onRefresh }) => {
-  const [expanded, setExpanded] = useState<string | null>(null);
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   const [showEditor, setShowEditor] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [decisionToDelete, setDecisionToDelete] = useState<Decision | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('fi-FI');
-  };
-
-  // Deletion is now handled by MarkdownDocumentEditor
-  // This function is kept for backwards compatibility but not used
-  const handleDeleteDecision = async () => {
-    console.log('⚠️ [Decisions] handleDeleteDecision called - deletion should be done in editor');
-    setShowDeleteDialog(false);
-    setDecisionToDelete(null);
   };
 
   const handleEdit = () => {
@@ -92,6 +68,11 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
   const handleEditorClose = () => {
     console.log('🔵 [Decisions] handleEditorClose called');
     setShowEditor(false);
+    // Refresh data even if editor was closed without saving
+    if (onRefresh) {
+      console.log('🔄 [Decisions] Calling onRefresh from handleEditorClose');
+      onRefresh();
+    }
   };
 
   const handleEditorSaved = () => {
@@ -101,7 +82,17 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
     console.log('  - closing decision dialog');
     setSelectedDecision(null);
     if (onRefresh) {
-      console.log('🔄 [Decisions] Calling onRefresh');
+      console.log('🔄 [Decisions] Calling onRefresh from handleEditorSaved');
+      onRefresh();
+    }
+  };
+
+  const handleDecisionDialogClose = () => {
+    console.log('🔵 [Decisions] handleDecisionDialogClose called');
+    setSelectedDecision(null);
+    // Refresh data when decision dialog is closed
+    if (onRefresh) {
+      console.log('🔄 [Decisions] Calling onRefresh from handleDecisionDialogClose');
       onRefresh();
     }
   };
@@ -174,7 +165,7 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
       <Dialog
         open={selectedDecision !== null}
         onOpenChange={(open) => {
-          if (!open) setSelectedDecision(null);
+          if (!open) handleDecisionDialogClose();
         }}
       >
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -188,7 +179,7 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
                   <DialogTitle className="text-2xl">
                     Päätös
                   </DialogTitle>
-                  <DialogDescription className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     {selectedDecision && formatDate(selectedDecision.date)}
                     {selectedDecision && (
@@ -196,10 +187,10 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
                         {decisionTypeLabels[selectedDecision.decisionType]}
                       </Badge>
                     )}
-                  </DialogDescription>
+                  </div>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setSelectedDecision(null)}>
+              <Button variant="ghost" size="icon" onClick={handleDecisionDialogClose}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -275,29 +266,15 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
 
               {/* Footer Actions */}
               <div className="flex justify-between items-center mt-6 pt-4 border-t">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleEdit}
-                    className="flex items-center gap-2"
-                  >
-                    <Edit3 className="h-4 w-4" />
-                    MUOKKAA
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      setDecisionToDelete(selectedDecision);
-                      setShowDeleteDialog(true);
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Poista päätös
-                  </Button>
-                </div>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleEdit}
+                  className="flex items-center gap-2"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  MUOKKAA
+                </Button>
                 <Button variant="outline" onClick={() => setSelectedDecision(null)}>
                   Sulje
                 </Button>
@@ -306,37 +283,6 @@ export const Decisions: React.FC<DecisionsProps> = ({ decisions, clientId = 'mal
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Poista päätös</AlertDialogTitle>
-            <AlertDialogDescription>
-              Oletko varma että haluat poistaa tämän päätöksen? Tätä toimintoa ei voi peruuttaa.
-              {decisionToDelete && (
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium">
-                    {formatDate(decisionToDelete.date)} - {decisionTypeLabels[decisionToDelete.decisionType]}
-                  </p>
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>
-              Peruuta
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteDecision}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {isDeleting ? 'Poistetaan...' : 'Poista'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Document Editor */}
       {selectedDecision && (
