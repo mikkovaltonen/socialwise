@@ -16,6 +16,23 @@ This is SocialWise - Sosiaalityön teknologiakumppani (Social Work Technology Pa
 - **Languages**: Finnish and English support
 - **Values**: Security, User-centricity, Reliability, Ethics, Innovation
 
+#### LLM API Configuration
+**IMPORTANT**: All LLM API calls have NO `max_tokens` limit (removed 2025-11-20)
+
+**Rationale:**
+- Let LLM generate complete responses without truncation
+- Prevents JSON parsing errors from incomplete responses
+- Costs are controlled by precise prompts, not artificial token limits
+- Better quality outputs with full context
+
+**Affected services:**
+- `documentSummaryService.ts` - Document summary generation
+- `DocumentCreationDialog.tsx` - Document structuring from uploads
+- `paatosWizardService.ts` - Decision wizard generation
+- All urgency/type detection functions
+
+**Note**: Prompts are designed to be concise and specific to minimize unnecessary token usage while ensuring complete, valid responses.
+
 ### 2. Client Data Management (CRM)
 - **Database**: Client information and service history in Firestore collections
 - **Data Fields**:

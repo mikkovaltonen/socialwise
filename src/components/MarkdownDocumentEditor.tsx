@@ -580,7 +580,46 @@ export default function MarkdownDocumentEditor({
           }
         }
         else if (existingContent) {
-          setSections(parseContentIntoSections(existingContent, structure));
+          const parsedSections = parseContentIntoSections(existingContent, structure);
+
+          // Auto-populate empty fields for LS-ilmoitus (uploaded documents)
+          if (documentType === 'ls-ilmoitus') {
+            const updatedSections = [...parsedSections];
+
+            // Helper function to check if content is empty or placeholder
+            const isEmptyOrPlaceholder = (content: string): boolean => {
+              const trimmed = content.trim();
+              return !trimmed ||
+                     trimmed.includes('Automaattinen') ||
+                     trimmed.includes('ÄLÄ täytä') ||
+                     trimmed.startsWith('[') && trimmed.endsWith(']');
+            };
+
+            // Auto-populate PÄIVÄYS if empty or placeholder
+            const paivaysIndex = updatedSections.findIndex(s => s.heading === '## PÄIVÄYS');
+            if (paivaysIndex !== -1 && isEmptyOrPlaceholder(updatedSections[paivaysIndex].content)) {
+              updatedSections[paivaysIndex].content = new Date().toLocaleDateString('fi-FI');
+              console.log('📅 [MarkdownDocumentEditor] Auto-filled PÄIVÄYS for uploaded document');
+            }
+
+            // Auto-populate LAPSEN TIEDOT if empty or placeholder
+            const lapsiIndex = updatedSections.findIndex(s => s.heading === '## LAPSEN TIEDOT');
+            if (lapsiIndex !== -1 && isEmptyOrPlaceholder(updatedSections[lapsiIndex].content)) {
+              updatedSections[lapsiIndex].content = await getLapsenTiedot(clientId);
+              console.log('👶 [MarkdownDocumentEditor] Auto-filled LAPSEN TIEDOT for uploaded document');
+            }
+
+            // Auto-populate HUOLTAJIEN TIEDOT if empty or placeholder
+            const huoltajatIndex = updatedSections.findIndex(s => s.heading === '## HUOLTAJIEN TIEDOT');
+            if (huoltajatIndex !== -1 && isEmptyOrPlaceholder(updatedSections[huoltajatIndex].content)) {
+              updatedSections[huoltajatIndex].content = await getHuoltajienTiedot(clientId);
+              console.log('👨‍👩‍👧 [MarkdownDocumentEditor] Auto-filled HUOLTAJIEN TIEDOT for uploaded document');
+            }
+
+            setSections(updatedSections);
+          } else {
+            setSections(parsedSections);
+          }
 
           // Extract PTA status if exists
           if (documentType === 'pta') {
@@ -631,6 +670,14 @@ export default function MarkdownDocumentEditor({
       };
 
       initializeDocument();
+    } else {
+      // RESET all state when dialog closes
+      console.log('🔵 [MarkdownDocumentEditor] Dialog closed - resetting state');
+      setSections([]);
+      setPtaStatus('Kesken');
+      setMessage('');
+      setError('');
+      setHasUnsavedChanges(false);
     }
   }, [open, documentType, existingContent, existingFilename, clientId]);
 

@@ -320,7 +320,7 @@ export async function generateDecisionDraft(clientId: string): Promise<DecisionD
           },
         ],
         temperature: temperature,
-        max_tokens: 2000,
+        // No max_tokens limit - let LLM generate complete decision document
       }),
     });
 

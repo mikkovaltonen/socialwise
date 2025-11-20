@@ -108,7 +108,7 @@ export async function generateDocumentSummary(
           },
         ],
         temperature: temperature,
-        max_tokens: 200,
+        // No max_tokens limit - let LLM generate complete response
       }),
     });
 
@@ -230,7 +230,7 @@ Kiireellisyystaso:`;
         model: FALLBACK_MODEL,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
-        max_tokens: 10,
+        // No max_tokens limit
       }),
     });
 
@@ -297,7 +297,7 @@ Päätöstyyppi:`;
         model: FALLBACK_MODEL,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
-        max_tokens: 20,
+        // No max_tokens limit
       }),
     });
 

@@ -17,11 +17,11 @@ Olet lastensuojelutyön asiantuntija. Analysoi tämä lastensuojeluilmoitus ja p
 
 3. **Yhteenveto**: Anna ytimekäs yhteenveto (max 100 merkkiä) ilmoituksen tärkeimmästä perusteesta.
 
-4. **Ilmoituksen perusta**: Poimii ilmoituksen perusta/syy dokumentista:
-   - Etsi "ILMOITUKSEN SYY" tai "ILMOITUKSEN PERUSTE" -osiosta koko teksti
-   - Säilytä alkuperäinen muotoilu ja yksityiskohdat
-   - Jos ei löydy erillistä osiota, poimii perustelut dokumentin pääsisällöstä
-   - Tämä on pidempi kuvaus kuin yhteenveto (200-500 merkkiä)
+4. **Ilmoituksen perusta**: Tiivistä ilmoituksen perusta/syy dokumentista:
+   - Etsi "ILMOITUKSEN SYY" tai "ILMOITUKSEN PERUSTE" -osiosta keskeisin sisältö
+   - Tiivistä olennaiset asiat selkeästi (max 300 merkkiä)
+   - Jos ei löydy erillistä osiota, tiivistä perustelut dokumentin pääsisällöstä
+   - Keskity keskeisiin huolenaiheisiin ja faktaoihin
 
 5. **Kiireellisyys**: Arvioi ilmoituksen kiireellisyys sisällön perusteella:
    - **"kriittinen"**: Välitön vaara (väkivalta, vakava kaltoinkohtelu, uhka lapsen turvallisuudelle)
@@ -35,9 +35,9 @@ Palauta vastaus **vain ja ainoastaan** tässä JSON-muodossa, ilman mitään muu
 ```json
 {
   "date": "YYYY-MM-DD",
-  "reporterSummary": "ilmoittajan ammatti tai asema",
+  "reporter": "ilmoittajan ammatti tai asema",
   "summary": "Lyhyt yhteenveto ilmoituksen perusteesta (max 100 merkkiä)",
-  "reason": "Pidempi kuvaus ilmoituksen perusteesta ja syystä (200-500 merkkiä)",
+  "reason": "Tiivistetty kuvaus ilmoituksen perusteesta (max 300 merkkiä)",
   "urgency": "kriittinen"
 }
 ```
@@ -46,7 +46,7 @@ Palauta vastaus **vain ja ainoastaan** tässä JSON-muodossa, ilman mitään muu
 ```json
 {
   "date": null,
-  "reporterSummary": "Opettaja",
+  "reporter": "Opettaja",
   "summary": "Lapsen ahdistus ja perheen konfliktit",
   "reason": "Lapsi on osoittanut viime viikkoina voimakasta ahdistusta ja pelkoa. Kotona on ollut riitoja vanhempien välillä. Lapsi on kertonut koulupsykologille pelkäävänsä kotiin menoa.",
   "urgency": "normaali"
@@ -61,7 +61,7 @@ Palauta vastaus **vain ja ainoastaan** tässä JSON-muodossa, ilman mitään muu
   "date": "2016-08-03",
   "reporter": "Opettaja",
   "summary": "Perheväkivalta ja lapsen välitön vaarassa oleminen",
-  "reason": "Lapsi on kertonut opettajalle kotona tapahtuvasta fyysisestä väkivallasta. Lapsella on näkyviä mustelmia käsivarsissa. Lapsi pelkää kotiin menoa ja on pyytänyt apua. Tilanne vaatii välitöntä lastensuojelun toimenpiteitä lapsen turvallisuuden takaamiseksi.",
+  "reason": "Lapsi kertoi opettajalle kotona tapahtuvasta fyysisestä väkivallasta. Lapsella näkyviä mustelmia käsivarsissa. Lapsi pelkää kotiin menoa ja on pyytänyt apua.",
   "urgency": "kriittinen"
 }
 ```
@@ -72,7 +72,7 @@ Palauta vastaus **vain ja ainoastaan** tässä JSON-muodossa, ilman mitään muu
   "date": "2015-11-20",
   "reporter": "Koulupsykologi",
   "summary": "Koulunkäymättömyys ja oppimisvaikeudet",
-  "reason": "Lapsi on ollut poissa koulusta useita päiviä ilman pätevää syytä. Oppimisvaikeudet ovat pahenemassa ja lapsi vaikuttaa väsyneeltä. Perheen tilanne on haasteellinen ja lapsi tarvitsisi tukea koulunkäyntiin ja oppimiseen.",
+  "reason": "Lapsi poissa koulusta useita päiviä ilman pätevää syytä. Oppimisvaikeudet pahenemassa ja lapsi vaikuttaa väsyneeltä. Perheen tilanne haasteellinen.",
   "urgency": "normaali"
 }
 ```
@@ -83,7 +83,7 @@ Palauta vastaus **vain ja ainoastaan** tässä JSON-muodossa, ilman mitään muu
   "date": "2017-03-15",
   "reporter": "Sairaanhoitaja",
   "summary": "Vanhempien päihteiden käyttö ja huoli lapsen turvallisuudesta",
-  "reason": "Terveydenhoitaja on havainnut vanhempien päihteiden käytön merkkejä kotikäynnillä. Lapsen hoito ja hygienia ovat puutteellisia. Kotiolot eivät ole lapselle turvalliset ja tilanne vaatii lastensuojelun selvitystä perheen tilanteesta ja tuen tarpeesta.",
+  "reason": "Terveydenhoitaja havainnut vanhempien päihteiden käytön merkkejä kotikäynnillä. Lapsen hoito ja hygienia puutteellisia. Kotiolot eivät turvalliset lapselle.",
   "urgency": "kiireellinen"
 }
 ```
