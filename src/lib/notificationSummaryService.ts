@@ -62,7 +62,7 @@ export async function generateNotificationSummaryForClient(
 
     // Prepare notification context
     const notificationContext = `
-# Lastensuojeluilmoitus
+# Lastensuojeluhakemus
 
 **Päivämäärä:** ${latestNotification.date}
 

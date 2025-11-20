@@ -210,7 +210,7 @@ function prepareClientContext(clientData: LSClientData): string {
 HUOM: Kaikki dokumentit ovat saatavilla täydellisessä muodossa kontekstissa yllä.
 Etsi päivämäärät lukemalla dokumenttien sisältöä (esim. "Päiväys:", "Päivämäärä:" kentät).
 
-Lastensuojeluilmoitukset (${notifications.length} kpl):
+Lastensuojeluhakemukset (${notifications.length} kpl):
 ${notificationSummaries}
 
 Päätökset:

@@ -174,13 +174,13 @@ export const BotInstructionManager: React.FC = () => {
     }
 
     try {
-      const success = await deleteInstruction(docId, storagePath);
-      if (success) {
+      const result = await deleteInstruction(docId, storagePath);
+      if (result.success) {
         toast.success('Dokumentti poistettu');
         loadDocuments();
         loadTotalStats();
       } else {
-        toast.error('Poisto epäonnistui');
+        toast.error(`Poisto epäonnistui: ${result.error}`);
       }
     } catch (error) {
       console.error('Delete error:', error);

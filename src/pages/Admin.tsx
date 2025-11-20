@@ -19,6 +19,7 @@ import PtaYhteenvetoPromptManager from "../components/PtaYhteenvetoPromptManager
 import PaatosYhteenvetoPromptManager from "../components/PaatosYhteenvetoPromptManager";
 import IlmoitusYhteenvetoPromptManager from "../components/IlmoitusYhteenvetoPromptManager";
 import AsiakaskirjausYhteenvetoPromptManager from "../components/AsiakaskirjausYhteenvetoPromptManager";
+import PaatosWizardPromptManager from "../components/PaatosWizardPromptManager";
 import OrganizationManager from "../components/OrganizationManager";
 import BotInstructionManager from "../components/BotInstructionManager";
 import UserRegistration from "@/components/UserRegistration";
@@ -329,16 +330,16 @@ const Admin = () => {
                   <AlertTriangle className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl font-bold mb-2">Lastensuojeluilmoitusten yhteenveto</CardTitle>
+                  <CardTitle className="text-2xl font-bold mb-2">Lastensuojeluhakemusten yhteenveto</CardTitle>
                   <p className="text-white/90 text-lg leading-relaxed">
-                    Hallitse lastensuojeluilmoitusten LLM-pohjaisten yhteenvetojen luomisen järjestelmäpromptin versioita
+                    Hallitse lastensuojeluhakemusten LLM-pohjaisten yhteenvetojen luomisen järjestelmäpromptin versioita
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 bg-white">
               <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                Hallitse lastensuojeluilmoitusten yhteenvetojen luomisen järjestelmäpromptin versioita. Yhteenveto käyttää samaa LLM-mallia ja temperature-asetusta kuin chatbot (voit vaihtaa mallin yllä olevasta osiosta). Muutokset tallentuvat versiohistoriaan.
+                Hallitse lastensuojeluhakemusten yhteenvetojen luomisen järjestelmäpromptin versioita. Yhteenveto käyttää samaa LLM-mallia ja temperature-asetusta kuin chatbot (voit vaihtaa mallin yllä olevasta osiosta). Muutokset tallentuvat versiohistoriaan.
               </p>
               <Dialog>
                 <DialogTrigger asChild>
@@ -353,10 +354,53 @@ const Admin = () => {
                   <DialogHeader>
                     <DialogTitle>Ilmoitusten Yhteenvedon Promptin hallinta</DialogTitle>
                     <DialogDescription>
-                      Hallitse lastensuojeluilmoitusten yhteenvetojen luomisen järjestelmäpromptia. Yhteenveto käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
+                      Hallitse lastensuojeluhakemusten yhteenvetojen luomisen järjestelmäpromptia. Yhteenveto käyttää samaa LLM-mallia kuin chatbot. Kaikki muutokset tallentuvat versiohistoriaan.
                     </DialogDescription>
                   </DialogHeader>
                   <IlmoitusYhteenvetoPromptManager />
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Päätös Wizard Management */}
+        <div className="mb-8">
+          <Card className="border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-red-600 to-orange-600 text-white p-8">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <Scale className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold mb-2">Päätösehdotuksen generointi (Wizard)</CardTitle>
+                  <p className="text-white/90 text-lg leading-relaxed">
+                    Hallitse AI-avusteisen päätösdokumentin generoinnin järjestelmäpromptin versioita
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 bg-white">
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                Hallitse päätösehdotuksen generoinnin järjestelmäpromptia. LLM initialisoidaan kaikilla asiakkaan dokumenteilla ja chatbot-ohjeilla, ja generoi ehdotuksen jokaiselle päätöksen kentälle.
+              </p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 py-6 text-lg font-medium shadow-lg shadow-red-600/25"
+                  >
+                    <Scale className="mr-2 h-5 w-5" />
+                    Avaa päätöswizardin promptin hallinta
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] w-full h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Päätös Wizardin Promptin hallinta</DialogTitle>
+                    <DialogDescription>
+                      Hallitse päätösehdotuksen generoinnin järjestelmäpromptia. Wizard initialisoidaan kaikilla asiakkaan dokumenteilla ja luo ehdotuksen päätösdokumentiksi. Kaikki muutokset tallentuvat versiohistoriaan.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <PaatosWizardPromptManager />
                 </DialogContent>
               </Dialog>
             </CardContent>

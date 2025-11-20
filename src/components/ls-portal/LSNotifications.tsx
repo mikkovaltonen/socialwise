@@ -1,6 +1,6 @@
 /**
  * LSNotifications Component
- * Displays list of child welfare notifications (Lastensuojeluilmoitukset)
+ * Displays list of child welfare notifications (Lastensuojeluhakemukset)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -120,7 +120,7 @@ export const LSNotifications: React.FC<LSNotificationsProps> = ({ notifications,
         <CardHeader>
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            <CardTitle>Lastensuojeluilmoitukset</CardTitle>
+            <CardTitle>Lastensuojeluhakemukset</CardTitle>
             {isGeneratingSummaries && (
               <Loader2 className="h-4 w-4 animate-spin text-blue-600 ml-2" />
             )}

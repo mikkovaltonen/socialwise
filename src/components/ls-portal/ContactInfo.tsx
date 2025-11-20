@@ -3,7 +3,7 @@
  * Displays contact information for child, guardians, and professionals
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { Users, Phone, Mail, Home, School, Edit } from 'lucide-react';
 import ContactInfoEditor from '../ContactInfoEditor';
 import type { ContactInfo as ContactInfoType } from '@/data/ls-types';
 import type { ClientBasicInfo } from '@/types/client';
+import { getClientBasicInfo } from '@/lib/clientService';
+import { logger } from '@/lib/logger';
 
 interface ContactInfoProps {
   contactInfo?: ContactInfoType;
@@ -20,6 +22,24 @@ interface ContactInfoProps {
 
 export const ContactInfo: React.FC<ContactInfoProps> = ({ contactInfo, clientId, onUpdate }) => {
   const [showEditor, setShowEditor] = useState(false);
+  const [basicInfo, setBasicInfo] = useState<ClientBasicInfo | undefined>(undefined);
+
+  // Load basic info from ASIAKAS_PERUSTIEDOT collection
+  useEffect(() => {
+    const loadBasicInfo = async () => {
+      try {
+        const data = await getClientBasicInfo(clientId);
+        logger.debug('Loaded basicInfo from ASIAKAS_PERUSTIEDOT:', data);
+        setBasicInfo(data || undefined);
+      } catch (error) {
+        logger.error('Error loading basic info:', error);
+      }
+    };
+
+    if (clientId) {
+      loadBasicInfo();
+    }
+  }, [clientId]);
 
   // Muunna ContactInfo -> ClientBasicInfo lomaketta varten
   const convertToBasicInfo = (): ClientBasicInfo | undefined => {
@@ -120,8 +140,16 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ contactInfo, clientId,
           open={showEditor}
           onClose={() => setShowEditor(false)}
           clientId={clientId}
-          existingData={convertToBasicInfo()}
-          onSaved={() => {
+          existingData={basicInfo || convertToBasicInfo()}
+          onSaved={async () => {
+            // Reload basicInfo from Firestore after save
+            try {
+              const data = await getClientBasicInfo(clientId);
+              setBasicInfo(data || undefined);
+            } catch (error) {
+              logger.error('Error reloading basic info:', error);
+            }
+
             setShowEditor(false);
             if (onUpdate) {
               onUpdate();
@@ -351,8 +379,16 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ contactInfo, clientId,
       open={showEditor}
       onClose={() => setShowEditor(false)}
       clientId={clientId}
-      existingData={convertToBasicInfo()}
-      onSaved={() => {
+      existingData={basicInfo || convertToBasicInfo()}
+      onSaved={async () => {
+        // Reload basicInfo from Firestore after save
+        try {
+          const data = await getClientBasicInfo(clientId);
+          setBasicInfo(data || undefined);
+        } catch (error) {
+          logger.error('Error reloading basic info:', error);
+        }
+
         setShowEditor(false);
         if (onUpdate) {
           onUpdate();

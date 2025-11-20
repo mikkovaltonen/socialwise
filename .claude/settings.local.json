@@ -42,7 +42,9 @@
       "Bash(python3:*)",
       "Bash(git checkout:*)",
       "WebFetch(domain:openrouter.ai)",
-      "Bash(gsutil ls:*)"
+      "Bash(gsutil ls:*)",
+      "Bash(timeout 30 npx tsc:*)",
+      "Bash(echo:*)"
     ],
     "deny": []
   }

@@ -272,7 +272,7 @@ export const LSPortal = forwardRef<LSPortalRef, LSPortalProps>(
               isLoadingClients={isLoadingClients}
               clientSummary={clientSummary}
             >
-              {/* Lastensuojeluilmoitukset + Asiakaskirjaukset (side by side) */}
+              {/* Lastensuojeluhakemukset + Asiakaskirjaukset (side by side) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <LSNotifications notifications={clientData.notifications} clientId={selectedClientId} onRefresh={refreshClientData} />
                 <CaseNotes caseNotes={clientData.caseNotes} clientId={selectedClientId} onRefresh={refreshClientData} />

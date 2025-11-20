@@ -70,9 +70,9 @@ All documents follow a strict markdown structure with dedicated sections. When u
 [Muutoksenhakuohjeet]
 ```
 
-**Lastensuojeluilmoitus (Child Protection Notification)**
+**Lastensuojeluhakemus (Child Protection Application)**
 ```markdown
-# Lastensuojeluilmoitus
+# Lastensuojeluhakemus
 
 ## PÄIVÄYS
 [DD.MM.YYYY - Automaattinen luomispäivä, lukittu, ei muokattavissa]

@@ -71,8 +71,8 @@ Tarjoat:
 
 Sinulla on pääsy seuraaviin asiakastietoihin:
 
-### Lastensuojeluilmoitukset
-- Kaikki asiakasta koskevat lastensuojeluilmoitukset aikajärjestyksessä
+### Lastensuojeluhakemukset
+- Kaikki asiakasta koskevat lastensuojeluhakemukset aikajärjestyksessä
 - Ilmoittajan ammatti, yhteystiedot ja ilmoituksen syy
 - Korostetut huolenaiheet ja havainnot
 

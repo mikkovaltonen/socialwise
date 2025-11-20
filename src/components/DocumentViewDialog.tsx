@@ -45,7 +45,7 @@ interface DocumentViewDialogProps {
 
 // Document type display names
 const documentTitles: Record<DocumentType, string> = {
-  'ls-ilmoitus': 'Lastensuojeluilmoitus',
+  'ls-ilmoitus': 'Lastensuojeluhakemus',
   'päätös': 'Päätös',
   'pta': 'Palvelutarpeen Arviointi',
   'asiakassuunnitelma': 'Asiakassuunnitelma',

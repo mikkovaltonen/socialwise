@@ -17,11 +17,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Save, X, Loader2, AlertCircle, Plus, Trash2 } from 'lucide-react';
 import { saveClientBasicInfo } from '@/lib/clientService';
-import type { ClientBasicInfo } from '@/types/client';
+import type { ClientBasicInfo, ProfessionalRole } from '@/types/client';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
+
+// Sallitut ammattilaisten roolit
+const PROFESSIONAL_ROLES: ProfessionalRole[] = [
+  'Vastuusosiaalityöntekijä',
+  'Sosiaalityöntekijä',
+  'Sosiaalityön opiskelija',
+  'Omatyöntekijä sosiaaliohjaaja',
+  'Omatyöntekijä perhetyöntekijä',
+];
 
 interface ContactInfoEditorProps {
   open: boolean;
@@ -56,9 +72,9 @@ export const ContactInfoEditor: React.FC<ContactInfoEditorProps> = ({
   // Ammattilaiset
   const [professionals, setProfessionals] = useState<Array<{
     nimi: string;
-    rooli: string;
-    puhelin: string;
-    sahkoposti: string;
+    rooli: string; // Allow any string to support legacy roles
+    puhelin?: string;
+    sahkoposti?: string;
   }>>([]);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -72,7 +88,11 @@ export const ContactInfoEditor: React.FC<ContactInfoEditorProps> = ({
       setChildSchool(existingData.child?.koulu || '');
       setChildSchoolPhone(existingData.child?.koulunPuhelin || '');
       setGuardians(existingData.guardians || []);
-      setProfessionals(existingData.professionals || []);
+
+      // Ensure professionals are loaded correctly
+      const loadedProfessionals = existingData.professionals || [];
+      logger.debug('Loading professionals:', loadedProfessionals);
+      setProfessionals(loadedProfessionals);
     } else if (open && !existingData) {
       // Tyhjennä lomake uudelle asiakkaalle
       resetForm();
@@ -109,7 +129,7 @@ export const ContactInfoEditor: React.FC<ContactInfoEditorProps> = ({
   const handleAddProfessional = () => {
     setProfessionals([
       ...professionals,
-      { nimi: '', rooli: 'oma sosiaali työntekijä', puhelin: '', sahkoposti: '' },
+      { nimi: '', rooli: 'Sosiaalityöntekijä' as ProfessionalRole, puhelin: '', sahkoposti: '' },
     ]);
   };
 
@@ -368,11 +388,30 @@ export const ContactInfoEditor: React.FC<ContactInfoEditorProps> = ({
 
                   <div>
                     <Label>Rooli</Label>
-                    <Input
+                    <Select
                       value={prof.rooli}
-                      onChange={(e) => handleUpdateProfessional(index, 'rooli', e.target.value)}
-                      placeholder="esim. oma sosiaali työntekijä"
-                    />
+                      onValueChange={(value) => handleUpdateProfessional(index, 'rooli', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Valitse rooli">
+                          {prof.rooli || 'Valitse rooli'}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {/* Näytä vanha rooli jos se ei ole uusissa vaihtoehdoissa */}
+                        {prof.rooli && !PROFESSIONAL_ROLES.includes(prof.rooli as ProfessionalRole) && (
+                          <SelectItem value={prof.rooli} className="text-amber-600 italic">
+                            {prof.rooli} (vanha arvo)
+                          </SelectItem>
+                        )}
+                        {/* Uudet standardoidut roolit */}
+                        <SelectItem value="Vastuusosiaalityöntekijä">Vastuusosiaalityöntekijä</SelectItem>
+                        <SelectItem value="Sosiaalityöntekijä">Sosiaalityöntekijä</SelectItem>
+                        <SelectItem value="Sosiaalityön opiskelija">Sosiaalityön opiskelija</SelectItem>
+                        <SelectItem value="Omatyöntekijä sosiaaliohjaaja">Omatyöntekijä sosiaaliohjaaja</SelectItem>
+                        <SelectItem value="Omatyöntekijä perhetyöntekijä">Omatyöntekijä perhetyöntekijä</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div>

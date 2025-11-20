@@ -7,7 +7,7 @@
  * Uses Firestore-based configuration from Admin panel:
  * - LS-ilmoitus: ilmoitusYhteenvetoService (ILMOITUS_YHTEENVETO)
  * - PTA: ptaYhteenvetoService (PALVELUNTARPEEN_ARVIOINTI_YHTEENVETO)
- * - Päätös: paatosYhteenvetoService (PAATOS_YHTEENVETO)
+ * - Päätös: NO SUMMARY (wizard generates full content)
  * - Asiakaskirjaus: asiakaskirjausYhteenvetoService (ASIAKASKIRJAUS_YHTEENVETO)
  */
 
@@ -15,24 +15,41 @@ import { logger } from './logger';
 import type { DocumentCategory } from './firestoreDocumentService';
 import * as ilmoitusYhteenvetoService from './ilmoitusYhteenvetoService';
 import * as ptaYhteenvetoService from './ptaYhteenvetoService';
-import * as paatosYhteenvetoService from './paatosYhteenvetoService';
 import * as asiakaskirjausYhteenvetoService from './asiakaskirjausYhteenvetoService';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const FALLBACK_MODEL = 'google/gemini-2.5-flash-lite'; // For urgency/decision type extraction
 
 /**
  * Generate summary for a document using LLM
  *
- * @param fullMarkdownText - Complete markdown document
+ * @param documentContent - Complete markdown document (string) OR structured fields (object)
  * @param category - Document category (determines prompt and configuration)
  * @returns Parsed JSON object with summary fields (date, summary, etc.) or fallback object with summary string
  */
 export async function generateDocumentSummary(
-  fullMarkdownText: string,
+  documentContent: string | object,
   category: DocumentCategory
 ): Promise<any> {
   try {
+    // Skip summary generation for päätös documents
+    if (category === 'päätös') {
+      logger.debug('Skipping summary generation for päätös (wizard generates full content)');
+      return { summary: '' };
+    }
+
+    // Format document content for LLM
+    let documentText: string;
+    if (typeof documentContent === 'string') {
+      documentText = documentContent;
+      logger.debug('Using markdown text for summary generation');
+    } else {
+      // Convert structured fields to JSON for LLM
+      documentText = JSON.stringify(documentContent, null, 2);
+      logger.debug('Using structured JSON fields for summary generation');
+    }
+
     // Get configuration from appropriate service based on category
     let model: string;
     let temperature: number;
@@ -43,28 +60,21 @@ export async function generateDocumentSummary(
       model = await ilmoitusYhteenvetoService.getLLMModel();
       temperature = await ilmoitusYhteenvetoService.getTemperature();
       const basePrompt = await ilmoitusYhteenvetoService.getPromptForGeneration();
-      prompt = `${basePrompt}\n\nDokumentti:\n${fullMarkdownText}`;
+      prompt = `${basePrompt}\n\nDokumentti:\n${documentText}`;
       logger.debug(`Using ILMOITUS_YHTEENVETO config: ${model} @ ${temperature}`);
     } else if (category === 'pta-record') {
       // Use Firestore-based configuration for PTA
       model = await ptaYhteenvetoService.getLLMModel();
       temperature = await ptaYhteenvetoService.getTemperature();
       const basePrompt = await ptaYhteenvetoService.getPromptForGeneration();
-      prompt = `${basePrompt}\n\nDokumentti:\n${fullMarkdownText}`;
+      prompt = `${basePrompt}\n\nDokumentti:\n${documentText}`;
       logger.debug(`Using PALVELUNTARPEEN_ARVIOINTI_YHTEENVETO config: ${model} @ ${temperature}`);
-    } else if (category === 'päätös') {
-      // Use Firestore-based configuration for Päätös
-      model = await paatosYhteenvetoService.getLLMModel();
-      temperature = await paatosYhteenvetoService.getTemperature();
-      const basePrompt = await paatosYhteenvetoService.getPromptForGeneration();
-      prompt = `${basePrompt}\n\nDokumentti:\n${fullMarkdownText}`;
-      logger.debug(`Using PAATOS_YHTEENVETO config: ${model} @ ${temperature}`);
     } else if (category === 'asiakaskirjaus') {
       // Use Firestore-based configuration for Asiakaskirjaus
       model = await asiakaskirjausYhteenvetoService.getLLMModel();
       temperature = await asiakaskirjausYhteenvetoService.getTemperature();
       const basePrompt = await asiakaskirjausYhteenvetoService.getPromptForGeneration();
-      prompt = `${basePrompt}\n\nDokumentti:\n${fullMarkdownText}`;
+      prompt = `${basePrompt}\n\nDokumentti:\n${documentText}`;
       logger.debug(`Using ASIAKASKIRJAUS_YHTEENVETO config: ${model} @ ${temperature}`);
     } else {
       // Unsupported document type
@@ -106,6 +116,8 @@ export async function generateDocumentSummary(
       return { summary: 'Ei yhteenvetoa' };
     }
 
+    logger.debug(`Raw LLM response (first 300 chars): ${rawSummary.substring(0, 300)}`);
+
     // Try to parse JSON response
     try {
       // Remove markdown code blocks if present (```json ... ```)
@@ -114,12 +126,23 @@ export async function generateDocumentSummary(
         .replace(/```\s*/g, '')
         .trim();
 
-      const parsed = JSON.parse(cleanedSummary);
+      logger.debug(`Cleaned summary: ${cleanedSummary.substring(0, 200)}`);
+
+      let parsed = JSON.parse(cleanedSummary);
+
+      // Handle double-stringified JSON (if LLM returns string instead of object)
+      if (typeof parsed === 'string') {
+        logger.debug('Detected double-stringified JSON, parsing again...');
+        parsed = JSON.parse(parsed);
+      }
+
       logger.info(`✅ Parsed JSON summary for ${category}:`, parsed);
+      logger.debug(`Summary object keys:`, Object.keys(parsed));
       return parsed;  // Return structured object
     } catch (parseError) {
       // Fallback: If not valid JSON, return as plain text
       logger.warn(`Could not parse JSON summary for ${category}, using raw string:`, parseError);
+      logger.debug(`Parse error details:`, parseError);
       return { summary: rawSummary };
     }
   } catch (error) {
@@ -130,6 +153,8 @@ export async function generateDocumentSummary(
 
 /**
  * Build appropriate prompt based on document category
+ * NOTE: This function is deprecated and not currently used.
+ * Summary generation now uses Firestore-based prompts from yhteenveto services.
  */
 function buildSummaryPrompt(fullMarkdownText: string, category: DocumentCategory): string {
   const baseInstruction = 'Luo tiivis yhteenveto (max 2 lausetta) seuraavasta dokumentista.';
@@ -149,12 +174,7 @@ ${fullMarkdownText}
 
 Yhteenveto:`,
 
-    päätös: `${baseInstruction} Keskity päätöksen sisältöön ja perusteluihin.
-
-Dokumentti:
-${fullMarkdownText}
-
-Yhteenveto:`,
+    päätös: `${baseInstruction} (NOT USED - päätös documents skip summary generation)`,
 
     asiakassuunnitelma: `${baseInstruction} Keskity suunnitelman tavoitteisiin ja toimenpiteisiin.
 
