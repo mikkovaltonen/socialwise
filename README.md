@@ -41,12 +41,55 @@
 - **Lakisääteinen vaatimustenmukaisuus**: Varmista sosiaalityön lainsäädännön noudattaminen
 - **Tapausmuistiinpanot**: Rakenteelliset mallit eri tapauksille
 - **Laadunvarmistus**: Automaattiset täydellisyys- ja tarkkuustarkistukset
+- **LLM-generoitu yhteenveto**: Automaattiset tiivistelmät kaikista dokumenteista
 
-### ⚙️ Järjestelmäpromptien Hallinta
+### 📄 Dokumenttityypit ja Yhteenveto-Promptit
+
+Jokaisella dokumenttityypillä on oma yhteenveto-prompt-hallinansa:
+
+#### **Lastensuojeluilmoitus (LS-ilmoitus)**
+- **Kokoelma**: `ILMOITUS_YHTEENVETO`
+- **Test-tiedosto**: `/public/ILMOITUS_YHTEENVETO_PROMPT.md`
+- **Komponentti**: `IlmoitusYhteenvetoPromptManager.tsx`
+- **Yhteenveto**: Tunnistaa ilmoituksen perusteen ja keskeiset huolenaiheet
+
+#### **Palvelutarpeen Arviointi (PTA)**
+- **Kokoelma**: `PALVELUNTARPEEN_ARVIOINTI_YHTEENVETO`
+- **Test-tiedosto**: `/public/PALVELUNTARPEEN_ARVIOINTI_YHTEENVETO_PROMPT.md`
+- **Komponentti**: `PtaYhteenvetoPromptManager.tsx`
+- **Yhteenveto**: Tiivistää asiakkaan tilanteen, huolenaiheet ja suositellut palvelut
+
+#### **Päätös**
+- **Kokoelma**: `PAATOS_YHTEENVETO`
+- **Test-tiedosto**: `/public/PAATOS_YHTEENVETO_PROMPT.md`
+- **Komponentti**: `PaatosYhteenvetoPromptManager.tsx`
+- **Yhteenveto**: Kuvaa päätöksen sisällön ja perustelut lyhyesti
+
+#### **Asiakaskirjaus**
+- **Kokoelma**: `ASIAKAS_YHTEENVETO`
+- **Test-tiedosto**: `/public/ASIAKAS_YHTEENVETO_PROMPT.md`
+- **Komponentti**: `AsiakasYhteenvetoPromptManager.tsx`
+- **Yhteenveto**: Tiivistää kontaktin aiheet ja suunnitellut jatkotoimet
+
+### ⚙️ Yhteenveto-Promptien Hallinta
+
+Kaikki yhteenveto-prompt-hallinnat noudattavat yhtenäistä arkkitehtuuria:
+
 - **Versiointi**: Aikaleima-pohjainen versioiden seuranta
+- **Test/Production-versiot**:
+  - **Test**: Prompti luetaan tiedostosta (read-only käyttöliittymässä)
+  - **Production**: Prompti tallennetaan Firestoreen (muokattavissa)
+- **LLM-mallivalinta**: Grok-4-Fast, Gemini 2.5 Flash Lite/Flash/Pro, Gemini 3 Pro Preview
+- **Temperature-säätö**: 0 - 1 (oletuksena 0.3)
 - **Historia**: Tarkastele ja palauta aiempia versioita
-- **Mallivalinta**: Valitse Grok-4-Fast, Gemini 2.5 Flash tai Gemini 2.5 Pro
-- **Käyttäjäpreferenssit**: Henkilökohtaiset LLM-mallivalinnat
+- **Kuvaukset**: Tallenna muutoskuvaus jokaiselle versiolle
+- **Fullscreen-editori**: Suuri editori pitkille prompteille
+
+**Tekninen toteutus:**
+- Jokainen tallennusoperaatio luo uuden dokumentin Firestoreen automaattisella ID:llä
+- Viimeisin prompti haetaan: `orderBy('createdAt', 'desc').limit(1)`
+- Täysi historia saatavilla katselua ja palautusta varten
+- Kaikki asetukset (LLM-malli, temperature, version) tallennetaan samaan dokumenttiin
 
 ## 🛠️ Teknologiat
 

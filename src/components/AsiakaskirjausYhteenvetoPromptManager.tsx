@@ -1,6 +1,6 @@
 /**
- * Asiakas Yhteenveto Prompt Manager Component
- * Manages client summary prompts with global LLM settings
+ * Asiakaskirjaus Yhteenveto Prompt Manager Component
+ * Manages PTA summary prompts with global LLM settings
  */
 
 import React, { useState, useEffect } from 'react';
@@ -10,8 +10,8 @@ import {
   savePrompt,
   getPromptHistory,
   initializePrompts,
-  AsiakasYhteenvetoPrompt
-} from '@/lib/asiakasYhteenvetoService';
+  AsiakaskirjausYhteenvetoPrompt
+} from '@/lib/asiakaskirjausYhteenvetoService';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,11 +43,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-export default function AsiakasYhteenvetoPromptManager() {
+export default function AsiakaskirjausYhteenvetoPromptManager() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [currentPrompt, setCurrentPrompt] = useState<AsiakasYhteenvetoPrompt | null>(null);
+  const [currentPrompt, setCurrentPrompt] = useState<AsiakaskirjausYhteenvetoPrompt | null>(null);
   const [content, setContent] = useState('');
   const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.5-flash-lite');
   const [temperature, setTemperature] = useState<number>(0.3);
@@ -57,7 +57,7 @@ export default function AsiakasYhteenvetoPromptManager() {
   const [showDescriptionDialog, setShowDescriptionDialog] = useState(false);
   const [description, setDescription] = useState('');
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
-  const [history, setHistory] = useState<AsiakasYhteenvetoPrompt[]>([]);
+  const [history, setHistory] = useState<AsiakaskirjausYhteenvetoPrompt[]>([]);
   const [showFullscreenEditor, setShowFullscreenEditor] = useState(false);
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function AsiakasYhteenvetoPromptManager() {
         // If test version, load from file instead of database
         if (latest.promptVersion === 'test') {
           try {
-            const response = await fetch('/ASIAKAS_YHTEENVETO_PROMPT.md');
+            const response = await fetch('/ASIAKASKIRJAUS_YHTEENVETO_PROMPT.md');
             if (response.ok) {
               const fileContent = await response.text();
               setContent(fileContent);
@@ -101,8 +101,8 @@ export default function AsiakasYhteenvetoPromptManager() {
         }
       }
     } catch (error) {
-      console.error('Error loading asiakas yhteenveto prompt:', error);
-      setError('Failed to load asiakas yhteenveto prompt');
+      console.error('Error loading Asiakaskirjaus yhteenveto prompt:', error);
+      setError('Failed to load Asiakaskirjaus yhteenveto prompt');
     } finally {
       setLoading(false);
     }
@@ -137,7 +137,7 @@ export default function AsiakasYhteenvetoPromptManager() {
         temperature,
         promptVersion,
         user.email || '',
-        description || 'Asiakas yhteenveto prompt update'
+        description || 'Asiakaskirjaus yhteenveto prompt update'
       );
 
       if (id) {
@@ -252,7 +252,7 @@ export default function AsiakasYhteenvetoPromptManager() {
     setShowHistoryDialog(true);
   };
 
-  const handleRevertToVersion = async (prompt: AsiakasYhteenvetoPrompt) => {
+  const handleRevertToVersion = async (prompt: AsiakaskirjausYhteenvetoPrompt) => {
     if (!user) return;
 
     setMessage('');
@@ -314,7 +314,7 @@ export default function AsiakasYhteenvetoPromptManager() {
           <span className="text-xs text-gray-500">(OpenRouter)</span>
         </div>
         <p className="text-xs text-gray-600 mb-3">
-          Nämä asetukset vaikuttavat kaikkiin käyttäjiin. Tallennetaan ASIAKAS_YHTEENVETO-collectioniin järjestelmäpromptin mukana.
+          Nämä asetukset vaikuttavat kaikkiin käyttäjiin. Tallennetaan ASIAKASKIRJAUS_YHTEENVETO-collectioniin järjestelmäpromptin mukana.
         </p>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
@@ -328,6 +328,7 @@ export default function AsiakasYhteenvetoPromptManager() {
               <SelectContent>
                 <SelectItem value="test">Test (Tiedosto)</SelectItem>
                 <SelectItem value="production">Production (DB)</SelectItem>
+              <SelectItem value="google/gemini-3-pro-preview">Gemini 3 Pro Preview</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -359,6 +360,7 @@ export default function AsiakasYhteenvetoPromptManager() {
                 <SelectItem value="0.4">0.4</SelectItem>
                 <SelectItem value="0.7">0.7</SelectItem>
                 <SelectItem value="1">1</SelectItem>
+              <SelectItem value="google/gemini-3-pro-preview">Gemini 3 Pro Preview</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -370,7 +372,7 @@ export default function AsiakasYhteenvetoPromptManager() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Asiakas Yhteenveto Järjestelmäprompt</CardTitle>
+              <CardTitle>Palveluntarpeen Arviointi Yhteenveto Järjestelmäprompt</CardTitle>
               <CardDescription>
                 Viimeisin versio • {currentPrompt ? formatDate(currentPrompt.createdAt) : 'Ei tallennettua promptia'}
                 {currentPrompt?.createdByEmail && ` • ${currentPrompt.createdByEmail}`}
@@ -391,7 +393,7 @@ export default function AsiakasYhteenvetoPromptManager() {
             <Alert className="bg-yellow-50 border-yellow-200">
               <AlertCircle className="w-4 h-4 text-yellow-600" />
               <AlertDescription className="text-yellow-800">
-                Test-versio: Prompti luetaan tiedostosta <code className="px-1 py-0.5 bg-yellow-100 rounded text-xs">/public/ASIAKAS_YHTEENVETO_PROMPT.md</code> eikä sitä voi muokata täällä.
+                Test-versio: Prompti luetaan tiedostosta <code className="px-1 py-0.5 bg-yellow-100 rounded text-xs">/public/PTA_YHTEENVETO_PROMPT.md</code> eikä sitä voi muokata täällä.
               </AlertDescription>
             </Alert>
           )}
@@ -405,7 +407,7 @@ export default function AsiakasYhteenvetoPromptManager() {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Kirjoita järjestelmäprompt..."
               className="min-h-[500px] font-mono text-sm"
-              id="asiakas-yhteenveto-prompt-editor"
+              id="pta-yhteenveto-prompt-editor"
               disabled={promptVersion === 'test'}
             />
           </div>
@@ -450,10 +452,10 @@ export default function AsiakasYhteenvetoPromptManager() {
         content={content}
         onChange={setContent}
         onSave={handleSavePrompt}
-        title="Asiakas Yhteenveto Prompt"
+        title="Asiakaskirjaus Yhteenveto Prompt"
         saving={saving}
         disabled={promptVersion === 'test'}
-        readOnlyMessage={promptVersion === 'test' ? 'Test-versio: Prompti luetaan tiedostosta /public/ASIAKAS_YHTEENVETO_PROMPT.md' : undefined}
+        readOnlyMessage={promptVersion === 'test' ? 'Test-versio: Prompti luetaan tiedostosta /public/PTA_YHTEENVETO_PROMPT.md' : undefined}
       />
 
       {/* Description Dialog */}
@@ -469,7 +471,7 @@ export default function AsiakasYhteenvetoPromptManager() {
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g., Updated summary format, Added new fields..."
+              placeholder="e.g., Updated PTA summary format, Added new fields..."
               className="min-h-[100px]"
             />
           </div>

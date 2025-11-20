@@ -25,7 +25,7 @@ const documentStructures: DocumentStructure[] = [
       '## LAPSEN JA PERHEEN TAPAAMINEN',
       '## ASIAKKAAN MIELIPIDE JA NÄKEMYS PALVELUTARPEESEEN',
       '## SOSIAALIHUOLLON AMMATTIHENKILÖN JOHTOPÄÄTÖKSET',
-      '## ARIO OMATYÖNTEKIJÄN TARPEESTA',
+      '## ARVIO OMATYÖNTEKIJÄN TARPEESTA',
       '## JAKELU JA ALLEKIRJOITUS'
     ],
     description: 'Asiakkaan palvelutarpeen kartoitus ja arviointi'
@@ -35,12 +35,16 @@ const documentStructures: DocumentStructure[] = [
     title: 'Lastensuojeluilmoitus',
     mainHeading: '# Lastensuojeluilmoitus',
     subHeadings: [
-      '## Ilmoittajan tiedot',
-      '## Huolen aihe',
-      '## Havaitut seikat',
-      '## Toimenpiteet'
+      '## PÄIVÄYS (automaattinen, lukittu)',
+      '## ILMOITTAJAN TIEDOT',
+      '## LAPSEN TIEDOT (automaattinen, lukittu)',
+      '## HUOLTAJIEN TIEDOT (automaattinen, lukittu)',
+      '## HUOLEN AIHEET',
+      '## ILMOITUKSEN PERUSTE',
+      '## TOIMENPITEET',
+      '## ALLEKIRJOITUS JA KÄSITTELYN PÄÄTTYMISPÄIVÄMÄÄRÄ'
     ],
-    description: 'Lastensuojeluilmoituksen dokumentointi'
+    description: 'Lastensuojeluilmoituksen dokumentointi automaattisilla kentillä'
   },
   {
     type: 'päätös',
@@ -71,13 +75,8 @@ const documentStructures: DocumentStructure[] = [
     type: 'asiakaskirjaus',
     title: 'Asiakaskirjaus',
     mainHeading: '# Asiakaskirjaus',
-    subHeadings: [
-      '## Tapaamisen tiedot',
-      '## Keskustelun aiheet',
-      '## Havainnot',
-      '## Jatkotoimet'
-    ],
-    description: 'Asiakaskontaktin dokumentointi'
+    subHeadings: [],
+    description: 'Asiakaskontaktin dokumentointi vapaamuotoisena tekstinä'
   },
   {
     type: 'yhteystiedot',

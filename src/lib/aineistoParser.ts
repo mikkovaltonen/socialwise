@@ -351,7 +351,7 @@ export async function loadCaseNotes(clientId: string): Promise<CaseNote[]> {
       date: doc.date,
       filename: doc.id ? `${doc.id}.md` : `${doc.documentKey}.md`,
       keywords: doc.keywords,
-      summary: doc.manualSummary || '',
+      summary: doc.summary || '',
       fullText: doc.fullMarkdownText,
       updatedAt: doc.updatedAt?.toDate().toISOString(),
       updatedBy: doc.updatedBy,

@@ -180,30 +180,31 @@ export default function DocumentCreationDialog({
 
 # Lastensuojeluilmoitus
 
-## Päiväys
-[Päivämäärä muodossa DD.MM.YYYY]
+## PÄIVÄYS
+[Päivämäärä muodossa DD.MM.YYYY - ÄLÄ täytä, tämä kenttä täytetään automaattisesti]
 
-## Ilmoittajan tiedot
-**Nimi:** [Ilmoittajan nimi]
-**Ammatti/asema:** [Ammatti]
-**Puhelin:** [Puhelinnumero]
-**Sähköposti:** [Sähköposti]
-**Osoite:** [Osoite]
+## ILMOITTAJAN TIEDOT
+[Poimii dokumentista ilmoittajan tiedot - nimi, rooli, yhteystiedot]
 
-## Lapsen tiedot
-**Nimi:** [Lapsen nimi]
-**Henkilötunnus:** [Henkilötunnus]
-**Osoite:** [Osoite]
-**Koulu/päivähoitopaikka:** [Koulu]
+## LAPSEN TIEDOT
+[ÄLÄ täytä, tämä kenttä täytetään automaattisesti asiakastiedoista]
 
-## Huoltajien tiedot
-**Äiti:** [Äidin tiedot]
-**Isä:** [Isän tiedot]
+## HUOLTAJIEN TIEDOT
+[ÄLÄ täytä, tämä kenttä täytetään automaattisesti asiakastiedoista]
 
-## Ilmoituksen peruste
-[Ilmoituksen sisältö ja perusteet]
+## HUOLEN AIHEET
+[Poimii dokumentista huolenaiheet ja huolta aiheuttavat seikat]
 
-Poimii tiedot alkuperäisestä tekstistä ja sijoita ne oikeisiin kohtiin. Jos tietoa ei löydy, jätä kohta tyhjäksi.`,
+## ILMOITUKSEN PERUSTE
+[Poimii dokumentista ilmoituksen varsinainen peruste ja keskeiset syyt]
+
+## TOIMENPITEET
+[Poimii dokumentista tehdyt tai suunnitellut toimenpiteet]
+
+## ALLEKIRJOITUS JA KÄSITTELYN PÄÄTTYMISPÄIVÄMÄÄRÄ
+[Poimii dokumentista allekirjoitustiedot ja käsittelyn päättymispäivämäärä, jos löytyy]
+
+TÄRKEÄÄ: Jätä PÄIVÄYS, ILMOITTAJAN TIEDOT, LAPSEN TIEDOT ja HUOLTAJIEN TIEDOT -kentät TYHJIKSI. Keskity vain muokattaviin kenttiin (HUOLEN AIHEET, ILMOITUKSEN PERUSTE, TOIMENPITEET, ALLEKIRJOITUS).`,
 
       'pta': `Jäsennä seuraava palveluntarvearviointi oikeaan rakenteeseen:
 

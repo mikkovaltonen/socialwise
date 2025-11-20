@@ -8,6 +8,7 @@
  * - LS-ilmoitus: ilmoitusYhteenvetoService (ILMOITUS_YHTEENVETO)
  * - PTA: ptaYhteenvetoService (PALVELUNTARPEEN_ARVIOINTI_YHTEENVETO)
  * - Päätös: paatosYhteenvetoService (PAATOS_YHTEENVETO)
+ * - Asiakaskirjaus: asiakaskirjausYhteenvetoService (ASIAKASKIRJAUS_YHTEENVETO)
  */
 
 import { logger } from './logger';
@@ -15,6 +16,7 @@ import type { DocumentCategory } from './firestoreDocumentService';
 import * as ilmoitusYhteenvetoService from './ilmoitusYhteenvetoService';
 import * as ptaYhteenvetoService from './ptaYhteenvetoService';
 import * as paatosYhteenvetoService from './paatosYhteenvetoService';
+import * as asiakaskirjausYhteenvetoService from './asiakaskirjausYhteenvetoService';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -30,13 +32,6 @@ export async function generateDocumentSummary(
   fullMarkdownText: string,
   category: DocumentCategory
 ): Promise<any> {
-  // Skip LLM generation for case notes (asiakaskirjaus)
-  // Manual summary is required and stored directly
-  if (category === 'asiakaskirjaus') {
-    logger.debug('Skipping LLM generation for asiakaskirjaus (manual summary required)');
-    return { summary: '' };  // Return empty object, manual summary will be set separately
-  }
-
   try {
     // Get configuration from appropriate service based on category
     let model: string;
@@ -64,6 +59,13 @@ export async function generateDocumentSummary(
       const basePrompt = await paatosYhteenvetoService.getPromptForGeneration();
       prompt = `${basePrompt}\n\nDokumentti:\n${fullMarkdownText}`;
       logger.debug(`Using PAATOS_YHTEENVETO config: ${model} @ ${temperature}`);
+    } else if (category === 'asiakaskirjaus') {
+      // Use Firestore-based configuration for Asiakaskirjaus
+      model = await asiakaskirjausYhteenvetoService.getLLMModel();
+      temperature = await asiakaskirjausYhteenvetoService.getTemperature();
+      const basePrompt = await asiakaskirjausYhteenvetoService.getPromptForGeneration();
+      prompt = `${basePrompt}\n\nDokumentti:\n${fullMarkdownText}`;
+      logger.debug(`Using ASIAKASKIRJAUS_YHTEENVETO config: ${model} @ ${temperature}`);
     } else {
       // Unsupported document type
       throw new Error(`Unsupported document category: ${category}. No yhteenveto service configured.`);
