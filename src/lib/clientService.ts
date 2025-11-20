@@ -217,6 +217,34 @@ function getCurrentUserEmail(): string {
   return user.email || user.uid; // Use email if available, fallback to uid
 }
 
+/**
+ * Remove undefined values from object recursively
+ * Firestore does not accept undefined values - they must be omitted or set to null
+ */
+function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
+  const result: any = {};
+
+  for (const key in obj) {
+    if (obj[key] === undefined) {
+      continue; // Skip undefined values
+    }
+
+    if (obj[key] !== null && typeof obj[key] === 'object' && !Array.isArray(obj[key]) && !(obj[key] instanceof Timestamp)) {
+      // Recursively clean nested objects (but not arrays or Timestamps)
+      result[key] = removeUndefined(obj[key]);
+    } else if (Array.isArray(obj[key])) {
+      // Clean arrays of objects
+      result[key] = obj[key].map((item: any) =>
+        typeof item === 'object' && item !== null ? removeUndefined(item) : item
+      );
+    } else {
+      result[key] = obj[key];
+    }
+  }
+
+  return result;
+}
+
 // ============================================================================
 // Update Operations
 // ============================================================================
@@ -237,11 +265,14 @@ export async function saveClientBasicInfo(basicInfo: ClientBasicInfo): Promise<b
 
     const infoRef = doc(db, CLIENT_BASIC_INFO_COLLECTION, basicInfo.clientId);
 
-    await setDoc(infoRef, {
+    // Remove undefined values before saving to Firestore
+    const cleanedData = removeUndefined({
       ...basicInfo,
       updatedAt: Timestamp.now(),
       updatedBy: userEmail,
     });
+
+    await setDoc(infoRef, cleanedData);
 
     return true;
   } catch (error) {
@@ -270,11 +301,14 @@ export async function updateClientBasicInfo(
 
     const infoRef = doc(db, CLIENT_BASIC_INFO_COLLECTION, clientId);
 
-    await updateDoc(infoRef, {
+    // Remove undefined values before saving to Firestore
+    const cleanedData = removeUndefined({
       ...updates,
       updatedAt: Timestamp.now(),
       updatedBy: userEmail,
     });
+
+    await updateDoc(infoRef, cleanedData);
 
     return true;
   } catch (error) {
