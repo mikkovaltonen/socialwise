@@ -177,7 +177,7 @@ function convertLSNotification(doc: LSNotificationDocument): LSNotification {
     urgency: doc.urgency,
     fullText: doc.fullMarkdownText,
     // LLM-generated structured fields
-    reporterSummary: doc.reporterSummary,
+    reporterSummary: typeof doc.reporter === 'string' ? doc.reporter : doc.reporterSummary,
     reasonFromLLM: doc.reason,
     // Audit fields
     updatedAt: doc.updatedAt?.toDate().toISOString(),

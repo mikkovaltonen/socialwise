@@ -35,7 +35,7 @@ Palauta vastaus **vain ja ainoastaan** tässä JSON-muodossa, ilman mitään muu
 ```json
 {
   "date": "YYYY-MM-DD",
-  "reporter": "ilmoittajan ammatti tai asema",
+  "reporterSummary": "ilmoittajan ammatti tai asema",
   "summary": "Lyhyt yhteenveto ilmoituksen perusteesta (max 100 merkkiä)",
   "reason": "Pidempi kuvaus ilmoituksen perusteesta ja syystä (200-500 merkkiä)",
   "urgency": "kriittinen"
@@ -46,7 +46,7 @@ Palauta vastaus **vain ja ainoastaan** tässä JSON-muodossa, ilman mitään muu
 ```json
 {
   "date": null,
-  "reporter": "Opettaja",
+  "reporterSummary": "Opettaja",
   "summary": "Lapsen ahdistus ja perheen konfliktit",
   "reason": "Lapsi on osoittanut viime viikkoina voimakasta ahdistusta ja pelkoa. Kotona on ollut riitoja vanhempien välillä. Lapsi on kertonut koulupsykologille pelkäävänsä kotiin menoa.",
   "urgency": "normaali"

@@ -62,7 +62,7 @@ export interface BaseDocument {
 export interface LSNotificationDocument extends BaseDocument {
   category: 'ls-ilmoitus';
   urgency?: 'kriittinen' | 'kiireellinen' | 'normaali' | 'ei_kiireellinen';
-  reporter?: {
+  reporter?: string | {  // Can be string (LLM-generated) or object (parsed from markdown)
     name?: string;
     profession?: string;
     organization?: string;
